@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Workstation | Campus Complaint System</title>
+  <link rel="stylesheet" href="style.css?v=1.1">
+  <!-- Load Chart.js CDN for beautiful interactive charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Load Lucide Icons CDN for sleek UI icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="admin-portal-body" onclick="adminApp.closeAllAutocompletes()">
+
+  <!-- App Header -->
+  <header>
+    <div class="brand" onclick="adminApp.handleLogoClick()">
+      <div class="brand-emblem">
+        <img src="logo.jpg" alt="UMaT Logo" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <div class="brand-text">
+        <h1>Campus Complaint Management System</h1>
+        <p>University of Mines and Technology, Tarkwa</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs (Only visible when logged in) -->
+    <nav id="main-nav" style="display: none;">
+      <button class="nav-tab active" onclick="adminApp.switchTab('workstation')" id="nav-tab-workstation">
+        <i data-lucide="shield-check"></i> Workstation
+      </button>
+      <button class="nav-tab" onclick="adminApp.switchTab('analytics')" id="nav-tab-analytics">
+        <i data-lucide="bar-chart-3"></i> Analytics Dashboard
+      </button>
+    </nav>
+
+    <!-- Staff Session Badge (Interactive Profile Dropdown) -->
+    <div class="dashboard-profile-widget" id="staff-session-badge" style="display: none; margin-bottom: 0;" onclick="adminApp.toggleProfileDropdown(event)">
+      <div class="profile-avatar">
+        <i data-lucide="user-cog"></i>
+      </div>
+      <div class="profile-info">
+        <span class="profile-name" id="db-profile-name">Staff Name</span>
+        <span class="profile-role" id="db-profile-role">Staff Officer</span>
+      </div>
+      <i data-lucide="chevron-down" class="profile-chevron" id="db-profile-chevron"></i>
+      
+      <!-- Dropdown Menu -->
+      <div class="profile-dropdown-menu" id="db-profile-dropdown" style="display: none;" onclick="event.stopPropagation()">
+        <div class="dropdown-header">Admin Profile & Settings</div>
+        
+        <!-- Theme Selection -->
+        <div class="dropdown-item dropdown-theme-select">
+          <i data-lucide="palette"></i>
+          <div style="flex-grow: 1; display: flex; flex-direction: column;">
+            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Change Theme</span>
+            <select id="theme-selector" onchange="adminApp.changeTheme(this.value)" style="width: 100%; margin-top: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit;">
+              <option value="light">Light Mode</option>
+              <option value="dark">Dark Mode</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Change Password -->
+        <button type="button" class="dropdown-item-btn" onclick="adminApp.openChangePasswordModal(event)">
+          <i data-lucide="key-round"></i>
+          <span>Change Password</span>
+        </button>
+        
+        <div class="dropdown-divider"></div>
+        
+        <!-- Log Out -->
+        <button type="button" class="dropdown-item-btn text-danger" onclick="adminApp.handleLogout(); event.preventDefault();">
+          <i data-lucide="log-out"></i>
+          <span>Log Out</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Space -->
+  <main>
+
+    <!-- 1. STAFF LOGIN VIEW -->
+    <!-- 1. STAFF LOGIN VIEW -->
+    <section id="login-view" class="view-section active">
+      <!-- Slideshow background for premium dynamic feel -->
+      <div class="login-bg-slides">
+        <div class="login-bg-slide active" style="background-image: url('login_bg_2.png');"></div>
+        <div class="login-bg-slide" style="background-image: url('login_bg.png');"></div>
+      </div>
+      
+      
+      <div class="login-layout-wrapper animate-fade-in" onclick="event.stopPropagation()">
+        
+        <!-- Left Side: Brand features list -->
+        <div class="login-info-card glass-card">
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <p class="portal-tagline">STAFF ADMIN PORTAL</p>
+            <div class="gold-divider-line"></div>
+          </div>
+          
+          <div class="features-list">
+            <div class="feature-item">
+              <div class="feature-icon-box">
+                <i data-lucide="target"></i>
+              </div>
+              <div class="feature-text">
+                <h5>Monitor routed complaints</h5>
+                <p>Track which complaints have been sent to which faculty or officer and see their current status.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon-box">
+                <i data-lucide="check-check"></i>
+              </div>
+              <div class="feature-text">
+                <h5>Resolve assigned complaints</h5>
+                <p>Act on complaints routed directly to you and update their resolution status.</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon-box">
+                <i data-lucide="file-bar-chart"></i>
+              </div>
+              <div class="feature-text">
+                <h5>Generate reports</h5>
+                <p>Pull summary reports on complaint trends, resolution rates, and officer performance across faculties.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="info-card-footer">
+            © 2026 CampusDesk · UMaT · All rights reserved
+          </div>
+        </div>
+
+        <!-- Right Side: Login card pad -->
+        <div class="glass-card login-card" style="width: 100%; max-width: 460px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <i data-lucide="shield" style="width: 44px; height: 44px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+            <h3>Official Staff Login</h3>
+            <p class="section-desc">Enter your official Staff ID and password to access the administrative workspace.</p>
+          </div>
+
+          <!-- First time signing in warning box -->
+          <div style="display: flex; gap: 0.75rem; padding: 1rem; background: rgba(244, 196, 48, 0.08); border: 1px solid rgba(244, 196, 48, 0.35); border-radius: 8px; margin-bottom: 1.5rem; text-align: left; align-items: flex-start;">
+            <i data-lucide="info" style="width: 18px; height: 18px; stroke: #f4c430; flex-shrink: 0; margin-top: 2px;"></i>
+            <p style="font-size: 0.8rem; color: var(--text-dark); margin: 0; line-height: 1.4;">
+              <strong>First time signing in?</strong> Your default password is the same as your staff ID. You'll be asked to change it after logging in.
+            </p>
+          </div>
+
+          <form id="staff-login-form" onsubmit="adminApp.handleLoginSubmit(event)">
+            
+            <div class="input-group" style="margin-bottom: 1.25rem;">
+              <label for="login-staff-id">Staff ID</label>
+              <input type="text" id="login-staff-id" placeholder="e.g. DEC-101, HOD-103" required>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 1.75rem;">
+              <label for="login-password">Password</label>
+              <div style="position: relative; width: 100%;">
+                <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem;">
+                <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted);">
+                  <i data-lucide="eye" id="password-toggle-icon" style="width: 18px; height: 18px;"></i>
+                </button>
+              </div>
+              <span class="helper-text">Haven't changed your password yet? Enter your staff ID here.</span>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+              <i data-lucide="unlock"></i> LOG IN
+            </button>
+          </form>
+          
+          <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px; stroke: var(--text-muted);"></i>
+            <span>Secured connection · Staff use only</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- 2. STAFF DASHBOARD WORKVIEW (HIDDEN UNTIL LOGIN) -->
+    <section id="dashboard-view" class="view-section" style="display: none;">
+      
+      <!-- TAB A: WORKSTATION PANEL -->
+      <div id="panel-workstation" class="dashboard-panel-view active">
+        <!-- Main Layout containing Sidebar and Desk Workspace -->
+        <div class="admin-layout">
+          
+          <!-- Left Sidebar: Inbox List -->
+          <div class="admin-sidebar">
+            <div class="admin-sidebar-header">
+              <!-- Profile Widget moved to top right header -->
+
+              <!-- Active Jurisdiction Display -->
+              <div class="active-dept-display" style="margin-top: 0.5rem;">
+                <span class="dept-label">Faculty Jurisdiction</span>
+                <h4 id="active-jurisdiction-name" style="color: #fff; margin-top: 0.25rem; font-size: 0.95rem;">-</h4>
+              </div>
+
+              <!-- Filtering Tabs -->
+              <div class="admin-tabs-list">
+                <button class="admin-sidebar-tab active" onclick="adminApp.setInboxFilter('all')" id="admin-tab-all">All Tasks</button>
+                <button class="admin-sidebar-tab" onclick="adminApp.setInboxFilter('pending')" id="admin-tab-pending">New/Open</button>
+                <button class="admin-sidebar-tab" onclick="adminApp.setInboxFilter('active')" id="admin-tab-active">My Active</button>
+                <button class="admin-sidebar-tab" onclick="adminApp.setInboxFilter('resolved')" id="admin-tab-resolved">Resolved</button>
+              </div>
+
+              <!-- Search Bar -->
+              <div class="sidebar-search-wrapper" style="margin-top: 0.75rem;">
+                <input type="text" id="admin-search-input" placeholder="Search by name or ticket ID..." oninput="adminApp.handleSearch()" style="width: 100%; padding: 0.5rem 0.75rem; font-size: 0.85rem; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-input-color);">
+              </div>
+            </div>
+
+            <!-- Inbox Scroll Area -->
+            <div class="admin-complaint-list" id="admin-inbox-list">
+              <!-- Rendered list items -->
+            </div>
+          </div>
+
+          <!-- Right Side: Details Workspace -->
+          <div class="admin-workspace">
+            
+            <!-- Default empty state placeholder -->
+            <div id="admin-workspace-placeholder" class="admin-workspace-placeholder">
+              <i data-lucide="folder-open"></i>
+              <h3>No Complaint Loaded</h3>
+              <p>Select a student grievance card from the left inbox sidebar to begin resolution workflows, modify status, or read internal details.</p>
+            </div>
+
+            <!-- Interactive Workspace -->
+            <div id="admin-workspace-content" style="display: none; height: 100%; flex-direction: column;">
+              
+              <!-- Header section of active complaint -->
+              <div class="admin-workspace-header">
+                <div class="workspace-title-section">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+                    <span class="item-id" id="admin-work-id" style="font-size: 1.1rem;">UMAT-2026-A1B2</span>
+                    <span id="admin-work-urgency-badge"></span>
+                    <span id="admin-work-status-badge"></span>
+                  </div>
+                  <h3 id="admin-work-subject">Missing Grade for CSE 352 (Database Systems)</h3>
+                  <div class="workspace-student-info">
+                    Filer: <span id="admin-work-student-name">Adjoa Mansah</span> (<span id="admin-work-student-index">9021020</span>) | Programme: <span id="admin-work-student-dept">BSc CSE</span> | Level: <span id="admin-work-student-level">-</span>
+                  </div>
+                </div>
+                
+                <!-- Quick Actions in Header -->
+                <div class="workspace-actions-header">
+                  <button class="btn btn-secondary" id="admin-claim-btn" onclick="adminApp.claimActiveComplaint()">
+                    <i data-lucide="user-check"></i> Claim Ownership
+                  </button>
+                </div>
+              </div>
+
+              <!-- Workspace Tabs -->
+              <div class="admin-workspace-body">
+                <div class="workspace-tabs">
+                  <button class="workspace-tab-btn active" onclick="adminApp.setWorkspaceTab('overview')" id="ws-tab-overview">Grievance Overview</button>
+                  <button class="workspace-tab-btn" onclick="adminApp.setWorkspaceTab('notes')" id="ws-tab-notes">Internal Office Notes</button>
+                </div>
+
+                <!-- View 1: Overview and Workflow Controls -->
+                <div id="ws-panel-overview" class="workspace-panel active animate-fade-in">
+                  
+                  <!-- Active Scheduled Appointment Notice Card -->
+                  <div id="ws-active-appointment-display" class="glass-card" style="display: none; border-left: 5px solid var(--status-review); background: rgba(183, 121, 31, 0.03); padding: 1.25rem; margin-bottom: 1.5rem;">
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div style="flex-grow: 1;">
+                          <h5 style="color: var(--status-review); margin: 0 0 0.25rem 0; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+                            <i data-lucide="calendar" style="width:16px; height:16px;"></i> Active Appointment Scheduled
+                          </h5>
+                          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;" id="ws-appt-desc-text">Loading details...</p>
+                        </div>
+                        <button class="btn btn-outline-primary" id="btn-show-complete-appt" style="padding: 0.5rem 1rem; font-size: 0.8rem; text-transform:none;" onclick="adminApp.toggleCompleteAppointmentForm()">
+                          <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Complete Meeting & Provide Feedback
+                        </button>
+                      </div>
+                      
+                      <!-- Meeting Completion Form (Hidden by default) -->
+                      <div id="ws-complete-appt-form" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
+                        <div class="input-group" style="margin-bottom: 1rem;">
+                          <label for="appt-completion-feedback">Meeting Resolution Feedback / Outcome</label>
+                          <textarea id="appt-completion-feedback" placeholder="Summarize the meeting outcome and next steps (this will be sent to the student)..." style="min-height: 80px;"></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="adminApp.toggleCompleteAppointmentForm()">Cancel</button>
+                          <button type="button" class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.75rem;" onclick="adminApp.submitCompleteAppointment()">
+                            <i data-lucide="check-square" style="width: 12px; height: 12px;"></i> Save & Resolve Appointment
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="workspace-meta-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="meta-box">
+                      <label>Filing Date</label>
+                      <span id="admin-work-date">-</span>
+                    </div>
+                    <div class="meta-box">
+                      <label>Filer Email</label>
+                      <span id="admin-work-email">-</span>
+                    </div>
+                    <div class="meta-box">
+                      <label>Filer Phone</label>
+                      <span id="admin-work-phone">-</span>
+                    </div>
+                    <div class="meta-box">
+                      <label>Current Case Owner</label>
+                      <span id="admin-work-owner" style="color: var(--accent);">-</span>
+                    </div>
+                  </div>
+
+                  <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label>Grievance Body Details</label>
+                    <div class="tracking-description-box" id="admin-work-desc" style="background: rgba(0,0,0,0.02);">
+                      Description text...
+                    </div>
+                  </div>
+
+                  <!-- Case Status & Owner Controls -->
+                  <div class="workflow-action-panel" style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--text-color); font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.75rem;">
+                      Case Status & Owner Controls
+                    </h4>
+                    
+                    <!-- Quick Status Checklist -->
+                    <div style="display: flex; gap: 1.5rem; margin-bottom: 1.25rem; background: var(--bg-sidebar); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); align-items: center; flex-wrap: wrap;">
+                      <span style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Quick Status Actions:</span>
+                      
+                      <label style="display: flex; align-items: center; gap: 0.5rem; text-transform: none; font-size: 0.9rem; cursor: pointer; color: var(--text-color); font-weight: 500; margin: 0;">
+                        <input type="checkbox" id="chk-status-review" onchange="adminApp.handleQuickCheck('Under Review', this)" style="cursor: pointer; width: 16px; height: 16px;">
+                        Under Review
+                      </label>
+                      
+                      <label style="display: flex; align-items: center; gap: 0.5rem; text-transform: none; font-size: 0.9rem; cursor: pointer; color: var(--text-color); font-weight: 500; margin: 0;">
+                        <input type="checkbox" id="chk-status-progress" onchange="adminApp.handleQuickCheck('In Progress', this)" style="cursor: pointer; width: 16px; height: 16px;">
+                        In Progress
+                      </label>
+                      
+                      <label style="display: flex; align-items: center; gap: 0.5rem; text-transform: none; font-size: 0.9rem; cursor: pointer; color: var(--text-color); font-weight: 500; margin: 0;">
+                        <input type="checkbox" id="chk-status-resolved" onchange="adminApp.handleQuickCheck('Resolved', this)" style="cursor: pointer; width: 16px; height: 16px;">
+                        Resolved
+                      </label>
+                    </div>
+                    
+                    <div class="workflow-actions-row">
+                      <!-- Update Status -->
+                      <div class="input-group">
+                        <label for="workflow-status">Update Workflow Status</label>
+                        <select id="workflow-status">
+                          <option value="Submitted">Submitted (Log in Ledger)</option>
+                          <option value="Under Review">Under Review (Assessing claim)</option>
+                          <option value="In Progress">In Progress (Action is being taken)</option>
+                          <option value="Resolved">Resolved (Grievance completed)</option>
+                          <option value="Rejected">Rejected (Inaccurate / Dismissed)</option>
+                        </select>
+                      </div>
+
+                      <!-- Reassign Case -->
+                      <div class="input-group">
+                        <label for="workflow-owner">Reassign Case Officer</label>
+                        <select id="workflow-owner">
+                          <!-- Options populated programmatically -->
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Instruction History Log -->
+                    <div class="input-group" style="margin-top: 1rem; margin-bottom: 0.75rem;">
+                      <label style="color: var(--text-muted); font-size: 0.75rem;">Instructions Sent to Student</label>
+                      <div id="admin-instructions-sent-log" style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.1); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 6px; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- Populate sent instructions -->
+                      </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                      <button class="btn btn-primary" onclick="adminApp.submitWorkflowActions()">
+                        <i data-lucide="check-square"></i> Apply Status & Owner Changes
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Official Directives Panel (Dean Side) -->
+                  <div class="workflow-action-panel" style="margin-top: 1.5rem; border-color: rgba(13,82,44,0.25); background: rgba(255,255,255,0.01);">
+                    <h4 style="color: var(--primary); font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                      <i data-lucide="clipboard-list" style="stroke: var(--accent);"></i> Issue Directives & Next Steps (Action Required)
+                    </h4>
+                    
+                    <!-- Quick Appointment Prompt Buttons -->
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                      <button class="btn btn-outline-primary" style="padding: 0.6rem 1.25rem; text-transform: none; font-size: 0.85rem;" onclick="adminApp.toggleAppointmentForm('in-person')">
+                        <i data-lucide="users" style="width: 14px; height: 14px;"></i> Prompt: Come in Person
+                      </button>
+                      <button class="btn btn-outline-primary" style="padding: 0.6rem 1.25rem; text-transform: none; font-size: 0.85rem;" onclick="adminApp.toggleAppointmentForm('counselor')">
+                        <i data-lucide="smile" style="width: 14px; height: 14px;"></i> Prompt: Go to Counselor
+                      </button>
+                    </div>
+
+                    <!-- Detailed In-Person Scheduler Form (Hidden initially) -->
+                    <div id="ws-appointment-inperson-form" class="glass-card" style="display: none; border: 1px solid rgba(13,82,44,0.15); padding: 1.25rem; margin-bottom: 1.25rem; background: #ffffff;">
+                      <h5 style="color: var(--primary); margin-bottom: 1rem; font-weight: 700;">Schedule In-Person Office Meeting</h5>
+                      <form onsubmit="adminApp.submitDetailedAppointment('in-person', event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                          <div class="input-group">
+                            <label for="appt-inperson-time">Date & Time</label>
+                            <input type="datetime-local" id="appt-inperson-time" required>
+                          </div>
+                          <div class="input-group">
+                            <label for="appt-inperson-venue">Venue / Location</label>
+                            <input type="text" id="appt-inperson-venue" placeholder="e.g. Dean's Office, FCMS Block Room 102" required>
+                          </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 1rem;">
+                          <label for="appt-inperson-instructions">Required Documents / Purpose</label>
+                          <textarea id="appt-inperson-instructions" placeholder="e.g. Bring your registration slip, bank receipts, and mid-sem grading scripts." required style="min-height: 60px;"></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                          <button type="button" class="btn btn-secondary" onclick="adminApp.hideAppointmentForms()" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Cancel</button>
+                          <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.8rem;">Schedule Meeting</button>
+                        </div>
+                      </form>
+                    </div>
+
+                    <!-- Detailed Counselor Scheduler Form (Hidden initially) -->
+                    <div id="ws-appointment-counselor-form" class="glass-card" style="display: none; border: 1px solid rgba(13,82,44,0.15); padding: 1.25rem; margin-bottom: 1.25rem; background: #ffffff;">
+                      <h5 style="color: var(--primary); margin-bottom: 1rem; font-weight: 700;">Schedule Counselor Consultation Session</h5>
+                      <form onsubmit="adminApp.submitDetailedAppointment('counselor', event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                          <div class="input-group">
+                            <label for="appt-counselor-time">Date & Time</label>
+                            <input type="datetime-local" id="appt-counselor-time" required>
+                          </div>
+                          <div class="input-group">
+                            <label for="appt-counselor-venue">Venue / Center</label>
+                            <input type="text" id="appt-counselor-venue" placeholder="e.g. Student Guidance Center, Room 12" required>
+                          </div>
+                        </div>
+                        <div class="input-group" style="margin-bottom: 1rem;">
+                          <label for="appt-counselor-instructions">Session Goal / Instructions</label>
+                          <textarea id="appt-counselor-instructions" placeholder="e.g. Counseling session regarding class workload advice and personal welfare check." required style="min-height: 60px;"></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                          <button type="button" class="btn btn-secondary" onclick="adminApp.hideAppointmentForms()" style="padding: 0.5rem 1rem; font-size: 0.8rem;">Cancel</button>
+                          <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.8rem;">Schedule Consultation</button>
+                        </div>
+                      </form>
+                    </div>
+
+                    <p class="section-desc" style="font-size: 0.8rem; margin-bottom: 1rem;">Issue custom directive checks to appear on the student checklist feed.</p>
+                    
+                    <div id="admin-directives-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                      <!-- Populated dynamically -->
+                    </div>
+
+                    <div class="input-group">
+                      <label for="admin-new-directive">Add Action Directive</label>
+                      <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="admin-new-directive" placeholder="e.g. Submit remarking slip copies to clerk" style="flex-grow: 1;">
+                        <button class="btn btn-outline-primary" onclick="adminApp.addDirective(event)" style="padding: 0.8rem 1.25rem; text-transform: none;">Add Prompt</button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+
+
+                <!-- View 3: Internal Notes (Confidential) -->
+                <div id="ws-panel-notes" class="workspace-panel animate-fade-in">
+                  <div class="internal-note-panel">
+                    <h4><i data-lucide="lock"></i> Department Confidential Notes</h4>
+                    <p class="section-desc" style="margin-bottom: 1rem; font-size: 0.8rem;">These logs are strictly private to deans and department staff. The student cannot view these logs.</p>
+
+                    <div class="internal-note-list" id="admin-notes-list">
+                      <!-- Rendered notes -->
+                    </div>
+
+                    <div class="comment-box">
+                      <div class="input-group">
+                        <label for="admin-new-note">Record Internal Staff Observation</label>
+                        <textarea id="admin-new-note" placeholder="Write internal findings, lecturer remarks, or references..." style="min-height: 80px; background: rgba(0,0,0,0.03); border-color: rgba(244, 196, 48, 0.3);"></textarea>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end;">
+                        <button class="btn btn-outline-primary" onclick="adminApp.postAdminInternalNote()">
+                          <i data-lucide="sticky-note"></i> Add Internal Note
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB B: BOARD LEVEL ANALYTICS -->
+      <div id="panel-analytics" class="dashboard-panel-view">
+        <!-- Profile Widget moved to top right header -->
+
+        <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 id="analytics-scope-title">Institutional Analytics Dashboard</h2>
+            <p class="section-desc" id="analytics-scope-desc">Quantify resolution rates, monitor departmental backlog, and view trends.</p>
+            <div id="analytics-scope-selector-container" style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;"></div>
+          </div>
+          <button class="btn btn-primary" id="btn-print-report" onclick="adminApp.generateSemesterReportView()">
+            <i data-lucide="printer"></i> Semester End Report
+          </button>
+        </div>
+
+        <!-- KPI Numerical Cards -->
+        <div class="kpi-row">
+          <!-- KPI 1 -->
+          <div class="glass-card kpi-card">
+            <div class="kpi-icon">
+              <i data-lucide="folders"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4>Total Complaints</h4>
+              <div class="kpi-number" id="kpi-total">0</div>
+              <span class="kpi-change">Scope selected</span>
+            </div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="glass-card kpi-card">
+            <div class="kpi-icon" style="background: rgba(46, 196, 182, 0.1); color: var(--status-resolved);">
+              <i data-lucide="clipboard-check"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4>Resolved Count</h4>
+              <div class="kpi-number" id="kpi-resolved" style="color: var(--status-resolved);">0</div>
+              <span class="kpi-change" id="kpi-resolution-rate">0% Rate</span>
+            </div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="glass-card kpi-card">
+            <div class="kpi-icon" style="background: rgba(255, 159, 28, 0.1); color: var(--status-progress);">
+              <i data-lucide="activity"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4>Pending Backlog</h4>
+              <div class="kpi-number" id="kpi-pending" style="color: var(--status-progress);">0</div>
+              <span class="kpi-change down" id="kpi-pending-percent">0% Active</span>
+            </div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="glass-card kpi-card">
+            <div class="kpi-icon" style="background: rgba(0, 180, 216, 0.1); color: var(--info);">
+              <i data-lucide="clock"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4>Avg Resolution</h4>
+              <div class="kpi-number" id="kpi-avg-time" style="color: var(--info);">2.4d</div>
+              <span class="kpi-change">From submission</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Charts -->
+        <div class="analytics-grid">
+          <!-- Chart 1: Department Performance -->
+          <div class="glass-card chart-card">
+            <h3>Performance Rankings</h3>
+            <p class="section-desc" style="margin-bottom: 0.5rem;" id="chart-rank-desc">Complaints filed vs. resolved counts.</p>
+            <div class="chart-container">
+              <canvas id="deptPerformanceChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Breakdown -->
+          <div class="glass-card chart-card">
+            <h3>Grievance Categories</h3>
+            <p class="section-desc" style="margin-bottom: 0.5rem;">Total complaint count categorized by source matter.</p>
+            <div class="chart-container">
+              <canvas id="categoryDistributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Analytics Grid -->
+        <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+          <!-- Chart 3: Trend Over Time -->
+          <div class="glass-card chart-card">
+            <h3>Daily Submission Frequency</h3>
+            <p class="section-desc" style="margin-bottom: 0.5rem;">Tracking volume spikes to monitor exam periods or system outages.</p>
+            <div class="chart-container">
+              <canvas id="dailySubmissionChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Department Table Grid -->
+          <div class="glass-card">
+            <h3>Action Ledger</h3>
+            <p class="section-desc" style="margin-bottom: 1rem;">Direct matrix showing performance records and timelines.</p>
+            <div style="overflow-x: auto;">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th style="background: var(--bg-sidebar); color: var(--text-color);">Academic Branch</th>
+                    <th style="background: var(--bg-sidebar); color: var(--text-color); text-align: center;">Filed</th>
+                    <th style="background: var(--bg-sidebar); color: var(--text-color); text-align: center;">Resolved</th>
+                    <th style="background: var(--bg-sidebar); color: var(--text-color); text-align: center;">Pending</th>
+                    <th style="background: var(--bg-sidebar); color: var(--text-color); text-align: center;">Ratio</th>
+                  </tr>
+                </thead>
+                <tbody id="dept-table-rows">
+                  <!-- Programmatically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seed Reset / Administration Tool (Only visible to Deans / IT) -->
+        <div class="report-generator-box" id="ws-admin-tools" style="margin-bottom: 3rem; border-color: rgba(231, 29, 54, 0.3);">
+          <div class="report-generator-desc">
+            <h4>Ledger Administration Tools</h4>
+            <p>You can reset all local storage tables to the default seed values to facilitate testing from scratch, or clear all complaints from the database.</p>
+          </div>
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button class="btn btn-danger" onclick="adminApp.resetDatabaseToSeed()">
+              <i data-lucide="rotate-ccw"></i> Reset to Seed Data
+            </button>
+            <button class="btn btn-danger" style="background: var(--status-rejected);" onclick="adminApp.clearAllComplaints()">
+              <i data-lucide="trash-2"></i> Clear All Complaints
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. SEMESTER END REPORT DOCUMENT (OVERLAY) -->
+    <section id="report-view" class="semester-report-view">
+      <div class="report-header-doc">
+        <div class="report-title-doc">
+          <h2>UNIVERSITY OF MINES AND TECHNOLOGY (UMaT)</h2>
+          <p>OFFICE OF QUALITY ASSURANCE & GRIEVANCE REDRESSAL</p>
+          <p style="font-size: 0.75rem; color: #718096; margin-top: 0.5rem; text-transform: uppercase;">Campus Complaint Performance Report</p>
+        </div>
+        <div class="report-logo-placeholder">
+          <img src="logo.jpg" alt="UMaT Crest" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
+      </div>
+
+      <div class="report-meta-doc">
+        <div class="report-meta-item">
+          <label>Academic Semester</label>
+          <span id="rep-semester-lbl">Semester 2, 2025/2026</span>
+        </div>
+        <div class="report-meta-item">
+          <label>Date Generated</label>
+          <span id="rep-date-lbl">2026-06-22</span>
+        </div>
+        <div class="report-meta-item">
+          <label>Report Status</label>
+          <span style="color: #0d522c; font-weight: 800;">OFFICIAL COPY</span>
+        </div>
+      </div>
+
+      <h3 class="report-section-title">1. Executive Summary Indicators</h3>
+      <div class="report-stats-grid">
+        <div class="report-stat-box">
+          <div class="report-stat-num" id="rep-total-complaints">0</div>
+          <div class="report-stat-label">Total Grievances</div>
+        </div>
+        <div class="report-stat-box">
+          <div class="report-stat-num" id="rep-resolved-complaints" style="color: #2ec4b6;">0</div>
+          <div class="report-stat-label">Resolved Actions</div>
+        </div>
+        <div class="report-stat-box">
+          <div class="report-stat-num" id="rep-resolution-rate">0%</div>
+          <div class="report-stat-label">Clearance Ratio</div>
+        </div>
+        <div class="report-stat-box">
+          <div class="report-stat-num" id="rep-avg-days" style="color: #3182ce;">0d</div>
+          <div class="report-stat-label">Avg. Resolution Duration</div>
+        </div>
+      </div>
+
+      <h3 class="report-section-title">2. Division Performance Rankings</h3>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Academic / Service Division</th>
+            <th style="text-align: center;">Total Logged</th>
+            <th style="text-align: center;">Resolved Cases</th>
+            <th style="text-align: center;">Pending Backlog</th>
+            <th style="text-align: center;">Resolution Ratio</th>
+          </tr>
+        </thead>
+        <tbody id="rep-table-rows">
+          <!-- Programmatically populated -->
+        </tbody>
+      </table>
+
+      <h3 class="report-section-title">3. Category Distribution Analysis</h3>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Grievance Nature</th>
+            <th style="text-align: center;">Total Tickets</th>
+            <th style="text-align: center;">Percent Share</th>
+            <th>Primary Routing Office</th>
+          </tr>
+        </thead>
+        <tbody id="rep-cat-table-rows">
+          <!-- Programmatically populated -->
+        </tbody>
+      </table>
+
+      <h3 class="report-section-title">4. Institutional Recommendations</h3>
+      <p class="report-summary-text" id="rep-executive-notes">
+        <!-- Programmatically generated based on data ratios -->
+      </p>
+
+      <div style="margin-top: 4rem; display: flex; justify-content: space-between; border-top: 1px solid #cbd5e0; padding-top: 2rem; font-size: 0.8rem; color: #718096; font-weight: 600;">
+        <div>PREPARED BY: AUTOMATED COMPLAINT LEDGER ENGINE</div>
+        <div>AUTHORIZED SIGNATURE: QUALITY ASSURANCE COMMITTEE</div>
+      </div>
+    </section>
+
+    <!-- Report Action Bar (Shown below report in browser preview) -->
+    <div id="report-action-buttons" class="report-actions" style="display: none;">
+      <button class="btn btn-secondary" onclick="adminApp.closeSemesterReportView()">
+        <i data-lucide="chevron-left"></i> Return to Analytics
+      </button>
+      <button class="btn btn-primary" onclick="window.print()">
+        <i data-lucide="printer"></i> Print / Save PDF
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Change Password Modal -->
+  <div id="change-password-modal" class="modal-overlay" style="display: none;" onclick="adminApp.closeChangePasswordModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i data-lucide="key-round" style="stroke: var(--accent);"></i> Change Staff Password</h3>
+        <button class="btn-close-modal" onclick="adminApp.closeChangePasswordModal()"><i data-lucide="x"></i></button>
+      </div>
+      <form id="change-password-form" onsubmit="adminApp.handleChangePasswordSubmit(event)">
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="change-pwd-current">Current Password / Staff ID</label>
+          <input type="password" id="change-pwd-current" placeholder="••••••••" required>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="change-pwd-new">New Password</label>
+          <input type="password" id="change-pwd-new" placeholder="••••••••" minlength="4" required>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.75rem;">
+          <label for="change-pwd-confirm">Confirm New Password</label>
+          <input type="password" id="change-pwd-confirm" placeholder="••••••••" minlength="4" required>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="adminApp.closeChangePasswordModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Global Toast Notifications Wrapper -->
+  <div id="toast-container"></div>
+
+  <!-- Load Seed Data Module -->
+  <script src="seedData.js?v=1.5"></script>
+  <!-- Load Main Application Logic Module -->
+  <script src="admin.js?v=1.5"></script>
+</body>
+</html>
