@@ -1,0 +1,3 @@
+# Editor/tooling config — not part of the project
+.vscode/
+.DS_Store

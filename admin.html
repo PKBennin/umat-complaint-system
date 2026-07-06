@@ -155,7 +155,7 @@
             
             <div class="input-group" style="margin-bottom: 1.25rem;">
               <label for="login-staff-id">Staff ID</label>
-              <input type="text" id="login-staff-id" placeholder="e.g. DEC-101, HOD-103" required>
+              <input type="text" id="login-staff-id" placeholder="e.g. PS101, CS102" required>
             </div>
 
             <div class="input-group" style="margin-bottom: 1.75rem;">
@@ -246,7 +246,7 @@
                   </div>
                   <h3 id="admin-work-subject">Missing Grade for CSE 352 (Database Systems)</h3>
                   <div class="workspace-student-info">
-                    Filer: <span id="admin-work-student-name">Adjoa Mansah</span> (<span id="admin-work-student-index">9021020</span>) | Programme: <span id="admin-work-student-dept">BSc CSE</span> | Level: <span id="admin-work-student-level">-</span>
+                    Filer: <span id="admin-work-student-name">Bennin Paa Kofi</span> (<span id="admin-work-student-index">9012870422</span>) | Programme: <span id="admin-work-student-dept">BSc CSE</span> | Level: <span id="admin-work-student-level">-</span>
                   </div>
                 </div>
                 
@@ -323,6 +323,13 @@
                     <div class="tracking-description-box" id="admin-work-desc" style="background: rgba(0,0,0,0.02);">
                       Description text...
                     </div>
+                  </div>
+
+                  <div class="input-group" id="admin-work-attachment-row" style="display: none; margin-bottom: 1.5rem;">
+                    <label>Supporting Attachment</label>
+                    <a id="admin-work-attachment-link" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary" style="display: inline-flex; padding: 0.4rem 0.9rem; font-size: 0.85rem;">
+                      <i data-lucide="paperclip"></i> <span id="admin-work-attachment-name">-</span>
+                    </a>
                   </div>
 
                   <!-- Case Status & Owner Controls -->
@@ -627,21 +634,6 @@
           </div>
         </div>
 
-        <!-- Seed Reset / Administration Tool (Only visible to Deans / IT) -->
-        <div class="report-generator-box" id="ws-admin-tools" style="margin-bottom: 3rem; border-color: rgba(231, 29, 54, 0.3);">
-          <div class="report-generator-desc">
-            <h4>Ledger Administration Tools</h4>
-            <p>You can reset all local storage tables to the default seed values to facilitate testing from scratch, or clear all complaints from the database.</p>
-          </div>
-          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <button class="btn btn-danger" onclick="adminApp.resetDatabaseToSeed()">
-              <i data-lucide="rotate-ccw"></i> Reset to Seed Data
-            </button>
-            <button class="btn btn-danger" style="background: var(--status-rejected);" onclick="adminApp.clearAllComplaints()">
-              <i data-lucide="trash-2"></i> Clear All Complaints
-            </button>
-          </div>
-        </div>
       </div>
 
     </section>
@@ -779,9 +771,11 @@
   <!-- Global Toast Notifications Wrapper -->
   <div id="toast-container"></div>
 
-  <!-- Load Seed Data Module -->
+  <!-- Load Seed Data Module (login dropdown reference data) -->
   <script src="seedData.js?v=1.5"></script>
+  <!-- Backend API client -->
+  <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="admin.js?v=1.5"></script>
+  <script src="admin.js?v=2.0"></script>
 </body>
 </html>

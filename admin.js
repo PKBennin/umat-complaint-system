@@ -13,15 +13,16 @@ const adminApp = {
 
   // Initialize Application
   init() {
-    this.loadState();
+    window.API.configure({ tokenKey: 'umat_staff_token' });
     this.loadTheme();
     this.populateLoginSelectors();
     this.checkStaffSession();
     this.startAdminLoginBackgroundCycle();
-    
+
     // Default view routing based on session
     if (this.state.loggedStaff) {
       this.showDashboard();
+      this.loadAndRender();
     } else {
       this.showLogin();
     }
@@ -37,58 +38,58 @@ const adminApp = {
     if (window.lucide) lucide.createIcons();
   },
 
-  // State Management (LocalStorage)
-  loadState() {
-    const stored = localStorage.getItem('umat_complaints');
-    if (stored) {
-      try {
-        this.state.complaints = JSON.parse(stored);
-        if (this.state.complaints.length > 0 && !this.state.complaints[0].hasOwnProperty('studentPhone')) {
-          console.log("Old database format detected. Upgrading tables...");
-          this.resetDatabaseToSeed();
-        }
-      } catch (e) {
-        console.error("Error parsing local database. Resetting...", e);
-        this.resetDatabaseToSeed();
-      }
-    } else {
-      // Seed Database on first load
-      this.state.complaints = [...window.SEED_COMPLAINTS];
-      localStorage.setItem('umat_complaints', JSON.stringify(this.state.complaints));
+  // State Management (backend API).
+  // loadState/saveState are retained as no-ops so existing call sites keep
+  // working; complaint data now comes from refreshComplaints().
+  loadState() { /* data is fetched from the API via refreshComplaints() */ },
+  saveState() { /* persistence is handled server-side per mutation */ },
+
+  // Pull the complaints in this staff member's jurisdiction from the backend.
+  async refreshComplaints() {
+    if (!this.state.loggedStaff) { this.state.complaints = []; return; }
+    try {
+      const sid = this.state.loggedStaff.staffId;
+      this.state.complaints = await window.API.get(`/complaints/staff/${encodeURIComponent(sid)}`);
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      console.error('Failed to load complaints:', err);
+      this.showToast(err.message || 'Could not load complaints.', 'error');
     }
   },
 
-  saveState() {
-    localStorage.setItem('umat_complaints', JSON.stringify(this.state.complaints));
+  // Refresh from the API, then re-render the workstation + analytics.
+  async loadAndRender() {
+    await this.refreshComplaints();
+    this.renderWorkstationSidebar();
+    this.renderAdminWorkspace();
+    if (typeof this.renderAnalytics === 'function') this.renderAnalytics();
   },
 
-  resetDatabaseToSeed() {
-    localStorage.setItem('umat_complaints', JSON.stringify(window.SEED_COMPLAINTS));
-    this.state.complaints = [...window.SEED_COMPLAINTS];
+  // Refresh, then re-apply a single mutation's result to the active views.
+  async refreshAndRenderActive() {
+    await this.refreshComplaints();
+    this.renderWorkstationSidebar();
+    this.renderAdminWorkspace();
+  },
+
+  forceLogout() {
+    window.API.clearToken();
+    localStorage.removeItem('current_staff_session');
+    this.state.loggedStaff = null;
     this.state.activeAdminComplaintId = null;
-    this.saveState();
-    this.showToast("Database has been reset to default seeds.", "warning");
-    
-    // Refresh current views
-    this.renderWorkstation();
-    this.renderAnalytics();
-  },
-
-  clearAllComplaints() {
-    localStorage.setItem('umat_complaints', JSON.stringify([]));
     this.state.complaints = [];
-    this.state.activeAdminComplaintId = null;
-    this.saveState();
-    this.showToast("All complaints have been cleared from both student and workstation databases.", "success");
-    
-    // Refresh current views
-    this.renderWorkstation();
-    this.renderAnalytics();
+    this.showToast('Your session has expired. Please sign in again.', 'warning');
+    this.showLogin();
   },
 
   // Check Staff Session
   checkStaffSession() {
     const session = localStorage.getItem('current_staff_session');
+    // A restored session is only valid if we still hold a JWT.
+    if (session && !window.API.getToken()) {
+      localStorage.removeItem('current_staff_session');
+      return;
+    }
     if (session) {
       try {
         this.state.loggedStaff = JSON.parse(session);
@@ -116,10 +117,14 @@ const adminApp = {
     const staff = this.state.loggedStaff;
     if (!staff) return;
 
-    document.getElementById('logged-staff-name').textContent = `${staff.name} (${staff.portfolio})`;
-    document.getElementById('staff-session-badge').style.display = 'flex';
-    document.getElementById('active-jurisdiction-name').textContent = staff.portfolio;
-    document.getElementById('main-nav').style.display = 'flex';
+    const nameEl = document.getElementById('logged-staff-name');
+    if (nameEl) nameEl.textContent = `${staff.name} (${staff.portfolio})`;
+    const badgeEl = document.getElementById('staff-session-badge');
+    if (badgeEl) badgeEl.style.display = 'flex';
+    const jurEl = document.getElementById('active-jurisdiction-name');
+    if (jurEl) jurEl.textContent = staff.portfolio;
+    const navEl = document.getElementById('main-nav');
+    if (navEl) navEl.style.display = 'flex';
 
     // Populate profile widget values in the header
     const dbName = document.getElementById('db-profile-name');
@@ -206,8 +211,8 @@ const adminApp = {
     }
   },
 
-  // Staff Login Submit
-  handleLoginSubmit(e) {
+  // Staff Login Submit (backend JWT auth)
+  async handleLoginSubmit(e) {
     if (e) e.preventDefault();
 
     const staffIdVal = document.getElementById('login-staff-id').value.trim();
@@ -218,25 +223,16 @@ const adminApp = {
       return;
     }
 
-    // Find staff member or mock if not found (allows any login)
-    let staff = window.STAFF_DATABASE.find(
-      s => s.staffId.toLowerCase() === staffIdVal.toLowerCase()
-    );
-
-    if (!staff) {
-      staff = {
-        email: `${staffIdVal.toLowerCase()}@umat.edu.gh`,
-        staffId: staffIdVal,
-        roleKey: 'Dean',
-        name: `Staff Officer (${staffIdVal})`,
-        roleName: 'Staff Officer',
-        type: 'Dean',
-        facultyKey: 'FGL',
-        department: 'Computer Science & Engineering'
-      };
+    let result;
+    try {
+      result = await window.API.post('/auth/staff/login', { staff_id: staffIdVal, password: passwordVal });
+    } catch (err) {
+      this.showToast(err.message || 'Login failed. Check your staff ID and password.', 'error');
+      return;
     }
 
-    // Save session
+    window.API.setToken(result.token);
+    const staff = result.staff; // { staffId, name, email, type, facultyKey, department, portfolio }
     localStorage.setItem('current_staff_session', JSON.stringify(staff));
     this.state.loggedStaff = staff;
 
@@ -251,6 +247,7 @@ const adminApp = {
 
     this.updateStaffUI();
     this.showDashboard();
+    await this.loadAndRender();
     this.showToast(`Authenticated successfully as ${staff.name} (${staff.type}).`, "success");
   },
 
@@ -259,9 +256,11 @@ const adminApp = {
     if (!confirm("Are you sure you want to log out of the admin workstation?")) {
       return;
     }
+    window.API.clearToken();
     localStorage.removeItem('current_staff_session');
     this.state.loggedStaff = null;
     this.state.activeAdminComplaintId = null;
+    this.state.complaints = [];
     this.state.analyticsScope = null;
     this.state.selectedFacultyKey = null;
 
@@ -493,6 +492,19 @@ const adminApp = {
     document.getElementById('admin-work-owner').textContent = complaint.assignedTo || "Unassigned";
     document.getElementById('admin-work-desc').textContent = complaint.description;
 
+    const adminAttRow = document.getElementById('admin-work-attachment-row');
+    if (complaint.attachment) {
+      adminAttRow.style.display = 'block';
+      document.getElementById('admin-work-attachment-name').textContent = complaint.attachment.originalName;
+      document.getElementById('admin-work-attachment-link').onclick = (ev) => {
+        ev.preventDefault();
+        window.downloadComplaintAttachment(complaint.id, complaint.attachment.originalName,
+          (err) => this.showToast(err.message || 'Could not download the attachment.', 'error'));
+      };
+    } else {
+      adminAttRow.style.display = 'none';
+    }
+
     // Badges
     const statusB = document.getElementById('admin-work-status-badge');
     statusB.innerHTML = `<span class="badge badge-status-${complaint.status.replace(' ', '-').toLowerCase()}">${complaint.status}</span>`;
@@ -646,18 +658,17 @@ const adminApp = {
           checkbox.type = 'checkbox';
           checkbox.checked = dir.completed;
           checkbox.style.cursor = 'pointer';
-          checkbox.onchange = () => {
-            const nowStr = new Date().toISOString();
-            dir.completed = checkbox.checked;
-            complaint.timeline.push({
-              date: nowStr,
-              action: `Directive Update`,
-              message: `Task directive "${dir.text}" marked as ${dir.completed ? 'COMPLETED' : 'INCOMPLETE'}.`,
-              by: staff.name
-            });
-            complaint.updatedAt = nowStr;
-            adminApp.saveState();
-            adminApp.renderAdminWorkspace();
+          checkbox.onchange = async () => {
+            const desired = checkbox.checked;
+            try {
+              await window.API.put(`/complaints/${encodeURIComponent(complaint.id)}/directives/${dir.id}`, { completed: desired });
+            } catch (err) {
+              checkbox.checked = !desired; // revert on failure
+              if (err.status === 401) { adminApp.forceLogout(); return; }
+              adminApp.showToast(err.message || 'Could not update the directive.', 'error');
+              return;
+            }
+            await adminApp.refreshAndRenderActive();
             adminApp.showToast(`Directive status updated.`, "info");
           };
           
@@ -678,18 +689,15 @@ const adminApp = {
           deleteBtn.style.cursor = 'pointer';
           deleteBtn.style.padding = '0.25rem';
           deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px; stroke: var(--status-rejected);"></i>`;
-          deleteBtn.onclick = () => {
-            const nowStr = new Date().toISOString();
-            complaint.directives.splice(dirIndex, 1);
-            complaint.timeline.push({
-              date: nowStr,
-              action: `Directive Removed`,
-              message: `Action directive "${dir.text}" was cancelled/removed by the department.`,
-              by: staff.name
-            });
-            complaint.updatedAt = nowStr;
-            adminApp.saveState();
-            adminApp.renderAdminWorkspace();
+          deleteBtn.onclick = async () => {
+            try {
+              await window.API.del(`/complaints/${encodeURIComponent(complaint.id)}/directives/${dir.id}`);
+            } catch (err) {
+              if (err.status === 401) { adminApp.forceLogout(); return; }
+              adminApp.showToast(err.message || 'Could not remove the directive.', 'error');
+              return;
+            }
+            await adminApp.refreshAndRenderActive();
             adminApp.showToast(`Directive removed.`, "warning");
           };
           
@@ -715,179 +723,98 @@ const adminApp = {
     if (window.lucide) lucide.createIcons();
   },
 
-  // HOD claim ticket
-  claimActiveComplaint() {
+  // Claim ticket
+  async claimActiveComplaint() {
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
-
-    this.loadState();
-    const complaint = this.state.complaints.find(c => c.id === id);
-    if (!complaint) return;
-
-    const staff = this.state.loggedStaff;
-    const nowStr = new Date().toISOString();
-    complaint.assignedTo = staff.name;
-    complaint.updatedAt = nowStr;
-
-    let statusText = "";
-    if (complaint.status === "Submitted") {
-      complaint.status = "Under Review";
-      statusText = " and transitioned status to 'Under Review'";
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/claim`);
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not claim this ticket.', 'error');
+      return;
     }
-
-    complaint.timeline.push({
-      date: nowStr,
-      action: "Officer Assigned",
-      message: `${staff.name} took ownership of this complaint${statusText}.`,
-      by: staff.name
-    });
-
-    this.saveState();
-    this.renderWorkstationSidebar();
-    this.renderAdminWorkspace();
-    this.showToast(`Claimed ticket successfully${statusText}!`, "success");
+    await this.refreshAndRenderActive();
+    this.showToast('Claimed ticket successfully!', "success");
   },
 
-  // HOD submit workflow resolution options
-  submitWorkflowActions() {
+  // Submit workflow resolution options (status / owner)
+  async submitWorkflowActions() {
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
     const complaint = this.state.complaints.find(c => c.id === id);
     if (!complaint) return;
 
     const newStatus = document.getElementById('workflow-status').value;
     const newOwner = document.getElementById('workflow-owner').value;
-    
-    const staff = this.state.loggedStaff;
-    let changesMade = false;
-    const nowStr = new Date().toISOString();
 
-    // Status change process
-    if (complaint.status !== newStatus) {
-      const oldStatus = complaint.status;
-      complaint.status = newStatus;
-      complaint.timeline.push({
-        date: nowStr,
-        action: `Status Updated`,
-        message: `Grievance status modified from '${oldStatus}' to '${newStatus}'.`,
-        by: staff.name
-      });
-      changesMade = true;
+    const body = {};
+    if (newStatus && newStatus !== complaint.status) body.status = newStatus;
+    // Owner is edited by display name in the UI; map back to the routed staff id
+    // when it is the current assignee (reassignment by name is not supported by
+    // the scoped API, so only forward a status change here).
+    if (!body.status) {
+      this.showToast("No status change detected.", "info");
+      return;
     }
-
-    // Owner change process
-    if (complaint.assignedTo !== newOwner) {
-      const oldOwner = complaint.assignedTo;
-      complaint.assignedTo = newOwner;
-      complaint.timeline.push({
-        date: nowStr,
-        action: `Case Reassigned`,
-        message: `Case reassigned from ${oldOwner || 'Unassigned'} to ${newOwner}.`,
-        by: staff.name
-      });
-      changesMade = true;
+    try {
+      await window.API.put(`/complaints/${encodeURIComponent(id)}/status`, body);
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not update the grievance.', 'error');
+      return;
     }
-
-    if (changesMade) {
-      complaint.updatedAt = nowStr;
-      this.saveState();
-      this.renderWorkstationSidebar();
-      this.renderAdminWorkspace();
-      this.showToast("Grievance records successfully updated.", "success");
-    } else {
-      this.showToast("No status or owner changes detected.", "info");
-    }
+    await this.refreshAndRenderActive();
+    this.showToast("Grievance records successfully updated.", "success");
   },
 
-
   // Add Action Directive (Admin Side)
-  addDirective(e) {
+  async addDirective(e) {
     if (e) e.preventDefault();
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
-    const complaint = this.state.complaints.find(c => c.id === id);
-    if (!complaint) return;
-
     const directiveInput = document.getElementById('admin-new-directive');
     const text = directiveInput.value.trim();
-
     if (!text) {
       this.showToast("Directive text cannot be empty.", "warning");
       return;
     }
-
-    const staff = this.state.loggedStaff;
-    if (!complaint.directives) complaint.directives = [];
-    const nowStr = new Date().toISOString();
-
-    complaint.directives.push({
-      text: text,
-      completed: false
-    });
-
-    complaint.timeline.push({
-      date: nowStr,
-      action: "Directive Issued",
-      message: `A new required action prompt was issued: "${text}".`,
-      by: staff.name
-    });
-
-    // Auto-progress status if Submitted
-    if (complaint.status === "Submitted" || complaint.status === "Under Review") {
-      complaint.status = "In Progress";
-      complaint.timeline.push({
-        date: nowStr,
-        action: "Status Updated",
-        message: `Workflow advanced to In Progress based on issued action directive.`,
-        by: staff.name
-      });
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/directives`, { text });
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not issue the directive.', 'error');
+      return;
     }
-
-    complaint.updatedAt = nowStr;
-    this.saveState();
     directiveInput.value = '';
-    this.renderWorkstationSidebar();
-    this.renderAdminWorkspace();
+    await this.refreshAndRenderActive();
     this.showToast("Directive prompt issued to student.", "success");
   },
 
 
 
   // Post Admin Confidential Note (Confidential note Tab)
-  postAdminInternalNote() {
+  async postAdminInternalNote() {
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
-    const complaint = this.state.complaints.find(c => c.id === id);
-    if (!complaint) return;
-
     const noteInput = document.getElementById('admin-new-note');
     const message = noteInput.value.trim();
-
     if (!message) {
       this.showToast("Note content cannot be empty.", "warning");
       return;
     }
-
-    const staff = this.state.loggedStaff;
-    if (!complaint.internalNotes) complaint.internalNotes = [];
-
-    const nowStr = new Date().toISOString();
-    complaint.internalNotes.push({
-      date: nowStr,
-      by: staff.name,
-      message: message
-    });
-
-    complaint.updatedAt = nowStr;
-    this.saveState();
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/notes`, { message });
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not record the note.', 'error');
+      return;
+    }
     noteInput.value = '';
-    this.renderAdminWorkspace();
+    await this.refreshAndRenderActive();
     this.showToast("Internal note recorded securely.", "info");
   },
 
@@ -919,18 +846,12 @@ const adminApp = {
     }
   },
 
-  submitDetailedAppointment(type, event) {
+  async submitDetailedAppointment(type, event) {
     if (event) event.preventDefault();
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
-    const complaint = this.state.complaints.find(c => c.id === id);
-    if (!complaint) return;
-
-    const staff = this.state.loggedStaff;
     let dateTime, venue, instructions;
-
     if (type === 'in-person') {
       dateTime = document.getElementById('appt-inperson-time').value;
       venue = document.getElementById('appt-inperson-venue').value.trim();
@@ -945,42 +866,18 @@ const adminApp = {
       this.showToast("Please enter all appointment details.", "warning");
       return;
     }
-
-    const nowStr = new Date().toISOString();
-    complaint.appointment = {
-      type: type,
-      dateTime: dateTime,
-      venue: venue,
-      instructions: instructions,
-      completed: false
-    };
-
-    complaint.timeline.push({
-      date: nowStr,
-      action: "Appointment Scheduled",
-      message: `Scheduled an ${type === 'in-person' ? 'In-Person meeting' : 'Counselor consultation'} at ${venue} on ${this.formatDate(dateTime)}.`,
-      by: staff.name
-    });
-
-    // Auto-progress status if Submitted or Under Review
-    let statusLog = "";
-    if (complaint.status === "Submitted" || complaint.status === "Under Review") {
-      complaint.status = "In Progress";
-      statusLog = " Status advanced to 'In Progress'.";
-      complaint.timeline.push({
-        date: nowStr,
-        action: "Status Updated",
-        message: `Workflow advanced to In Progress based on scheduled appointment.${statusLog}`,
-        by: staff.name
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/appointment`, {
+        type, dateTime, venue, instructions,
       });
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not schedule the appointment.', 'error');
+      return;
     }
-
-    complaint.updatedAt = nowStr;
-    this.saveState();
     this.hideAppointmentForms();
-    this.renderWorkstationSidebar();
-    this.renderAdminWorkspace();
-    this.showToast(`Appointment scheduled successfully.${statusLog}`, "success");
+    await this.refreshAndRenderActive();
+    this.showToast('Appointment scheduled successfully.', "success");
   },
 
   toggleCompleteAppointmentForm() {
@@ -990,90 +887,61 @@ const adminApp = {
     }
   },
 
-  submitCompleteAppointment() {
+  async submitCompleteAppointment() {
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
     const complaint = this.state.complaints.find(c => c.id === id);
     if (!complaint || !complaint.appointment) return;
 
     const feedbackInput = document.getElementById('appt-completion-feedback');
     const feedbackText = feedbackInput ? feedbackInput.value.trim() : "";
-
-    const staff = this.state.loggedStaff;
-    const nowStr = new Date().toISOString();
-    complaint.appointment.completed = true;
-    complaint.appointment.completedAt = nowStr;
-    complaint.appointment.feedback = feedbackText || "Appointment completed successfully.";
-
-    complaint.timeline.push({
-      date: nowStr,
-      action: "Appointment Completed",
-      message: `The scheduled ${complaint.appointment.type === 'in-person' ? 'In-Person meeting' : 'Counselor session'} was COMPLETED. Outcome: "${complaint.appointment.feedback}"`,
-      by: staff.name
-    });
-
-    // Also automatically post this outcome feedback as a comment in the student's thread so they get notified
-    complaint.comments.push({
-      date: nowStr,
-      by: staff.name,
-      message: `[Appointment Feedback] ${complaint.appointment.feedback}`,
-      isAdmin: true
-    });
-
-    complaint.updatedAt = nowStr;
-    this.saveState();
+    try {
+      await window.API.put(`/complaints/${encodeURIComponent(id)}/appointment`, {
+        feedback: feedbackText || 'Appointment completed successfully.',
+      });
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not complete the appointment.', 'error');
+      return;
+    }
     if (feedbackInput) feedbackInput.value = '';
-    
     const form = document.getElementById('ws-complete-appt-form');
     if (form) form.style.display = 'none';
 
-    this.renderAdminWorkspace();
+    await this.refreshAndRenderActive();
     this.showToast("Appointment marked as completed with feedback.", "success");
   },
 
-  handleQuickCheck(targetStatus, checkbox) {
+  async handleQuickCheck(targetStatus, checkbox) {
     const id = this.state.activeAdminComplaintId;
     if (!id) return;
 
-    this.loadState();
     const complaint = this.state.complaints.find(c => c.id === id);
-    if (!complaint) return;
+    if (!complaint) { checkbox.checked = !checkbox.checked; return; }
 
-    const staff = this.state.loggedStaff;
     const oldStatus = complaint.status;
-
     let newStatus = oldStatus;
     if (checkbox.checked) {
       newStatus = targetStatus;
     } else {
       // Fallback logic when unchecking
-      if (targetStatus === 'Resolved') {
-        newStatus = 'In Progress';
-      } else if (targetStatus === 'In Progress') {
-        newStatus = 'Under Review';
-      } else if (targetStatus === 'Under Review') {
-        newStatus = 'Submitted';
-      }
+      if (targetStatus === 'Resolved') newStatus = 'In Progress';
+      else if (targetStatus === 'In Progress') newStatus = 'Under Review';
+      else if (targetStatus === 'Under Review') newStatus = 'Submitted';
     }
 
-    if (complaint.status !== newStatus) {
-      const nowStr = new Date().toISOString();
-      complaint.status = newStatus;
-      complaint.timeline.push({
-        date: nowStr,
-        action: `Status Update`,
-        message: `Grievance status modified from '${oldStatus}' to '${newStatus}' via quick checklist toggle.`,
-        by: staff.name
-      });
-
-      complaint.updatedAt = nowStr;
-      this.saveState();
-      this.renderWorkstationSidebar();
-      this.renderAdminWorkspace();
-      this.showToast(`Status updated to ${newStatus}.`, "success");
+    if (newStatus === oldStatus) return;
+    try {
+      await window.API.put(`/complaints/${encodeURIComponent(id)}/status`, { status: newStatus });
+    } catch (err) {
+      checkbox.checked = !checkbox.checked; // revert on failure
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not update the status.', 'error');
+      return;
     }
+    await this.refreshAndRenderActive();
+    this.showToast(`Status updated to ${newStatus}.`, "success");
   },
 
   handleAnalyticsScopeChange(scope) {
@@ -1171,7 +1039,11 @@ const adminApp = {
     filtered.forEach(c => {
       if (c.status === 'Resolved') {
         const start = new Date(c.createdAt);
-        const resLog = c.timeline.find(log => log.action === 'Status Changed' && log.message.includes('Resolved') || log.action === 'Status Updated' && log.message.includes('Resolved'));
+        // Match only transitions INTO Resolved ("to Resolved"), not "from Resolved to X"
+        // (which also contains the word "Resolved" but means the opposite). Take the
+        // LAST such transition so a resolve -> revert -> re-resolve cycle uses the
+        // most recent resolution timestamp, not the first one.
+        const resLog = [...c.timeline].reverse().find(log => /\bto Resolved\b/i.test(log.message));
         const end = resLog ? new Date(resLog.date) : new Date();
         const diffDays = (end - start) / (1000 * 60 * 60 * 24);
         totalResolvedTime += Math.max(0.1, diffDays);
@@ -1400,7 +1272,8 @@ const adminApp = {
     this.state.complaints.forEach(c => {
       if (c.status === 'Resolved') {
         const start = new Date(c.createdAt);
-        const resLog = c.timeline.find(log => log.action === 'Status Changed' && log.message.includes('Resolved') || log.action === 'Status Updated' && log.message.includes('Resolved'));
+        // See renderAnalytics() for why this matches "to Resolved" and takes the last one.
+        const resLog = [...c.timeline].reverse().find(log => /\bto Resolved\b/i.test(log.message));
         const end = resLog ? new Date(resLog.date) : new Date();
         const diffDays = (end - start) / (1000 * 60 * 60 * 24);
         totalResolvedTime += Math.max(0.1, diffDays);
@@ -1603,7 +1476,7 @@ const adminApp = {
     }
   },
 
-  handleChangePasswordSubmit(e) {
+  async handleChangePasswordSubmit(e) {
     e.preventDefault();
     if (!this.state.loggedStaff) return;
 
@@ -1611,27 +1484,22 @@ const adminApp = {
     const newPwd = document.getElementById('change-pwd-new').value;
     const confirmPwd = document.getElementById('change-pwd-confirm').value;
 
-    const emailKey = this.state.loggedStaff.email.toLowerCase();
-    const changedPasswords = JSON.parse(localStorage.getItem('umat_changed_staff_passwords') || '{}');
-    const actualPassword = changedPasswords[emailKey] || this.state.loggedStaff.staffId;
-
-    if (currentPwd !== actualPassword) {
-      this.showToast("Current password entered is incorrect.", "error");
-      return;
-    }
-
     if (newPwd !== confirmPwd) {
       this.showToast("New passwords do not match.", "error");
       return;
     }
 
-    // Save changed password
-    changedPasswords[emailKey] = newPwd;
-    localStorage.setItem('umat_changed_staff_passwords', JSON.stringify(changedPasswords));
-
-    // Update logged state
-    this.state.loggedStaff.staffId = newPwd;
-    localStorage.setItem('current_staff_session', JSON.stringify(this.state.loggedStaff));
+    try {
+      await window.API.put('/auth/staff/password', { currentPassword: currentPwd, newPassword: newPwd });
+    } catch (err) {
+      if (err.status === 401 && err.message && /current password/i.test(err.message)) {
+        this.showToast('Current password entered is incorrect.', 'error');
+        return;
+      }
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not update your password.', 'error');
+      return;
+    }
 
     this.closeChangePasswordModal();
     this.showToast("Password updated successfully!", "success");
@@ -1698,26 +1566,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) lucide.createIcons();
 });
 
-// Sync data in real-time across tabs/windows
-window.addEventListener('storage', (e) => {
-  if (e.key === 'umat_complaints') {
-    adminApp.loadState();
-    
-    // Refresh sidebar list
-    const loggedStaff = adminApp.state.loggedStaff;
-    if (loggedStaff) {
-      adminApp.renderWorkstationSidebar();
-      
-      // If a complaint is currently open, refresh its workspace details
-      if (adminApp.state.activeAdminComplaintId) {
-        adminApp.renderAdminWorkspace();
-      }
-      
-      // If we are currently on the analytics tab, refresh analytics view
-      const activeTab = document.querySelector('#main-nav .nav-tab.active');
-      if (activeTab && activeTab.id === 'nav-tab-analytics') {
-        adminApp.renderAnalytics();
-      }
-    }
+// Re-sync from the backend when the tab regains focus, so newly filed
+// complaints and student replies appear without a manual reload.
+window.addEventListener('focus', () => {
+  if (adminApp.state.loggedStaff) {
+    adminApp.loadAndRender();
   }
 });

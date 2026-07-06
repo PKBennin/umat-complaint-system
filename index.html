@@ -197,12 +197,12 @@
           <div class="form-grid">
             <div class="input-group">
               <label for="stud-name">Full Name</label>
-              <input type="text" id="stud-name" placeholder="e.g., Adjoa Mansah" required>
+              <input type="text" id="stud-name" placeholder="e.g., Bennin Paa Kofi" required>
             </div>
             <div class="input-group">
               <label for="stud-index">Reference Number (Index Number)</label>
-              <input type="text" id="stud-index" placeholder="e.g., 9021020" pattern="^[0-9]{7,8}$" title="Reference number must be 7 or 8 digits" required>
-              <span class="helper-text">Your 7 or 8 digit university enrollment code.</span>
+              <input type="text" id="stud-index" placeholder="e.g., 9012870422" pattern="^[0-9]{10}$" title="Reference number must be exactly 10 digits" required>
+              <span class="helper-text">Your 10-digit university enrollment code.</span>
             </div>
             
             <!-- Autocomplete Searchable Programme field -->
@@ -247,9 +247,9 @@
             </div>
             
             <div class="input-group">
-              <label>Supporting Attachment (Mock)</label>
-              <input type="file" id="comp-file" style="cursor: pointer;">
-              <span class="helper-text">Upload transcripts, bank drafts, or photos (Max 5MB).</span>
+              <label>Supporting Attachment (Optional)</label>
+              <input type="file" id="comp-file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" style="cursor: pointer;">
+              <span class="helper-text">Upload transcripts, bank drafts, or photos. JPG, PNG, WEBP, PDF, DOC/DOCX — Max 5MB.</span>
             </div>
 
             <!-- Dynamic Auto-Routing Alert Panel -->
@@ -315,6 +315,10 @@
             <span>Routed Target</span>
             <span id="receipt-routed-to">-</span>
           </div>
+          <div class="receipt-item" id="receipt-attachment-row" style="display: none;">
+            <span>Attachment</span>
+            <a id="receipt-attachment-link" href="#" target="_blank" rel="noopener">-</a>
+          </div>
         </div>
 
         <div style="display: flex; gap: 1rem; justify-content: center;">
@@ -352,7 +356,7 @@
           <form onsubmit="app.handleLoginSubmit(event)">
             <div class="input-group" style="margin-bottom: 1.25rem;">
               <label for="login-index">Student Index Number</label>
-              <input type="text" id="login-index" placeholder="e.g. 9021020" required>
+              <input type="text" id="login-index" placeholder="e.g. 9012870422" required>
             </div>
             <div class="input-group" style="margin-bottom: 1.75rem;">
               <label for="login-password">Password</label>
@@ -568,6 +572,13 @@
                     -
                   </div>
                 </div>
+
+                <div id="track-attachment-row" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Supporting Attachment</label>
+                  <a id="track-attachment-link" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary" style="display: inline-flex; padding: 0.4rem 0.9rem; font-size: 0.85rem;">
+                    <i data-lucide="paperclip"></i> <span id="track-attachment-name">-</span>
+                  </a>
+                </div>
               </div>
 
             </div>
@@ -617,9 +628,11 @@
   <!-- Global Toast Notifications Wrapper -->
   <div id="toast-container"></div>
 
-  <!-- Load Seed Data Module -->
+  <!-- Load Seed Data Module (form dropdown reference data) -->
   <script src="seedData.js?v=1.2"></script>
+  <!-- Backend API client -->
+  <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=1.2"></script>
+  <script src="app.js?v=2.0"></script>
 </body>
 </html>

@@ -11,7 +11,7 @@ const app = {
 
   // Initialize Application
   init() {
-    this.loadState();
+    window.API.configure({ tokenKey: 'umat_student_token' });
     this.loadTheme();
     this.checkStudentSession();
     this.populateSelectors();
@@ -35,37 +35,42 @@ const app = {
     });
   },
 
-  // State Management (LocalStorage)
-  loadState() {
-    const stored = localStorage.getItem('umat_complaints');
-    if (stored) {
-      try {
-        this.state.complaints = JSON.parse(stored);
-        if (this.state.complaints.length > 0 && !this.state.complaints[0].hasOwnProperty('studentPhone')) {
-          console.log("Old database format detected. Upgrading tables...");
-          this.resetDatabaseToSeed();
-        }
-      } catch (e) {
-        console.error("Error parsing local database. Resetting...", e);
-        this.resetDatabaseToSeed();
-      }
-    } else {
-      // Seed Database on first load
-      this.state.complaints = [...window.SEED_COMPLAINTS];
-      localStorage.setItem('umat_complaints', JSON.stringify(this.state.complaints));
+  // State Management (backend API).
+  // loadState/saveState are retained as no-ops so existing call sites keep
+  // working; the authoritative complaint data now comes from refreshComplaints().
+  loadState() { /* data is fetched from the API via refreshComplaints() */ },
+  saveState() { /* persistence is handled server-side per mutation */ },
+
+  // Pull this student's complaints from the backend into state.
+  async refreshComplaints() {
+    if (!this.state.loggedStudent) { this.state.complaints = []; return; }
+    try {
+      const idx = this.state.loggedStudent.index;
+      this.state.complaints = await window.API.get(`/complaints/student/${encodeURIComponent(idx)}`);
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      console.error('Failed to load complaints:', err);
+      this.showToast(err.message || 'Could not load your complaints.', 'error');
     }
   },
 
-  saveState() {
-    localStorage.setItem('umat_complaints', JSON.stringify(this.state.complaints));
+  // Refresh from the API, then re-render the student views.
+  async loadAndRenderStudent() {
+    await this.refreshComplaints();
+    this.renderStudentHistory();
+    if (this.state.activeStudentComplaintId) this.renderStudentTracker();
   },
 
-  resetDatabaseToSeed() {
-    localStorage.setItem('umat_complaints', JSON.stringify(window.SEED_COMPLAINTS));
-    this.state.complaints = [...window.SEED_COMPLAINTS];
+  // Session invalid/expired — clear and return to landing.
+  forceLogout() {
+    window.API.clearToken();
+    localStorage.removeItem('current_student_session');
+    this.state.loggedStudent = null;
     this.state.activeStudentComplaintId = null;
-    this.saveState();
-    this.showToast("Database has been reset to defaults.", "warning");
+    this.state.complaints = [];
+    const badge = document.getElementById('student-session-badge');
+    if (badge) badge.style.display = 'none';
+    this.showToast('Your session has expired. Please sign in again.', 'warning');
     this.showView('landing');
   },
 
@@ -73,9 +78,15 @@ const app = {
   checkStudentSession() {
     const session = localStorage.getItem('current_student_session');
     const navTabTrack = document.getElementById('nav-tab-track');
-    if (session) {
+    // A restored session is only valid if we still hold a JWT.
+    if (session && !window.API.getToken()) {
+      localStorage.removeItem('current_student_session');
+    }
+    if (session && window.API.getToken()) {
       try {
         this.state.loggedStudent = JSON.parse(session);
+        // Pull fresh complaints from the backend for the restored session.
+        this.loadAndRenderStudent();
         // Show session badge in header
         document.getElementById('logged-student-name').textContent = this.state.loggedStudent.name;
         document.getElementById('student-session-badge').style.display = 'flex';
@@ -361,8 +372,8 @@ const app = {
     return !!(name || index || prog || category || subject || desc);
   },
 
-  // Student Authentication Submit
-  handleLoginSubmit(e) {
+  // Student Authentication Submit (backend JWT auth)
+  async handleLoginSubmit(e) {
     if (e) e.preventDefault();
     const indexVal = document.getElementById('login-index').value.trim();
     const passwordVal = document.getElementById('login-password').value.trim();
@@ -372,35 +383,41 @@ const app = {
       return;
     }
 
-    // Find in student database or mock if not found (allows any login)
-    let matched = window.STUDENT_DATABASE.find(s => s.index === indexVal);
-    if (!matched) {
-      matched = {
-        index: indexVal,
-        name: `Student (${indexVal})`,
-        password: passwordVal,
-        email: `${indexVal}@student.umat.edu.gh`,
-        phone: '+233 54 000 0000',
-        level: '300'
-      };
+    let result;
+    try {
+      result = await window.API.post('/auth/student/login', { index_number: indexVal, password: passwordVal });
+    } catch (err) {
+      this.showToast(err.message || 'Login failed. Check your index number and password.', 'error');
+      return;
     }
 
+    window.API.setToken(result.token);
+    // Normalise to the shape the rest of the UI expects (uses .index).
+    const matched = {
+      index: result.student.index_number,
+      name: result.student.name,
+      email: result.student.email,
+      phone: result.student.phone,
+      level: result.student.level,
+      programme: result.student.programme,
+    };
     localStorage.setItem('current_student_session', JSON.stringify(matched));
     this.state.loggedStudent = matched;
-    
+
     document.getElementById('logged-student-name').textContent = matched.name;
     document.getElementById('student-session-badge').style.display = 'flex';
-    
+
     const navTabTrack = document.getElementById('nav-tab-track');
     if (navTabTrack) {
       navTabTrack.innerHTML = '<i data-lucide="layout-dashboard"></i> Dashboard';
     }
-    
+
     const dbName = document.getElementById('db-profile-name');
     if (dbName) {
       dbName.textContent = matched.name;
     }
-    
+
+    await this.refreshComplaints();
     this.showView('track');
     this.showToast(`Welcome back, ${matched.name}!`, "success");
   },
@@ -410,9 +427,11 @@ const app = {
     if (!confirm("Are you sure you want to log out of the student portal?")) {
       return;
     }
+    window.API.clearToken();
     localStorage.removeItem('current_student_session');
     this.state.loggedStudent = null;
     this.state.activeStudentComplaintId = null;
+    this.state.complaints = [];
     
     document.getElementById('student-session-badge').style.display = 'none';
     
@@ -435,8 +454,9 @@ const app = {
     this.updateRoutingPreview();
   },
 
-  // Form Submission (Public)
-  handleFormSubmit(e) {
+  // Form Submission (Public — no login required, per the "instant public
+  // filings" FAQ. The typed name/index identify the filer.)
+  async handleFormSubmit(e) {
     e.preventDefault();
 
     const name = document.getElementById('stud-name').value.trim();
@@ -453,59 +473,57 @@ const app = {
     }
 
     const recipient = this.calculateRouting(category, prog.name);
-    const matchedStudent = window.STUDENT_DATABASE.find(s => s.index === index) || this.state.loggedStudent;
-    const resolvedEmail = matchedStudent ? matchedStudent.email : "N/A";
-    const resolvedPhone = matchedStudent ? matchedStudent.phone : "N/A";
-    const resolvedLevel = matchedStudent ? (matchedStudent.level || "N/A") : "N/A";
 
-    // Generate unique tracking code
-    const uniqueId = `UMAT-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const fileInput = document.getElementById('comp-file');
+    const file = fileInput && fileInput.files[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      this.showToast("Attachment is too large. Maximum size is 5MB.", "warning");
+      return;
+    }
 
-    const newComplaint = {
-      id: uniqueId,
-      studentName: name,
-      studentIndex: index,
-      studentProgramme: prog.name,
-      studentDept: prog.department,
-      studentFaculty: recipient.facultyName,
-      studentFacultyKey: recipient.facultyKey,
-      studentLevel: resolvedLevel,
-      studentEmail: resolvedEmail,
-      studentPhone: resolvedPhone,
-      category: category,
-      subject: subject,
-      description: desc,
-      urgency: urgency,
-      routingDept: recipient.deptName,
-      assignedTo: recipient.name,
-      status: "Submitted",
-      createdAt: new Date().toISOString(),
-      timeline: [
-        {
-          date: new Date().toISOString(),
-          action: "Complaint Submitted",
-          message: `Complaint successfully registered under Reference Number ${index} and routed to the ${recipient.role}.`,
-          by: "System Engine"
-        }
-      ],
-      comments: [],
-      internalNotes: [],
-      directives: [],
-      appointment: null
-    };
+    const formData = new FormData();
+    formData.append('studentName', name);
+    formData.append('studentIndex', index);
+    formData.append('subject', subject);
+    formData.append('category', category);
+    formData.append('urgency', urgency);
+    formData.append('description', desc);
+    formData.append('programmeName', prog.name);
+    if (file) formData.append('attachment', file);
 
-    this.loadState();
-    this.state.complaints.unshift(newComplaint);
-    this.saveState();
+    let ticket;
+    try {
+      ticket = await window.API.postForm('/complaints', formData);
+    } catch (err) {
+      this.showToast(err.message || 'Could not submit your complaint.', 'error');
+      return;
+    }
+
+    const uniqueId = ticket.id;
+    await this.refreshComplaints();
 
     // Populate receipt page
     document.getElementById('receipt-track-code').textContent = uniqueId;
-    document.getElementById('receipt-stud-name').textContent = name;
-    document.getElementById('receipt-stud-index').textContent = index;
+    document.getElementById('receipt-stud-name').textContent = ticket.studentName;
+    document.getElementById('receipt-stud-index').textContent = ticket.studentIndex;
     document.getElementById('receipt-programme').textContent = prog.name;
     document.getElementById('receipt-faculty').textContent = recipient.facultyName;
     document.getElementById('receipt-category').textContent = category;
     document.getElementById('receipt-routed-to').textContent = `${recipient.role} (${recipient.name})`;
+
+    const attRow = document.getElementById('receipt-attachment-row');
+    const attLink = document.getElementById('receipt-attachment-link');
+    if (ticket.attachment) {
+      attRow.style.display = 'flex';
+      attLink.textContent = ticket.attachment.originalName;
+      attLink.onclick = (ev) => {
+        ev.preventDefault();
+        window.downloadComplaintAttachment(ticket.id, ticket.attachment.originalName,
+          (err) => this.showToast(err.message || 'Could not download the attachment.', 'error'));
+      };
+    } else {
+      attRow.style.display = 'none';
+    }
 
     // Toggle panels
     document.getElementById('student-file-panel').style.display = 'none';
@@ -705,6 +723,20 @@ const app = {
     // Subject & Desc
     document.getElementById('track-subject-lbl').textContent = complaint.subject;
     document.getElementById('track-desc-body').textContent = complaint.description;
+
+    // Supporting attachment
+    const trackAttRow = document.getElementById('track-attachment-row');
+    if (complaint.attachment) {
+      trackAttRow.style.display = 'block';
+      document.getElementById('track-attachment-name').textContent = complaint.attachment.originalName;
+      document.getElementById('track-attachment-link').onclick = (ev) => {
+        ev.preventDefault();
+        window.downloadComplaintAttachment(complaint.id, complaint.attachment.originalName,
+          (err) => this.showToast(err.message || 'Could not download the attachment.', 'error'));
+      };
+    } else {
+      trackAttRow.style.display = 'none';
+    }
 
     // Render Unresolved delay reminder
     this.renderDelayReminder(complaint);
@@ -907,24 +939,15 @@ const app = {
     }
   },
 
-  resendComplaint(complaintId) {
-    this.loadState();
-    const complaint = this.state.complaints.find(c => c.id === complaintId);
-    if (!complaint) return;
-
-    const nowStr = new Date().toISOString();
-    complaint.lastRemindedAt = nowStr;
-    complaint.updatedAt = nowStr;
-    
-    // Add timeline entry
-    complaint.timeline.push({
-      date: nowStr,
-      action: "Grievance Reminded",
-      message: "Reminder notification resent by the student due to unresolved delay.",
-      by: "Student (Ledger)"
-    });
-
-    this.saveState();
+  async resendComplaint(complaintId) {
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(complaintId)}/remind`);
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not send the reminder.', 'error');
+      return;
+    }
+    await this.refreshComplaints();
     this.renderStudentHistory();
     this.renderStudentTracker();
     this.showToast("Ledger reminder sent to resolving officer successfully!", "success");
@@ -1153,7 +1176,7 @@ const app = {
     }
   },
 
-  handleChangePasswordSubmit(e) {
+  async handleChangePasswordSubmit(e) {
     e.preventDefault();
     if (!this.state.loggedStudent) return;
 
@@ -1161,27 +1184,22 @@ const app = {
     const newPwd = document.getElementById('change-pwd-new').value;
     const confirmPwd = document.getElementById('change-pwd-confirm').value;
 
-    const indexVal = this.state.loggedStudent.index;
-    const changedPasswords = JSON.parse(localStorage.getItem('umat_changed_passwords') || '{}');
-    const actualPassword = changedPasswords[indexVal] || this.state.loggedStudent.password;
-
-    if (currentPwd !== actualPassword) {
-      this.showToast("Current password entered is incorrect.", "error");
-      return;
-    }
-
     if (newPwd !== confirmPwd) {
       this.showToast("New passwords do not match.", "error");
       return;
     }
 
-    // Save changed password
-    changedPasswords[indexVal] = newPwd;
-    localStorage.setItem('umat_changed_passwords', JSON.stringify(changedPasswords));
-
-    // Update logged state
-    this.state.loggedStudent.password = newPwd;
-    localStorage.setItem('current_student_session', JSON.stringify(this.state.loggedStudent));
+    try {
+      await window.API.put('/auth/student/password', { currentPassword: currentPwd, newPassword: newPwd });
+    } catch (err) {
+      if (err.status === 401 && err.message && /current password/i.test(err.message)) {
+        this.showToast('Current password entered is incorrect.', 'error');
+        return;
+      }
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not update your password.', 'error');
+      return;
+    }
 
     this.closeChangePasswordModal();
     this.showToast("Password updated successfully!", "success");
@@ -1226,15 +1244,10 @@ window.addEventListener('DOMContentLoaded', () => {
   window.app = app;
 });
 
-// Sync data in real-time across tabs/windows
-window.addEventListener('storage', (e) => {
-  if (e.key === 'umat_complaints') {
-    app.loadState();
-    if (app.state.loggedStudent) {
-      app.renderStudentHistory();
-      if (app.state.activeStudentComplaintId) {
-        app.renderStudentTracker();
-      }
-    }
+// Re-sync from the backend when the tab regains focus, so staff updates
+// (status changes, directives, appointments) show up for the student.
+window.addEventListener('focus', () => {
+  if (app.state.loggedStudent) {
+    app.loadAndRenderStudent();
   }
 });
