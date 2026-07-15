@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Campus Complaint System | UMaT Student Portal</title>
-  <link rel="stylesheet" href="style.css?v=1.1">
+  <link rel="stylesheet" href="style.css?v=4.15">
   <!-- Load Lucide Icons CDN for sleek UI icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -23,55 +23,83 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <nav id="main-nav">
+    <nav id="main-nav" style="margin-left: auto; margin-right: auto;">
       <button class="nav-tab active" onclick="app.showView('landing')" id="nav-tab-landing">
         <i data-lucide="home"></i> Home
       </button>
-      <button class="nav-tab" onclick="app.showView('track')" id="nav-tab-track">
+      <button class="nav-tab" onclick="app.showSignInModal(event)" id="nav-tab-track">
         <i data-lucide="log-in"></i> Sign In
       </button>
     </nav>
 
-    <!-- Student Session Header Badge (Interactive Profile Dropdown) -->
-    <div class="dashboard-profile-widget" id="student-session-badge" style="display: none; margin-bottom: 0;" onclick="app.toggleProfileDropdown(event)">
-      <div class="profile-avatar">
-        <i data-lucide="user"></i>
-      </div>
-      <div class="profile-info">
-        <span class="profile-name" id="logged-student-name">Student Session</span>
-        <span class="profile-role">Student</span>
-      </div>
-      <i data-lucide="chevron-down" class="profile-chevron" id="db-profile-chevron"></i>
-      
-      <!-- Dropdown Menu -->
-      <div class="profile-dropdown-menu" id="db-profile-dropdown" style="display: none;" onclick="event.stopPropagation()">
-        <div class="dropdown-header">User Profile & Settings</div>
+    <!-- Header User Widget Group -->
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <!-- Student Notification Bell Widget -->
+      <div class="notification-widget" id="student-notification-widget" style="display: none; position: relative; align-items: center;">
+        <button class="notification-bell-btn" id="student-notification-btn" onclick="app.toggleNotificationDropdown(event)">
+          <i data-lucide="bell"></i>
+          <span class="notification-badge" id="student-notification-badge" style="display: none;"></span>
+        </button>
         
-        <!-- Theme Selection -->
-        <div class="dropdown-item dropdown-theme-select">
-          <i data-lucide="palette"></i>
-          <div style="flex-grow: 1; display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Change Theme</span>
-            <select id="theme-selector" onchange="app.changeTheme(this.value)" style="width: 100%; margin-top: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit;">
-              <option value="light">Light Mode</option>
-              <option value="dark">Dark Mode</option>
-            </select>
+        <!-- Notifications Dropdown -->
+        <div class="notification-dropdown" id="student-notification-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; width: 320px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: var(--shadow-lg); z-index: 100; padding: 0.75rem 0;" onclick="event.stopPropagation()">
+          <div class="notification-dropdown-header" style="padding: 0.5rem 1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); color: var(--primary); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-family: inherit;">
+            <span>Notifications</span>
+            <button onclick="app.markAllNotificationsRead()" style="background: none; border: none; font-size: 0.75rem; color: var(--accent); font-weight: 700; cursor: pointer; padding: 0; font-family: inherit;">Mark all as read</button>
+          </div>
+          <div class="notification-list" id="student-notification-list" style="max-height: 250px; overflow-y: auto;">
+            <!-- Populated dynamically -->
           </div>
         </div>
+      </div>
+
+      <!-- Student Session Header Badge (Interactive Profile Dropdown) -->
+      <div class="dashboard-profile-widget" id="student-session-badge" style="display: none; margin-bottom: 0;" onclick="app.toggleProfileDropdown(event)">
+        <div class="profile-avatar">
+          <i data-lucide="user"></i>
+        </div>
+        <div class="profile-info">
+          <span class="profile-name" id="logged-student-name">Student Session</span>
+          <span class="profile-role">Student</span>
+        </div>
+        <i data-lucide="chevron-down" class="profile-chevron" id="db-profile-chevron"></i>
         
-        <!-- Change Password -->
-        <button type="button" class="dropdown-item-btn" onclick="app.openChangePasswordModal(event)">
-          <i data-lucide="key-round"></i>
-          <span>Change Password</span>
-        </button>
-        
-        <div class="dropdown-divider"></div>
-        
-        <!-- Log Out -->
-        <button type="button" class="dropdown-item-btn text-danger" onclick="app.handleLogout(); event.preventDefault();">
-          <i data-lucide="log-out"></i>
-          <span>Log Out</span>
-        </button>
+        <!-- Dropdown Menu -->
+        <div class="profile-dropdown-menu" id="db-profile-dropdown" style="display: none;" onclick="event.stopPropagation()">
+          <div class="dropdown-header">User Profile & Settings</div>
+          
+          <!-- Theme Selection -->
+          <div class="dropdown-item dropdown-theme-select">
+            <i data-lucide="palette"></i>
+            <div style="flex-grow: 1; display: flex; flex-direction: column;">
+              <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Change Theme</span>
+              <select id="theme-selector" onchange="app.changeTheme(this.value)" style="width: 100%; margin-top: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit;">
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- My Profile -->
+          <button type="button" class="dropdown-item-btn" onclick="app.openProfileModal(event)">
+            <i data-lucide="user-cog"></i>
+            <span>My Profile</span>
+          </button>
+
+          <!-- Change Password -->
+          <button type="button" class="dropdown-item-btn" onclick="app.openChangePasswordModal(event)">
+            <i data-lucide="key-round"></i>
+            <span>Change Password</span>
+          </button>
+          
+          <div class="dropdown-divider"></div>
+          
+          <!-- Log Out -->
+          <button type="button" class="dropdown-item-btn text-danger" onclick="app.handleLogout(); event.preventDefault();">
+            <i data-lucide="log-out"></i>
+            <span>Log Out</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -81,190 +109,230 @@
 
     <!-- 1. LANDING HUB VIEW -->
     <section id="landing-view" class="view-section active">
-      <!-- Hero Banner -->
+      <!-- Hero Banner with Grid Matrix Background -->
       <div class="hero-section">
         <!-- Slideshow background for premium dynamic feel -->
         <div class="hero-bg-slides">
-          <div class="hero-bg-slide active" style="background-image: url('umat_admin_1.jpg');"></div>
-          <div class="hero-bg-slide" style="background-image: url('umat_admin_2.jpg');"></div>
+          <div class="hero-bg-slide active" style="background-image: linear-gradient(135deg, rgba(13, 82, 44, 0.25) 0%, rgba(27, 138, 79, 0.30) 60%, rgba(74, 222, 128, 0.20) 100%), url('umat_admin_1.jpg');"></div>
         </div>
         <div class="hero-content">
-          <h2 class="animate-slide-up">UMaT Campus Complaint Portal</h2>
-          <p class="section-desc animate-slide-up" style="max-width: 750px; margin: 1rem auto 2rem auto; font-size: 1.15rem;">
+          <h2 class="animate-slide-up" style="color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 3.2rem;">UMaT Campus Complaint Portal</h2>
+          <p class="section-desc animate-slide-up" style="max-width: 750px; margin: 1rem auto 2rem auto; font-size: 1.3rem; color: #ffffff; text-shadow: 0 1px 5px rgba(0,0,0,0.4);">
             Ensuring student concerns are processed transparently, routed automatically to deans and department heads, and resolved with official administrative accountability.
           </p>
           <div class="hero-actions animate-slide-up">
-            <button class="btn btn-primary btn-lg" onclick="app.showView('file')">
-              <i data-lucide="file-text"></i> Submit a Quick Complaint
+            <button class="btn btn-primary btn-lg" onclick="app.handleQuickComplaintClick()">
+              Submit a complaint
             </button>
-            <button class="btn btn-outline-white btn-lg" onclick="app.showView('track')">
-              <i data-lucide="compass"></i> Track Ticket Status
+            <button class="btn btn-hero-track btn-lg" onclick="app.showView('track')">
+              Track ticket status
             </button>
           </div>
         </div>
       </div>
 
-      <!-- About Us Grid -->
-      <div class="home-section-container">
-        <h3 class="home-section-title">Institutional Grievance Principles</h3>
-        <div class="info-grid">
-          <div class="glass-card info-card">
-            <div class="info-icon">
-              <i data-lucide="shield-check"></i>
+      <!-- Section: How would you like to submit? -->
+      <div id="submit-methods-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
+        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">How would you like to submit?</h3>
+        <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
+          Both options are reviewed the same way — the difference is whether the office can follow up with you directly.
+        </p>
+        
+        <div class="submit-options-grid">
+          <!-- Option 1: Submit with student ID (Recommended) -->
+          <div class="submit-option-card recommended">
+            <div class="card-badge">RECOMMENDED</div>
+            <div class="card-icon-wrapper">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/></svg>
             </div>
-            <h4>Dean-Led Case Review</h4>
-            <p>Academic, Harassment, and general concerns go directly to the Dean of your Faculty. Financial disputes route to your Faculty Finance Officer. IT issues route to the Central school IT Directorate.</p>
+            <h4 style="border-bottom: none; padding-bottom: 0; margin-top: 0;">Submit with student ID</h4>
+            <p>Sign in with your student account to track your ticket status and receive direct updates from the reviewing office.</p>
+            <button class="btn btn-primary" onclick="app.showLoginOverlayFromTracker(event)">Continue with ID</button>
           </div>
-          <div class="glass-card info-card">
-            <div class="info-icon">
-              <i data-lucide="git-pull-request"></i>
+          
+          <!-- Option 2: Submit anonymously -->
+          <div class="submit-option-card anonymous">
+            <div class="card-icon-wrapper" style="margin-top: 12px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m17 8 5 5"/><path d="m22 8-5 5"/></svg>
             </div>
-            <h4>Automated Program Routing</h4>
-            <p>Skip administrative gatekeepers. Simply search and select your degree programme. The system automatically maps your department and routes your ticket to the correct Faculty Dean.</p>
-          </div>
-          <div class="glass-card info-card">
-            <div class="info-icon">
-              <i data-lucide="clock"></i>
-            </div>
-            <h4>Detailed Appointments & Track</h4>
-            <p>Faculty heads can schedule structured Counselor or In-Person appointments with you. Date, venue, and checklist instructions sync directly into your portal's interactive tracking card.</p>
+            <h4 style="border-bottom: none; padding-bottom: 0; margin-top: 0;">Submit anonymously</h4>
+            <p>No sign-in required. You'll receive a reference code to check on your case later without revealing your identity.</p>
+            <button class="btn btn-outline-white" onclick="app.goToAnonymousForm()">Continue anonymously</button>
           </div>
         </div>
       </div>
 
-      <!-- How it Works Timeline -->
-      <div class="home-section-container" style="background: rgba(13,82,44,0.01); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 4rem 2rem;">
-        <h3 class="home-section-title">How To File & Track</h3>
-        <div class="timeline-steps-grid">
-          <div class="step-box">
-            <div class="step-number">1</div>
-            <h4>Submit File</h4>
-            <p>Open the complaint form. Filing is fully open—no pre-login is required to submit a complaint details page.</p>
+      <!-- Section: What's this about? -->
+      <div class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
+        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">What's this about?</h3>
+        <p class="section-desc" style="margin-bottom: 2rem; max-width: 650px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
+          Choose a category to route your complaint to the right office. Harassment and safety concerns are flagged automatically.
+        </p>
+        
+        <div class="category-pills-row">
+          <button class="category-pill" onclick="app.handleCategoryPillClick('Academic & Exams')">
+            Academic & Exams
+          </button>
+          <button class="category-pill" onclick="app.handleCategoryPillClick('Fees & Finance')">
+            Fees & Finance
+          </button>
+          <button class="category-pill" onclick="app.handleCategoryPillClick('ICT & Portal Services')">
+            ICT & Portal Services
+          </button>
+          <button class="category-pill alert-flagged" onclick="app.handleCategoryPillClick('Harassment')">
+            Harassment
+            <span class="alert-dot"></span>
+          </button>
+          <button class="category-pill" onclick="app.handleCategoryPillClick('Others')">
+            Others
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Institutional grievance principles -->
+      <div class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
+        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Institutional grievance principles</h3>
+        <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
+          The standards this portal is built to uphold, for every complaint regardless of category.
+        </p>
+        
+        <div class="principles-grid">
+          <div class="principle-card">
+            <h4>Confidentiality</h4>
+            <p>Your identity is visible only to the assigned reviewer, never published or shared outside the review process.</p>
           </div>
-          <div class="step-box">
-            <div class="step-number">2</div>
-            <h4>Get Ticket ID</h4>
-            <p>Once submitted, copy the unique ledger reference code (e.g., UMAT-2026-X8Y2) and save it for future tracking.</p>
+          <div class="principle-card">
+            <h4>Timeliness</h4>
+            <p>Every complaint receives an acknowledgment within 48 hours and a status update at each stage of review.</p>
           </div>
-          <div class="step-box">
-            <div class="step-number">3</div>
-            <h4>Log In to Track</h4>
-            <p>Access the tracker by entering your Student Index Number and password. The system matches details from the school registry database.</p>
-          </div>
-          <div class="step-box">
-            <div class="step-number">4</div>
-            <h4>Follow Directives</h4>
-            <p>Review the detailed appointment notice cards, complete checklist items, and click 'Resend' to bump delayed tickets.</p>
+          <div class="principle-card">
+            <h4>Non-retaliation</h4>
+            <p>Filing a complaint in good faith carries no academic or administrative penalty, for you or anyone you name.</p>
           </div>
         </div>
       </div>
 
-      <!-- FAQ Section -->
-      <div class="home-section-container" style="max-width: 900px; margin: 0 auto 5rem auto;">
-        <h3 class="home-section-title">Frequently Asked Questions</h3>
-        <div class="faq-list">
-          <div class="glass-card faq-item">
-            <h5><i data-lucide="help-circle"></i> Is it mandatory to log in before filing a complaint?</h5>
-            <p>No. We support instant public filings. Any student can file a grievance immediately without an account. Authentication is only required when retrieving details or tracking status.</p>
+      <!-- Footer: Quick Links & Support -->
+      <footer id="portal-footer" style="background-color: #052611; color: #ffffff; padding: 4rem 2rem 3rem 2rem; margin-top: 5rem; border-top: 1px solid rgba(255,255,255,0.1); margin-left: -2rem; margin-right: -2rem;">
+        <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3rem; flex-wrap: wrap; text-align: left;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="width: 32px; height: 32px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.1rem;">U</div>
+              <span style="font-weight: 700; font-size: 1.1rem; letter-spacing: 0.5px; text-transform: uppercase;">UMaT Portal</span>
+            </div>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; max-width: 320px; line-height: 1.5; margin: 0;">
+              University of Mines and Technology, helping you resolve academic, financial and administrative concerns.
+            </p>
           </div>
-          <div class="glass-card faq-item">
-            <h5><i data-lucide="help-circle"></i> What credentials should I use to log in to the tracking system?</h5>
-            <p>Use your university Student Index Number and your portal registration password. The system verifies these inputs directly against the prototype school database.</p>
+          <div>
+            <h5 style="color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 1.25rem;">Quick Links</h5>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; font-weight: 500;">
+              <li><a href="#" onclick="app.handleQuickComplaintClick(); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">How it works</a></li>
+              <li><a href="#" onclick="app.handleQuickComplaintClick(); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Why it works</a></li>
+              <li><a href="#" onclick="app.showView('track'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Track a ticket</a></li>
+            </ul>
           </div>
-          <div class="glass-card faq-item">
-            <h5><i data-lucide="help-circle"></i> What happens if my complaint is delayed or unresolved?</h5>
-            <p>If your complaint remains unresolved past its urgency limit (e.g., 24 hours for Critical, 48 hours for High), an alert box will appear on your tracker allowing you to click "Resend" to bump it back to the top of the Dean's queue.</p>
+          <div>
+            <h5 style="color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 1.25rem;">Support</h5>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; font-weight: 500;">
+              <li><a href="mailto:studentaffairs@umat.edu.gh" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Contact student affairs</a></li>
+              <li><a href="#" onclick="app.showView('landing'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">FAQs</a></li>
+              <li><a href="mailto:support@umat.edu.gh" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Report an issue</a></li>
+            </ul>
           </div>
         </div>
-      </div>
+        <div style="max-width: 1200px; margin: 3rem auto 0 auto; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; font-weight: 500;">
+          &copy; 2026 University of Mines and Technology. All rights reserved.
+        </div>
+      </footer>
     </section>
 
 
     <!-- 2. STUDENT PORTAL FORM VIEW (PUBLIC ACCESS) -->
     <section id="file-view" class="view-section">
       <div style="margin-bottom: 2rem;">
-        <h2>File Campus Complaint</h2>
-        <p class="section-desc">Submit new grievances to the university database. Routing is automatically resolved based on your degree course.</p>
+        <h2>Submit a complaint</h2>
+        <p class="section-desc">Fill in the details below. Harassment and safety categories are routed as high priority automatically.</p>
       </div>
 
       <!-- Filing Form Panel -->
-      <div id="student-file-panel" class="glass-card animate-fade-in">
-        <h3 style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i data-lucide="clipboard-list" style="stroke: var(--accent);"></i> New Complaint Filing Form
-        </h3>
+      <div id="student-file-panel" class="glass-card animate-fade-in" style="max-width: 800px; margin: 0 auto; padding: 2.5rem;">
+        <!-- Submission Mode Identity Chip Banner -->
+        <div id="idchip" class="idchip-banner" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(34, 197, 94, 0.08); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.5rem; font-weight: 600; font-size: 0.9rem; color: var(--accent); border: 1px solid rgba(34, 197, 94, 0.2);">
+          <i data-lucide="user-check"></i>
+          <span id="idchip-text">Submitting anonymously</span>
+        </div>
 
         <form id="complaint-form" onsubmit="app.handleFormSubmit(event)" onclick="app.closeAllAutocompletes()">
-          <div class="form-grid">
-            <div class="input-group">
-              <label for="stud-name">Full Name</label>
-              <input type="text" id="stud-name" placeholder="e.g., Bennin Paa Kofi" required>
+          <!-- Submitter Identity Mode Selector (Visible only when student is logged in) -->
+          <div id="submitter-identity-selector" class="glass-card" style="display: none; margin-bottom: 1.5rem; padding: 1.25rem; border: 1px solid var(--border-color); background: rgba(0,0,0,0.015); border-radius: 8px;">
+            <label style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 0.75rem; letter-spacing: 0.5px;">Submitter Identity Mode</label>
+            <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; color: var(--text-color);">
+                <input type="radio" name="filing-identity" id="filing-id-real" value="real" checked onchange="app.toggleFilingIdentity('real')" style="width: 18px; height: 18px; accent-color: var(--accent);">
+                <span>Submit with my Student ID</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.95rem; color: var(--text-color);">
+                <input type="radio" name="filing-identity" id="filing-id-anon" value="anon" onchange="app.toggleFilingIdentity('anon')" style="width: 18px; height: 18px; accent-color: var(--accent);">
+                <span>Submit anonymously</span>
+              </label>
             </div>
-            <div class="input-group">
-              <label for="stud-index">Reference Number (Index Number)</label>
-              <input type="text" id="stud-index" placeholder="e.g., 9012870422" pattern="^[0-9]{10}$" title="Reference number must be exactly 10 digits" required>
-              <span class="helper-text">Your 10-digit university enrollment code.</span>
+            <div id="identity-meta-preview" style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="user-check" style="width: 14px; height: 14px; stroke: var(--accent);"></i>
+              <span id="identity-meta-text">Submitting as Student</span>
             </div>
-            
-            <!-- Autocomplete Searchable Programme field -->
-            <div class="input-group form-autocomplete-wrapper" onclick="event.stopPropagation()">
-              <label for="stud-programme-search">Programme / Course of Study</label>
-              <div style="position: relative; width: 100%;">
-                <input type="text" id="stud-programme-search" placeholder="Type to search programme (e.g. BSc Computer...)" autocomplete="off" required oninput="app.filterProgrammes()" onfocus="app.showProgrammesList()">
-                <div id="stud-programme-list" class="autocomplete-list" style="display: none;"></div>
-              </div>
-              <span class="helper-text">Type your degree. The system resolves your department & faculty.</span>
-            </div>
+          </div>
 
+          <!-- Hidden inputs to satisfy server validations under-the-hood -->
+          <div id="group-stud-name" style="display: none;">
+            <input type="text" id="stud-name" value="Anonymous Student">
+          </div>
+          <div id="group-stud-index" style="display: none;">
+            <input type="text" id="stud-index" value="9099999999">
+          </div>
+          <div id="group-stud-programme" style="display: none;">
+            <input type="text" id="stud-programme-search" value="BSc Computer Science and Engineering">
+          </div>
+          <select id="comp-urgency" style="display: none;">
+            <option value="Medium" selected>Medium</option>
+          </select>
+
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <div class="input-group">
-              <label for="comp-category">Complaint Category</label>
+              <label for="comp-category">Category</label>
               <select id="comp-category" required onchange="app.updateRoutingPreview()">
                 <option value="" disabled selected>Select category...</option>
                 <!-- Prepopulated via JS -->
               </select>
-              <div id="anonymous-harassment-notice" style="display: none; background: rgba(229, 62, 62, 0.05); border: 1px dashed var(--status-rejected); padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.8rem; color: var(--status-rejected); margin-top: 0.5rem; font-weight: 500;">
-                <i data-lucide="shield-alert" style="width: 14px; height: 14px; vertical-align: middle; display: inline-block; margin-right: 4px;"></i> Harassment reports are submitted anonymously. Your name and reference identifiers will be hidden from resolving case officers.
-              </div>
-            </div>
-
-            <div class="input-group form-full-width">
-              <label for="comp-subject">Complaint Subject / Title</label>
-              <input type="text" id="comp-subject" placeholder="Brief summary of the issue (e.g., Missing Exam Grade, Fee Receipt Block)" required>
-            </div>
-
-            <div class="input-group form-full-width">
-              <label for="comp-desc">Detailed Description</label>
-              <textarea id="comp-desc" placeholder="Please elaborate thoroughly, listing specific dates, locations, codes, or prior conversations..." required></textarea>
             </div>
 
             <div class="input-group">
-              <label for="comp-urgency">Priority / Urgency Level</label>
-              <select id="comp-urgency" required onchange="app.updateRoutingPreview()">
-                <option value="Low">Low (Informational query / suggestion)</option>
-                <option value="Medium" selected>Medium (Standard issue needing attention)</option>
-                <option value="High">High (Urgent action needed / academic delay)</option>
-                <option value="Urgent">Critical (Safety hazard / immediate administrative block)</option>
-              </select>
+              <label for="comp-subject">Subject</label>
+              <input type="text" id="comp-subject" placeholder="Brief summary of the issue" required>
+            </div>
+
+            <div class="input-group">
+              <label for="comp-desc">Description</label>
+              <textarea id="comp-desc" placeholder="Describe what happened, when, and who was involved..." required style="min-height: 150px; resize: vertical;"></textarea>
             </div>
             
             <div class="input-group">
-              <label>Supporting Attachment (Optional)</label>
-              <input type="file" id="comp-file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" style="cursor: pointer;">
-              <span class="helper-text">Upload transcripts, bank drafts, or photos. JPG, PNG, WEBP, PDF, DOC/DOCX — Max 5MB.</span>
-            </div>
-
-            <!-- Dynamic Auto-Routing Alert Panel -->
-            <div class="form-full-width" id="routing-preview-box" style="display: none; background: var(--primary-glow); border: 1px solid rgba(13, 82, 44, 0.4); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; color: var(--text-color); margin: 0.5rem 0;">
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="route" style="stroke: var(--accent); width: 18px; height: 18px;"></i>
-                <strong>Intelligent System Routing Rule:</strong>
+              <label>Attachments (optional)</label>
+              <div class="file-upload-drag-zone" onclick="document.getElementById('comp-file').click()">
+                <input type="file" id="comp-file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" style="display: none;" onchange="app.handleFileSelectionChange(this)">
+                <span id="file-upload-text">Click to upload evidence, screenshots, or documents</span>
               </div>
-              <p id="routing-preview-text" style="margin-top: 0.25rem; font-weight: 500;"></p>
             </div>
 
-            <div class="form-full-width" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
-              <button type="reset" class="btn btn-secondary">Clear Form</button>
-              <button type="submit" class="btn btn-primary">
-                <i data-lucide="send"></i> Submit Grievance
+            <!-- Dynamic Auto-Routing Alert Panel (kept hidden in DOM to maintain JS compatibility) -->
+            <div id="routing-preview-box" style="display: none;">
+              <p id="routing-preview-text"></p>
+            </div>
+
+            <div style="display: flex; gap: 1rem; width: 100%; margin-top: 1rem;">
+              <button type="button" class="btn btn-secondary" onclick="app.showView('landing')" style="flex: 1; justify-content: center; padding: 0.9rem;">Cancel</button>
+              <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 0.9rem; background: var(--accent); color: #000000; border: none; font-weight: 700;">
+                Submit complaint
               </button>
             </div>
           </div>
@@ -277,11 +345,11 @@
           <div class="success-check-icon">
             <i data-lucide="check"></i>
           </div>
-          <h3 style="color: var(--status-resolved); font-size: 1.5rem;">Grievance Successfully Registered</h3>
-          <p class="section-desc" style="margin-bottom: 0;">Your complaint has been logged in the UMaT Ledger database.</p>
+          <h3 id="receipt-title" style="color: var(--status-resolved); font-size: 1.5rem;">Grievance Successfully Registered</h3>
+          <p id="receipt-subtitle" class="section-desc" style="margin-bottom: 0;">Your complaint has been logged in the UMaT Ledger database.</p>
         </div>
 
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Please document your unique tracking code below to follow updates:</p>
+        <p id="receipt-label-title" style="font-size: 0.9rem; color: var(--text-muted);">Please document your unique tracking code below to follow updates:</p>
         
         <div class="tracking-number-box">
           <span class="tracking-code" id="receipt-track-code">UMAT-2026-XXXX</span>
@@ -290,16 +358,22 @@
           </button>
         </div>
 
+        <!-- Anonymous Warning Alert -->
+        <div id="receipt-anonymous-warning-note" style="display: none; align-items: center; gap: 0.75rem; background: rgba(229, 62, 62, 0.05); padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 500; color: var(--status-rejected); border: 1px solid rgba(229, 62, 62, 0.15); margin-top: 1rem;">
+          <i data-lucide="alert-triangle" style="stroke: var(--status-rejected); width: 18px; height: 18px; margin-right: 4px;"></i>
+          <span>Save this code — it's the only way to check this complaint's status. Your identity was not recorded.</span>
+        </div>
+
         <div class="receipt-details">
-          <div class="receipt-item">
+          <div class="receipt-item receipt-filer-item">
             <span>Filer Name</span>
             <span id="receipt-stud-name">-</span>
           </div>
-          <div class="receipt-item">
+          <div class="receipt-item receipt-filer-item">
             <span>Index Number</span>
             <span id="receipt-stud-index">-</span>
           </div>
-          <div class="receipt-item">
+          <div class="receipt-item receipt-filer-item">
             <span>Course Programme</span>
             <span id="receipt-programme">-</span>
           </div>
@@ -335,10 +409,7 @@
 
     <!-- 3. STUDENT TRACKING VIEW (REQUIRES AUTHENTICATION) -->
     <section id="track-view" class="view-section">
-      <div style="margin-bottom: 2rem;">
-        <h2>Grievance Tracking Desk</h2>
-        <p class="section-desc">Verify investigation timelines, attend scheduled appointments, and resolve tasks.</p>
-      </div>
+
 
       <!-- A. Login Overlay Panel (Shown if not logged in) -->
       <div id="student-login-panel-container" class="student-login-bg-container" style="display: none;">
@@ -349,29 +420,55 @@
         </div>
         <div id="student-login-panel" class="glass-card login-card animate-fade-in" style="max-width: 480px; padding: 2.5rem; position: relative; z-index: 2;">
           <div style="text-align: center; margin-bottom: 2rem;">
-            <i data-lucide="lock" style="width: 40px; height: 40px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
-            <h3>Student Authentication Required</h3>
-            <p class="section-desc">Please log in with your credentials from the school database to access the tracking module.</p>
+            <i data-lucide="search" style="width: 40px; height: 40px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+            <h3>Track ticket status</h3>
+            <p class="section-desc">Enter your Ticket ID to check the status of your complaint.</p>
           </div>
           <form onsubmit="app.handleLoginSubmit(event)">
-            <div class="input-group" style="margin-bottom: 1.25rem;">
-              <label for="login-index">Student Index Number</label>
-              <input type="text" id="login-index" placeholder="e.g. 9012870422" required>
-            </div>
             <div class="input-group" style="margin-bottom: 1.75rem;">
-              <label for="login-password">Password</label>
-              <input type="password" id="login-password" placeholder="••••••••" required>
-              <span class="helper-text">Default demo password for seed accounts is <code>password123</code></span>
+              <label for="login-index" style="text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Ticket ID</label>
+              <input type="text" id="login-index" placeholder="e.g. UMAT-2026-0742" required style="text-align: center; font-size: 1.1rem; letter-spacing: 0.5px;">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
-              <i data-lucide="unlock"></i> LOG IN
+            <button type="submit" id="btn-check-status" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-weight: 700; border: none; background: var(--accent); color: #000; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+              Check status
             </button>
+            <p id="login-footnote" style="margin-top: 1.25rem; font-size: 0.8rem; text-align: center; color: var(--text-muted); font-weight: 500;">
+              Anonymous tickets can only be checked with the exact Ticket ID you were given.
+            </p>
           </form>
         </div>
       </div>
 
       <!-- B. Authenticated Tracker Workspace (Hidden initially) -->
       <div id="student-track-workspace" class="animate-fade-in" style="display: none;">
+        <!-- Welcome header & counter pills -->
+        <div id="student-dashboard-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; width: 100%;">
+          <div>
+            <h2 style="font-size: 2.2rem; font-weight: 700; margin-bottom: 0.25rem;" id="dash-welcome-title">Welcome back, Student</h2>
+            <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0;">Here's where things stand with your complaints.</p>
+          </div>
+          
+          <div class="dash-counter-grid" style="display: flex; gap: 1rem; align-items: center; margin-right: 2rem;">
+            <!-- Card 1: Awaiting Review -->
+            <div class="dash-counter-card" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; min-width: 140px; box-shadow: var(--shadow-sm); box-sizing: border-box;">
+              <span class="dash-counter-num" id="dash-count-awaiting" style="font-size: 1.8rem; font-weight: 700; color: #f472b6; line-height: 1;">0</span>
+              <span class="dash-counter-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-color); line-height: 1.2;">Awaiting<br>review</span>
+            </div>
+
+            <!-- Card 2: Under Review -->
+            <div class="dash-counter-card" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; min-width: 140px; box-shadow: var(--shadow-sm); box-sizing: border-box;">
+              <span class="dash-counter-num" id="dash-count-progress" style="font-size: 1.8rem; font-weight: 700; color: #fbbf24; line-height: 1;">0</span>
+              <span class="dash-counter-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-color); line-height: 1.2;">Under review</span>
+            </div>
+
+            <!-- Card 3: Resolved -->
+            <div class="dash-counter-card" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; min-width: 140px; box-shadow: var(--shadow-sm); box-sizing: border-box;">
+              <span class="dash-counter-num" id="dash-count-resolved" style="font-size: 1.8rem; font-weight: 700; color: #22c55e; line-height: 1;">0</span>
+              <span class="dash-counter-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-color); line-height: 1.2;">Resolved</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Side-by-Side Grievance History Desk -->
         <div class="admin-layout">
           
@@ -380,7 +477,7 @@
             <div class="admin-sidebar-header">
               <!-- Profile Widget moved to top right header -->
 
-              <div class="active-dept-display" style="background: var(--accent); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 0.5rem; margin-top: 0.5rem;">
+              <div class="active-dept-display" onclick="app.showDashboardOverview()" style="background: var(--accent); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 0.5rem; margin-top: 0.5rem; cursor: pointer;" title="Back to Dashboard Overview">
                 <span class="dept-label" style="color: rgba(255,255,255,0.75); font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Student Ledger</span>
                 <h4 style="color: #fff; margin-top: 0.25rem; font-size: 0.95rem; font-weight: 700;">Grievance History</h4>
               </div>
@@ -405,17 +502,20 @@
           <!-- Right Workspace: Tracking Workspace -->
           <div class="admin-workspace" style="position: relative;">
             
-            <!-- Default empty state placeholder -->
-            <div id="student-workspace-placeholder" class="admin-workspace-placeholder" style="display: flex;">
-              <i data-lucide="file-text" style="width: 48px; height: 48px; stroke: var(--accent); margin-bottom: 1rem;"></i>
-              <h3>Select Grievance To Track</h3>
-              <p style="max-width: 450px; margin: 0 auto; color: var(--text-muted);">Select a complaint card from the left history list to track active investigation workflows, view directives, check appointments, and read official feedback.</p>
+            <!-- Default empty state placeholder: Welcome back dashboard counter -->
+            <div id="student-workspace-placeholder" class="admin-workspace-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3rem; width: 100%; box-sizing: border-box;">
+              <i data-lucide="info" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+              <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-color);">No Ticket Selected</h3>
+              <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; max-width: 320px;">Select a grievance from the history ledger on the left to track its live status, timelines, and appointments.</p>
+              <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #000; padding: 0.65rem 1.25rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; border: none; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> File New Complaint
+              </button>
             </div>
             
             <!-- Loaded Grievance Tracking Workspace -->
-            <div id="student-workspace-content" style="display: none; height: 100%; flex-direction: column; overflow-y: auto; padding: 2rem;">
+            <div id="student-workspace-content" style="display: none; height: auto; flex-direction: column; overflow: visible; padding: 2rem;">
               
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+              <div class="active-ticket-sticky-header" style="position: sticky; top: 0; z-index: 10; background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-top: -2rem; padding-top: 2rem; margin-left: -2rem; margin-right: -2rem; padding-left: 2rem; padding-right: 2rem; border-top-right-radius: var(--radius-lg);">
                 <div style="max-width: 75%;">
                   <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
                     <span class="item-id" id="track-meta-id" style="font-size: 1.1rem; font-weight: 700; color: var(--accent);">-</span>
@@ -425,56 +525,15 @@
                   <h3 id="track-subject-lbl" style="font-size: 1.4rem; color: var(--primary); margin: 0.25rem 0 0 0;">Subject Title</h3>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
-                  <button class="btn btn-secondary" onclick="window.print()" style="padding: 0.5rem 1rem; font-size: 0.8rem; text-transform:none;">
+                  <button class="btn btn-secondary" onclick="app.printComplaintTicket()" style="padding: 0.5rem 1rem; font-size: 0.8rem; text-transform:none;">
                     <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Ticket
                   </button>
                 </div>
               </div>
 
-              <!-- Unresolved Delay Reminder Alert Box (Hidden by default, shown via JS) -->
-              <div id="track-delay-reminder" class="glass-card animate-fade-in" style="display: none; border-left: 5px solid var(--status-rejected); background: rgba(229, 62, 62, 0.03); padding: 1.25rem; margin-bottom: 2rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; flex-wrap: wrap;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i data-lucide="alert-triangle" style="stroke: var(--status-rejected); width: 22px; height: 22px;"></i>
-                    <div>
-                      <h5 style="color: var(--status-rejected); margin: 0; font-size: 0.95rem; font-weight: 700;">Unresolved Resolution Alert</h5>
-                      <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;" id="delay-reminder-text">This complaint has exceeded the typical response window for its urgency level.</p>
-                    </div>
-                  </div>
-                  <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem;" id="btn-resend-complaint">
-                    <i data-lucide="refresh-cw"></i> Resend Reminder
-                  </button>
-                </div>
-              </div>
-
-              <!-- Glowing Upcoming Appointment Notice Card -->
-              <div id="track-appointment-card" class="glass-card appointment-card animate-fade-in" style="display: none; border: 2px solid var(--status-review); margin-bottom: 2rem; background: rgba(183, 121, 31, 0.03); padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(183, 121, 31, 0.15); padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                  <h3 style="color: var(--status-review); margin: 0; display: flex; align-items: center; gap: 0.5rem; border-bottom: none; padding-bottom: 0;">
-                    <i data-lucide="calendar" style="stroke: var(--status-review);"></i> Scheduled Action: Appointment Set
-                  </h3>
-                  <span class="badge badge-status-review">Action Required</span>
-                </div>
-                <div class="appointment-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
-                  <div>
-                    <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Meeting Type</label>
-                    <span id="appt-type-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Date & Time</label>
-                    <span id="appt-time-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Venue / Location</label>
-                    <span id="appt-venue-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
-                  </div>
-                </div>
-                <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(183, 121, 31, 0.1); padding: 1rem; border-radius: 8px;">
-                  <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Required Action & Instructions</label>
-                  <p id="appt-instructions-lbl" style="font-size: 0.95rem; font-weight: 500; color: var(--text-color); margin: 0;"></p>
-                </div>
-              </div>
-
+              <!-- Scrollable details content container starts here -->
+              <div id="active-ticket-scroll-body" style="flex-grow: 1; overflow-y: auto; padding: 1.5rem 2rem 2rem 2rem; margin: 0 -2rem -2rem -2rem; display: flex; flex-direction: column;">
+              
               <!-- Horizontal Graphical Timeline -->
               <h3 style="margin-bottom: 1rem;">Workflow Progress Timeline</h3>
               <div class="timeline-track" style="margin-top: 1.5rem; margin-bottom: 2.5rem;">
@@ -482,103 +541,166 @@
                 
                 <div class="timeline-node" id="node-submitted">
                   <div class="timeline-icon">1</div>
-                  <div class="timeline-label">Submitted</div>
+                  <div class="timeline-label" id="lbl-node-1">Submitted</div>
                 </div>
                 <div class="timeline-node" id="node-review">
                   <div class="timeline-icon">2</div>
-                  <div class="timeline-label">In Review</div>
+                  <div class="timeline-label" id="lbl-node-2">In Review</div>
                 </div>
                 <div class="timeline-node" id="node-progress">
                   <div class="timeline-icon">3</div>
-                  <div class="timeline-label">In Progress</div>
+                  <div class="timeline-label" id="lbl-node-3">In Progress</div>
                 </div>
                 <div class="timeline-node" id="node-resolved">
                   <div class="timeline-icon">4</div>
-                  <div class="timeline-label">Resolved</div>
+                  <div class="timeline-label" id="lbl-node-4">Resolved</div>
                 </div>
               </div>
 
-              <!-- Student Directives Checklist -->
-              <div id="track-directives-box" class="glass-card" style="display: none; border-color: var(--accent); margin-bottom: 2rem; background: rgba(13,82,44,0.02);">
-                <h3 style="color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: none; padding-bottom: 0;">
-                  <i data-lucide="alert-circle" style="stroke: var(--accent);"></i> Action Required: Official Directives
-                </h3>
-                <p class="section-desc" style="margin-bottom: 1rem; font-size: 0.85rem;">The department requires you to complete the following tasks to proceed with your resolution:</p>
-                <div id="track-directives-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                  <!-- Populated via JS -->
+              <!-- Dynamic Status Explanation Message Card -->
+              <div id="track-status-message-card" class="glass-card animate-fade-in" style="display: none; padding: 1.5rem; margin-top: 1rem; margin-bottom: 2.5rem; border-left: 4px solid var(--accent); font-weight: 500; font-size: 0.95rem; line-height: 1.6; color: var(--text-color); background: rgba(13,82,44,0.02);">
+                <p id="track-status-message-text" style="margin: 0;"></p>
+              </div>
+
+              <!-- Guest Login Prompt Banner -->
+              <div id="track-login-banner" class="glass-card animate-fade-in" style="display: none; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; padding: 1.5rem; background: rgba(34, 197, 94, 0.04); border: 1px dashed var(--accent); margin-top: 2.5rem; margin-bottom: 2.5rem;">
+                <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--primary);">Want to track all your complaints or view full conversation details?</h5>
+                <button class="btn btn-primary" onclick="app.showLoginOverlayFromTracker(event)" style="font-weight: 700; background: var(--accent); color: #000; border: none; padding: 0.6rem 1.25rem;">
+                  Login for full details
+                </button>
+              </div>
+
+              <!-- Container for Full Details (Hidden for guest lookups of regular student complaints) -->
+              <div id="track-full-details-area" style="display: block;">
+                <!-- Unresolved Delay Reminder Alert Box (Hidden by default, shown via JS) -->
+                <div id="track-delay-reminder" class="glass-card animate-fade-in" style="display: none; border-left: 5px solid var(--status-rejected); background: rgba(229, 62, 62, 0.03); padding: 1.25rem; margin-bottom: 2rem;">
+                  <div style="display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <i data-lucide="alert-triangle" style="stroke: var(--status-rejected); width: 22px; height: 22px;"></i>
+                      <div>
+                        <h5 style="color: var(--status-rejected); margin: 0; font-size: 0.95rem; font-weight: 700;">Unresolved Resolution Alert</h5>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;" id="delay-reminder-text">This complaint has exceeded the typical response window for its urgency level.</p>
+                      </div>
+                    </div>
+                    <button class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.8rem;" id="btn-resend-complaint">
+                      <i data-lucide="refresh-cw"></i> Resend Reminder
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Glowing Upcoming Appointment Notice Card -->
+                <div id="track-appointment-card" class="glass-card appointment-card animate-fade-in" style="display: none; border: 2px solid var(--status-review); margin-bottom: 2rem; background: rgba(183, 121, 31, 0.03); padding: 1.5rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(183, 121, 31, 0.15); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                    <h3 style="color: var(--status-review); margin: 0; display: flex; align-items: center; gap: 0.5rem; border-bottom: none; padding-bottom: 0;">
+                      <i data-lucide="calendar" style="stroke: var(--status-review);"></i> Scheduled Action: Appointment Set
+                    </h3>
+                    <span class="badge badge-status-review">Action Required</span>
+                  </div>
+                  <div class="appointment-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
+                    <div>
+                      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Meeting Type</label>
+                      <span id="appt-type-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Date & Time</label>
+                      <span id="appt-time-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Venue / Location</label>
+                      <span id="appt-venue-lbl" style="font-weight: 700; font-size: 1.05rem; color: var(--primary);">-</span>
+                    </div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.7); border: 1px solid rgba(183, 121, 31, 0.1); padding: 1rem; border-radius: 8px;">
+                    <label style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Required Action & Instructions</label>
+                    <p id="appt-instructions-lbl" style="font-size: 0.95rem; font-weight: 500; color: var(--text-color); margin: 0;"></p>
+                  </div>
+                </div>
+
+                <!-- Student Directives Checklist -->
+                <div id="track-directives-box" class="glass-card" style="display: none; border-color: var(--accent); margin-bottom: 2rem; background: rgba(13,82,44,0.02);">
+                  <h3 style="color: var(--primary); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: none; padding-bottom: 0;">
+                    <i data-lucide="alert-circle" style="stroke: var(--accent);"></i> Action Required: Official Directives
+                  </h3>
+                  <p class="section-desc" style="margin-bottom: 1rem; font-size: 0.85rem;">The department requires you to complete the following tasks to proceed with your resolution:</p>
+                  <div id="track-directives-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <!-- Populated via JS -->
+                  </div>
+                </div>
+
+                <!-- Administrative Instructions / Guidelines Logs (One-Way Feedback Area) -->
+                <div class="comments-section" style="margin-top: 2rem; margin-bottom: 2.5rem;">
+                  <h3>Administrative Guidelines & Feedback</h3>
+                  <p class="section-desc" style="margin-bottom: 1rem;">Official updates and directions issued by the assigned Administrator.</p>
+                  
+                  <div class="internal-note-list" id="track-instructions-log" style="display: flex; flex-direction: column; gap: 1rem; background: rgba(13,82,44,0.03); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <!-- Rendered official instruction text cards populated via JS -->
+                  </div>
+                </div>
+
+                <!-- Detailed Status Log Timeline -->
+                <h3>Activity History Log</h3>
+                <div class="timeline-logs" id="track-timeline-logs">
+                  <!-- Rendered logs -->
+                </div>
+
+                <!-- Ticket Info Meta -->
+                <div class="glass-card" style="margin-top: 2.5rem; padding: 1.5rem;">
+                  <h4 style="margin-bottom: 1rem; color: var(--primary);">Grievance Details Summary</h4>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Category</label>
+                      <div id="track-meta-category" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Responsible Division</label>
+                      <div id="track-meta-department" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Assigned Officer</label>
+                      <div id="track-meta-owner" style="font-size: 0.95rem; font-weight: 600; color: var(--accent);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Date Filed</label>
+                      <div id="track-meta-date" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                  </div>
+
+                  <div id="track-meta-student-info-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Student Filer</label>
+                      <div id="track-meta-student-name" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Index / Reference</label>
+                      <div id="track-meta-student-index" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Programme / Course</label>
+                      <div id="track-meta-student-prog" style="font-size: 0.95rem; font-weight: 600; color: var(--accent);">-</div>
+                    </div>
+                    <div>
+                      <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Academic Level</label>
+                      <div id="track-meta-student-level" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
+                    </div>
+                  </div>
+                  
+                  <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Full Grievance Description</label>
+                    <div class="tracking-description-box" id="track-desc-body" style="background: rgba(0,0,0,0.02); padding: 1rem; border-radius: 6px; font-size: 0.95rem; line-height: 1.5; color: var(--text-color); border: 1px solid var(--border-color);">
+                      -
+                    </div>
+                  </div>
+
+                  <div id="track-attachment-row" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Supporting Attachment</label>
+                    <a id="track-attachment-link" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary" style="display: inline-flex; padding: 0.4rem 0.9rem; font-size: 0.85rem;">
+                      <i data-lucide="paperclip"></i> <span id="track-attachment-name">-</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 
-              <!-- Administrative Instructions / Guidelines Logs (One-Way Feedback Area) -->
-              <div class="comments-section" style="margin-top: 2rem; margin-bottom: 2.5rem;">
-                <h3>Administrative Guidelines & Feedback</h3>
-                <p class="section-desc" style="margin-bottom: 1rem;">Official updates and directions issued by the assigned Administrator.</p>
-                
-                <div class="internal-note-list" id="track-instructions-log" style="display: flex; flex-direction: column; gap: 1rem; background: rgba(13,82,44,0.03); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color);">
-                  <!-- Rendered official instruction text cards populated via JS -->
-                </div>
-              </div>
-
-              <!-- Detailed Status Log Timeline -->
-              <h3>Activity History Log</h3>
-              <div class="timeline-logs" id="track-timeline-logs">
-                <!-- Rendered logs -->
-              </div>
-
-              <!-- Ticket Info Meta -->
-              <div class="glass-card" style="margin-top: 2.5rem; padding: 1.5rem;">
-                <h4 style="margin-bottom: 1rem; color: var(--primary);">Grievance Details Summary</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Category</label>
-                    <div id="track-meta-category" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Responsible Division</label>
-                    <div id="track-meta-department" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Assigned Officer</label>
-                    <div id="track-meta-owner" style="font-size: 0.95rem; font-weight: 600; color: var(--accent);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Date Filed</label>
-                    <div id="track-meta-date" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Student Filer</label>
-                    <div id="track-meta-student-name" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Index / Reference</label>
-                    <div id="track-meta-student-index" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Programme / Course</label>
-                    <div id="track-meta-student-prog" style="font-size: 0.95rem; font-weight: 600; color: var(--accent);">-</div>
-                  </div>
-                  <div>
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Academic Level</label>
-                    <div id="track-meta-student-level" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
-                  </div>
-                </div>
-                
-                <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
-                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Full Grievance Description</label>
-                  <div class="tracking-description-box" id="track-desc-body" style="background: rgba(0,0,0,0.02); padding: 1rem; border-radius: 6px; font-size: 0.95rem; line-height: 1.5; color: var(--text-color); border: 1px solid var(--border-color);">
-                    -
-                  </div>
-                </div>
-
-                <div id="track-attachment-row" style="display: none; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
-                  <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 0.25rem;">Supporting Attachment</label>
-                  <a id="track-attachment-link" href="#" target="_blank" rel="noopener" class="btn btn-outline-primary" style="display: inline-flex; padding: 0.4rem 0.9rem; font-size: 0.85rem;">
-                    <i data-lucide="paperclip"></i> <span id="track-attachment-name">-</span>
-                  </a>
-                </div>
+              <!-- Close active-ticket-scroll-body -->
               </div>
 
             </div>
@@ -591,11 +713,7 @@
 
   </main>
 
-  <!-- Floating Aesthetic Quick Complaint Button (Bottom Left) -->
-  <button class="btn-floating-quick" onclick="app.showView('file')" title="File a Quick Complaint">
-    <i data-lucide="plus"></i>
-    <span>Quick Complaint</span>
-  </button>
+
 
   <!-- Change Password Modal -->
   <div id="change-password-modal" class="modal-overlay" style="display: none;" onclick="app.closeChangePasswordModal()">
@@ -610,12 +728,12 @@
           <input type="password" id="change-pwd-current" placeholder="••••••••" required>
         </div>
         <div class="input-group" style="margin-bottom: 1.25rem;">
-          <label for="change-pwd-new">New Password</label>
-          <input type="password" id="change-pwd-new" placeholder="••••••••" minlength="4" required>
+          <label for="change-pwd-new">New Password (4-8 chars)</label>
+          <input type="password" id="change-pwd-new" placeholder="••••••••" minlength="4" maxlength="8" required>
         </div>
         <div class="input-group" style="margin-bottom: 1.75rem;">
           <label for="change-pwd-confirm">Confirm New Password</label>
-          <input type="password" id="change-pwd-confirm" placeholder="••••••••" minlength="4" required>
+          <input type="password" id="change-pwd-confirm" placeholder="••••••••" minlength="4" maxlength="8" required>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 1rem;">
           <button type="button" class="btn btn-secondary" onclick="app.closeChangePasswordModal()">Cancel</button>
@@ -625,14 +743,935 @@
     </div>
   </div>
 
-  <!-- Global Toast Notifications Wrapper -->
+
+
+  <!-- Student Profile Modal -->
+  <div id="student-profile-modal" class="modal-overlay" style="display: none;" onclick="app.closeProfileModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i data-lucide="user" style="stroke: var(--accent);"></i> My Profile</h3>
+        <button class="btn-close-modal" onclick="app.closeProfileModal()"><i data-lucide="x"></i></button>
+      </div>
+      <form id="student-profile-form" onsubmit="app.handleProfileUpdateSubmit(event)">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="input-group">
+            <label>Reference Number</label>
+            <input type="text" id="profile-index" readonly style="background: var(--bg-body); cursor: not-allowed; opacity: 0.85;">
+          </div>
+          <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" id="profile-name" readonly style="background: var(--bg-body); cursor: not-allowed; opacity: 0.85;">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="input-group">
+            <label>Course Programme</label>
+            <input type="text" id="profile-programme" readonly style="background: var(--bg-body); cursor: not-allowed; opacity: 0.85;">
+          </div>
+          <div class="input-group">
+            <label>Level</label>
+            <input type="text" id="profile-level" readonly style="background: var(--bg-body); cursor: not-allowed; opacity: 0.85;">
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="profile-phone">Telephone Number (Editable)</label>
+          <input type="text" id="profile-phone" placeholder="e.g., 0535620797" required>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.75rem;">
+          <label for="profile-email">Email Address</label>
+          <input type="email" id="profile-email" readonly style="background: var(--bg-body); cursor: not-allowed; opacity: 0.85;">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeProfileModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Harassment Priority Warning Modal -->
+  <div id="harassment-priority-modal" class="modal-overlay" style="display: none;" onclick="app.closeHarassmentModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()" style="max-width: 480px; padding: 2rem; border-top: 4px solid var(--urgency-high);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <i data-lucide="shield-alert" style="width: 48px; height: 48px; stroke: var(--urgency-high); margin-bottom: 0.75rem;"></i>
+        <h3 style="color: var(--urgency-high);">Priority Harassment Notice</h3>
+        <p style="margin-top: 0.5rem; font-size: 0.95rem; line-height: 1.5; color: var(--text-color);">
+          Harassment and safety issues are routed immediately to the Title IX Coordinator as high-priority cases. Please proceed to select how you wish to submit this complaint.
+        </p>
+      </div>
+      <div style="display: flex; gap: 1rem; width: 100%;">
+        <button class="btn btn-secondary" onclick="app.closeHarassmentModal()" style="flex: 1; justify-content: center; padding: 0.85rem;">Close</button>
+        <button class="btn btn-primary" onclick="app.proceedToChoiceFromHarassment()" style="flex: 1; justify-content: center; padding: 0.85rem; background: var(--urgency-high); color: #fff; border: none;">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Entry Choice Screen Modal -->
+  <div id="submit-method-choice-modal" class="modal-overlay" style="display: none;" onclick="app.closeChoiceModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()" style="max-width: 500px; padding: 2.5rem; border-top: 4px solid var(--accent);">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <i data-lucide="help-circle" style="width: 44px; height: 44px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+        <h3 style="font-size: 1.5rem; border-bottom: none; padding-bottom: 0;">How would you like to submit?</h3>
+        <p id="catEntryLede" style="margin-top: 0.75rem; font-size: 0.95rem; line-height: 1.5; color: var(--text-color);">
+          Both options are reviewed the same way — the difference is whether the office can follow up with you directly.
+        </p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+        <button class="btn btn-primary" onclick="app.choiceContinueWithId()" style="width: 100%; justify-content: center; padding: 0.95rem; font-weight: 700; background: var(--accent); color: #000; border: none; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="id-badge"></i> Continue with student ID
+        </button>
+        <button class="btn btn-secondary" onclick="app.choiceContinueAnonymously()" style="width: 100%; justify-content: center; padding: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="user-minus"></i> Continue anonymously
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Sign In Modal Overlay -->
+  <!-- Student Auth Modal (Login + Signup) -->
+  <div id="student-signin-modal" class="modal-overlay" style="display: none;" onclick="app.closeSignInModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()" style="max-width: 480px; padding: 2.5rem; border-top: 4px solid var(--accent); position: relative; box-sizing: border-box;">
+      
+      <!-- Modal Header (Dynamic depending on tab) -->
+      <div id="student-auth-header" style="text-align: center; margin-bottom: 1.5rem;">
+        <i data-lucide="user" id="student-auth-icon" style="width: 40px; height: 40px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+        <h3 id="student-auth-title" style="margin-bottom: 0.5rem; font-size: 1.6rem; border-bottom: none; padding-bottom: 0;">Student Sign In</h3>
+        <p class="section-desc" id="student-auth-desc" style="font-size: 0.9rem; margin: 0; line-height: 1.4; color: var(--text-muted);">Sign in with your student credentials to view and manage all your complaints.</p>
+      </div>
+
+      <!-- Auth Tab Toggle -->
+      <div style="display: flex; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; gap: 1rem;">
+        <button id="auth-tab-login" onclick="app.setStudentAuthMode('login')" style="background: none; border: none; padding: 0.5rem 1rem; font-weight: 700; color: var(--accent); border-bottom: 3px solid var(--accent); cursor: pointer; font-size: 0.95rem; font-family: inherit;">Sign In</button>
+        <button id="auth-tab-signup" onclick="app.setStudentAuthMode('signup')" style="background: none; border: none; padding: 0.5rem 1rem; font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.95rem; font-family: inherit;">Sign Up</button>
+      </div>
+
+      <!-- Form 1: Student Login Form -->
+      <form id="student-login-form" onsubmit="app.handleStudentLoginSubmit(event)" style="display: block;">
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="signin-student-id" style="font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Student Index or Email</label>
+          <input type="text" id="signin-student-id" placeholder="e.g. 9012870422 or name@umat.edu.gh" required>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.75rem;">
+          <label for="signin-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Password</label>
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="signin-password" placeholder="••••••••" required style="padding-right: 2.5rem; width: 100%; box-sizing: border-box;" maxlength="8">
+            <button type="button" onclick="app.togglePasswordVisibility('signin-password', this)" style="position: absolute; right: 0.75rem; background: none; border: none; padding: 0; margin: 0; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; outline: none;">
+              <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeSignInModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Log In</button>
+        </div>
+      </form>
+
+      <!-- Form 2: Student Signup Form -->
+      <form id="student-signup-form" onsubmit="app.handleStudentSignupSubmit(event)" style="display: none;">
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="signup-email" style="font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Student Email (@st.umat.edu.gh)</label>
+          <input type="email" id="signup-email" placeholder="e.g. bpkofi@st.umat.edu.gh" required>
+        </div>
+        <div class="input-group" style="margin-bottom: 1.5rem;">
+          <label for="signup-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Create Password (4-8 chars)</label>
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="signup-password" placeholder="••••••••" required style="padding-right: 2.5rem; width: 100%; box-sizing: border-box;" maxlength="8">
+            <button type="button" onclick="app.togglePasswordVisibility('signup-password', this)" style="position: absolute; right: 0.75rem; background: none; border: none; padding: 0; margin: 0; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; outline: none;">
+              <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeSignInModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Sign Up</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- First-Time Login Profile Completion Section (Full viewport onboarding screen) -->
+  <div id="profile-completion-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; overflow: hidden; font-family: 'Outfit', sans-serif; background: #ffffff; flex-direction: column;">
+    
+    <!-- Same Navigation Bar as the Home Page -->
+    <header style="position: relative; top: 0; left: 0; width: 100%; z-index: 100; background-color: #0b311d; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); box-sizing: border-box; flex-shrink: 0; height: 70px;">
+      <!-- Brand -->
+      <div class="brand" style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="brand-emblem" style="width: 42px; height: 42px; background: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; box-sizing: border-box;">
+          <img src="logo.jpg" alt="UMaT Logo" style="width: 100%; height: 100%; object-fit: contain;">
+        </div>
+        <div class="brand-text" style="display: flex; flex-direction: column; text-align: left;">
+          <h1 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.2; border: none; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Campus Complaint System</h1>
+          <p style="font-size: 0.72rem; color: #fecb00; margin: 0; line-height: 1.2; font-weight: 600;">University of Mines and Technology, Tarkwa</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Locked on Profile Setup) -->
+      <nav id="onboarding-nav" style="display: flex; gap: 1rem;">
+        <button class="nav-tab active" style="background: var(--accent); color: #ffffff; border: none; padding: 0.5rem 1.25rem; border-radius: 30px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-family: inherit; cursor: not-allowed;" disabled>
+          <i data-lucide="user-cog" style="width: 16px; height: 16px; stroke: #ffffff;"></i> Account Setup
+        </button>
+      </nav>
+
+      <!-- Right Side: Profile dropdown badge -->
+      <div class="dashboard-profile-widget active-onboarding" id="onboarding-profile-badge" onclick="app.toggleOnboardingDropdown(event)" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.45rem 1rem; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15); transition: all 0.2s ease; position: relative;">
+        <div class="profile-avatar" style="width: 28px; height: 28px; background: #0b311d; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #fecb00;">
+          <i data-lucide="user" style="width: 12px; height: 12px; stroke: #fecb00;"></i>
+        </div>
+        <div class="profile-info" style="display: flex; flex-direction: column; text-align: left;">
+          <span class="profile-name" id="onboarding-logged-name" style="font-size: 0.82rem; font-weight: 700; color: #ffffff; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">Student</span>
+          <span class="profile-role" style="font-size: 0.68rem; color: #fecb00; font-weight: 600; line-height: 1.1;">Student Session</span>
+        </div>
+        <i data-lucide="chevron-down" style="width: 12px; height: 12px; color: rgba(255, 255, 255, 0.5);"></i>
+        
+        <!-- Dropdown Menu -->
+        <div id="onboarding-profile-dropdown" class="profile-dropdown-menu" style="display: none; position: absolute; top: 110%; right: 0; background: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); z-index: 100; min-width: 170px; overflow: hidden;" onclick="event.stopPropagation()">
+          <div class="dropdown-header" style="padding: 0.75rem 1rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.2);">Session Actions</div>
+          <button type="button" class="dropdown-item-btn" onclick="app.handleLogout(); event.preventDefault();" style="width: 100%; padding: 0.85rem 1.25rem; background: transparent; border: none; color: #fc8181; text-align: left; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.65rem; transition: background 0.2s ease; font-family: inherit; font-weight: 600;">
+            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+            <span>Log Out</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="onboarding-split-container">
+      
+      <!-- Scoped CSS for the Split Screen Onboarding View -->
+      <style>
+        .onboarding-split-container {
+          display: flex;
+          width: 100%;
+          height: calc(100vh - 70px);
+          overflow: hidden;
+        }
+        
+        /* Left Sidebar - White Theme with Green Accents */
+        .onboarding-left-panel {
+          width: 32%;
+          background: #ffffff;
+          padding: 4rem 3rem;
+          color: #0b311d;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          border-right: 1px solid rgba(11, 49, 29, 0.1);
+          position: relative;
+          box-sizing: border-box;
+        }
+        
+        .onboarding-left-panel::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: radial-gradient(circle at 80% 20%, rgba(11, 49, 29, 0.02) 0%, transparent 50%);
+          pointer-events: none;
+        }
+        
+        /* Right Workspace - Branded Light Gray */
+        .onboarding-right-panel {
+          width: 68%;
+          background: #f8fafc;
+          padding: 4rem 5rem;
+          overflow-y: auto;
+          box-sizing: border-box;
+          color: #2d3748;
+          position: relative;
+        }
+        
+        .onboarding-right-panel::before {
+          content: '';
+          position: absolute;
+          top: -10%; right: -10%;
+          width: 400px; height: 400px;
+          background: radial-gradient(circle, rgba(11, 49, 29, 0.05) 0%, transparent 70%);
+          pointer-events: none;
+          filter: blur(50px);
+        }
+        
+        /* Stepper elements in Light Onboarding Sidebar */
+        .onboarding-step-tracker {
+          margin-top: 3rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.75rem;
+        }
+        
+        .onboarding-step-item {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          font-size: 0.95rem;
+          color: rgba(11, 49, 29, 0.5);
+          transition: all 0.3s ease;
+        }
+        
+        .onboarding-step-item.active {
+          color: #0b311d;
+          font-weight: 700;
+        }
+        
+        .onboarding-step-circle {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          font-weight: 800;
+          box-sizing: border-box;
+          z-index: 2;
+        }
+        
+        .onboarding-step-item.completed .onboarding-step-circle {
+          background: #0b311d;
+          border: 2px solid #0b311d;
+          color: #fecb00;
+        }
+        
+        .onboarding-step-item.active .onboarding-step-circle {
+          border: 2px solid #0b311d;
+          background: transparent;
+          color: #0b311d;
+        }
+        
+        .onboarding-step-item.pending .onboarding-step-circle {
+          border: 2px solid rgba(11, 49, 29, 0.25);
+          background: transparent;
+        }
+        
+        /* Inputs styling */
+        .onboarding-section-title {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1.5px;
+          color: #0b311d;
+          margin-top: 2rem;
+          margin-bottom: 0.75rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid rgba(11, 49, 29, 0.08);
+          font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        
+        .onboarding-input-group {
+          margin-bottom: 1.5rem;
+        }
+        
+        .onboarding-input-group label {
+          display: block;
+          font-weight: 600;
+          font-size: 0.9rem;
+          color: #0b311d;
+          margin-bottom: 0.5rem;
+        }
+        
+        .onboarding-input-wrapper {
+          position: relative;
+          width: 100%;
+        }
+        
+        .onboarding-input-wrapper i,
+        .onboarding-input-wrapper svg {
+          position: absolute;
+          left: 1.1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #0b311d;
+          width: 16px;
+          height: 16px;
+          pointer-events: none;
+          transition: color 0.2s ease;
+          z-index: 5;
+        }
+        
+        .onboarding-input-wrapper i.right-icon,
+        .onboarding-input-wrapper svg.right-icon {
+          left: auto;
+          right: 1.1rem;
+        }
+        
+        .onboarding-input-wrapper input,
+        .onboarding-input-wrapper select {
+          border: 1.5px solid rgba(11, 49, 29, 0.12);
+          border-radius: 12px;
+          padding: 0.95rem 1rem 0.95rem 2.85rem;
+          font-size: 0.98rem;
+          width: 100%;
+          box-sizing: border-box;
+          font-family: inherit;
+          background: #ffffff;
+          color: #1a202c;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          outline: none;
+          z-index: 1;
+        }
+        
+        .onboarding-input-wrapper select {
+          -webkit-appearance: none;
+          appearance: none;
+          padding-right: 2.75rem;
+          background-image: none;
+        }
+        
+        .onboarding-input-wrapper input:focus,
+        .onboarding-input-wrapper select:focus {
+          border-color: #0b311d;
+          box-shadow: 0 0 0 3px rgba(11, 49, 29, 0.08);
+          background: #ffffff;
+        }
+        
+        .onboarding-input-wrapper input:focus + i,
+        .onboarding-input-wrapper select:focus + i {
+          color: #fecb00;
+        }
+        
+        /* Auto-complete custom popup */
+        .onboarding-autocomplete-container {
+          display: none;
+          border-radius: 12px;
+          box-shadow: 0 15px 30px rgba(11, 49, 29, 0.12);
+          border: 1px solid rgba(11, 49, 29, 0.12);
+          max-height: 200px;
+          overflow-y: auto;
+          position: absolute;
+          width: 100%;
+          z-index: 10;
+          background: #ffffff;
+          margin-top: 4px;
+          top: 100%;
+          left: 0;
+        }
+        
+        .onboarding-autocomplete-container .autocomplete-item {
+          padding: 0.85rem 1.25rem;
+          cursor: pointer;
+          font-size: 0.9rem;
+          color: #2d3748;
+          transition: all 0.2s ease;
+          border-bottom: 1px solid rgba(11, 49, 29, 0.05);
+        }
+        
+        .onboarding-autocomplete-container .autocomplete-item:hover {
+          background: rgba(11, 49, 29, 0.05);
+          color: #0b311d;
+          font-weight: 600;
+          padding-left: 1.5rem;
+        }
+        
+        /* Button style */
+        .onboarding-btn-submit {
+          width: 100%;
+          justify-content: center;
+          padding: 1.1rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, #0b311d, #165633);
+          color: #ffffff !important;
+          border: 1px solid #fecb00;
+          font-size: 1.05rem;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          font-family: inherit;
+          margin-top: 2.5rem;
+          box-shadow: 0 8px 20px rgba(11, 49, 29, 0.15);
+        }
+        
+        .onboarding-btn-submit:hover {
+          transform: translateY(-2px);
+          background: linear-gradient(135deg, #104329, #1b683e);
+          border-color: #ffffff;
+          box-shadow: 0 12px 24px rgba(11, 49, 29, 0.25);
+        }
+        
+        .onboarding-btn-submit:active {
+          transform: translateY(0);
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 900px) {
+          .onboarding-split-container {
+            flex-direction: column;
+            overflow-y: auto;
+            height: calc(100vh - 70px);
+          }
+          .onboarding-left-panel {
+            width: 100%;
+            height: auto;
+            padding: 3rem 2rem;
+          }
+          .onboarding-right-panel {
+            width: 100%;
+            height: auto;
+            padding: 3rem 2rem;
+            overflow-y: visible;
+          }
+          .onboarding-step-tracker {
+            margin-top: 1.5rem;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 1rem;
+          }
+        }
+      </style>
+      
+      <!-- Left Panel: Brand info & steps tracker -->
+      <div class="onboarding-left-panel" style="padding-top: 3.5rem;">
+        <div>
+          <h2 style="font-size: 2.5rem; font-weight: 800; line-height: 1.15; margin: 0 0 1rem 0; letter-spacing: -1px; font-family: 'Plus Jakarta Sans', sans-serif; color: #0b311d;">Almost there.</h2>
+          <p style="font-size: 1.05rem; line-height: 1.45; color: #4a5568; margin: 0; font-weight: 400;">A complete profile means your complaints reach the right department, faster.</p>
+        </div>
+        
+        <!-- Steps stepper -->
+        <div class="onboarding-step-tracker">
+          <div class="onboarding-step-item completed">
+            <span class="onboarding-step-circle"><i data-lucide="check" style="width: 12px; height: 12px; stroke-width: 3px;"></i></span>
+            <span>Account created</span>
+          </div>
+          <div class="onboarding-step-item active">
+            <span class="onboarding-step-circle"></span>
+            <span>Profile details</span>
+          </div>
+          <div class="onboarding-step-item pending">
+            <span class="onboarding-step-circle"></span>
+            <span>Ready to submit complaints</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel: Onboarding fields -->
+      <div class="onboarding-right-panel">
+        <div style="max-width: 650px; width: 100%;">
+          
+          <span style="font-size: 0.78rem; font-weight: 800; color: #0b311d; letter-spacing: 1px; text-transform: uppercase;">Step 2 of 3</span>
+          <h3 style="font-size: 2.2rem; font-weight: 800; color: #0b311d; border-bottom: none; padding-bottom: 0; margin: 0.5rem 0 0.75rem 0; letter-spacing: -0.5px; font-family: 'Plus Jakarta Sans', sans-serif;">Complete your student profile</h3>
+          <p style="font-size: 1.05rem; color: #718096; margin: 0 0 2rem 0; line-height: 1.5;">This helps us route complaints to the right office and verify who submitted them.</p>
+          
+          <form id="profile-completion-form" onsubmit="app.handleProfileCompletionSubmit(event)" onclick="app.closeAllAutocompletes()">
+            
+            <div class="onboarding-section-title">Personal Details</div>
+            
+            <!-- Name Fields (First, Middle, Last Name) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+              <div>
+                <label for="onboarding-profile-firstname">First name <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-firstname" placeholder="e.g. Benin" required>
+                  <i data-lucide="user"></i>
+                </div>
+              </div>
+              <div>
+                <label for="onboarding-profile-middlename">Middle name (Optional)</label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-middlename" placeholder="e.g. Paa">
+                  <i data-lucide="user"></i>
+                </div>
+              </div>
+              <div>
+                <label for="onboarding-profile-lastname">Last name <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-lastname" placeholder="e.g. Kofi" required>
+                  <i data-lucide="user"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Phone Number and Reference Number -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+              <div>
+                <label for="onboarding-profile-phone">Phone number <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-phone" placeholder="e.g. 0540000000" required>
+                  <i data-lucide="phone"></i>
+                </div>
+              </div>
+              <div>
+                <label for="onboarding-profile-ref-num">Reference number <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-ref-num" placeholder="e.g. 9012870422" required>
+                  <i data-lucide="hash"></i>
+                </div>
+              </div>
+            </div>
+            
+            <div class="onboarding-section-title" style="margin-top: 2.5rem;">Academic Details</div>
+            
+            <!-- Level Selector -->
+            <div class="onboarding-input-group">
+              <label for="onboarding-profile-level">Level <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+              <div class="onboarding-input-wrapper">
+                <select id="onboarding-profile-level" required>
+                  <option value="" disabled selected></option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                  <option value="300">300</option>
+                  <option value="400">400</option>
+                  <option value="Post-graduate">Post-graduate</option>
+                </select>
+                <i data-lucide="graduation-cap"></i>
+                <i data-lucide="chevron-down" class="right-icon"></i>
+              </div>
+            </div>
+            
+            <!-- Searchable Course / Programme Selector -->
+            <div class="onboarding-input-group" style="position: relative;">
+              <label for="onboarding-profile-prog-search">Course / programme <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+              <div class="onboarding-input-wrapper">
+                <input type="text" id="onboarding-profile-prog-search" placeholder="Type to search — e.g. Computer Science" oninput="app.handleProfileProgSearch(this)" autocomplete="off" required>
+                <i data-lucide="notebook"></i>
+                <div id="onboarding-profile-prog-autocomplete-list" class="onboarding-autocomplete-container"></div>
+              </div>
+            </div>
+            
+            <!-- Searchable Faculty and Department (Two-column grid) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+              <div style="position: relative;">
+                <label for="onboarding-profile-faculty-search">Faculty <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-faculty-search" placeholder="e.g. Faculty of Computing" oninput="app.handleProfileFacultySearch(this)" autocomplete="off" required>
+                  <i data-lucide="graduation-cap"></i>
+                  <div id="onboarding-profile-faculty-autocomplete-list" class="onboarding-autocomplete-container"></div>
+                </div>
+              </div>
+              <div style="position: relative;">
+                <label for="onboarding-profile-dept-search">Department <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
+                <div class="onboarding-input-wrapper">
+                  <input type="text" id="onboarding-profile-dept-search" placeholder="e.g. Dept. of Computer Science" oninput="app.handleProfileDeptSearch(this)" autocomplete="off" required>
+                  <i data-lucide="git-branch"></i>
+                  <div id="onboarding-profile-dept-autocomplete-list" class="onboarding-autocomplete-container"></div>
+                </div>
+              </div>
+            </div>
+            
+            <button type="submit" class="onboarding-btn-submit">
+              <span>Save and continue</span> <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+            </button>
+          </form>
+          
+        </div>
+      </div>
+      
+    </div>
+  </div>
+          
+
+  <!-- Hidden Print-Only Official Complaint Record Template -->
+  <div id="ticket-print-template" class="print-only-container">
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-logo-emblem">
+          <img src="logo.jpg" alt="UMaT Logo">
+        </div>
+        <div class="print-brand-info">
+          <div class="print-title">Campus Complaint System</div>
+          <div class="print-subtitle">Office of Student Affairs — Official Complaint Record</div>
+        </div>
+      </div>
+      <div class="print-header-right">
+        <div class="print-doc-name">Student Complaint Form</div>
+        <div class="print-ticket-id" id="print-ticket-id">Ticket CMP-1042</div>
+      </div>
+    </div>
+    
+    <div class="print-meta-grid">
+      <div class="print-meta-item">
+        <div class="print-meta-label">DATE FILED</div>
+        <div class="print-meta-val" id="print-date-filed">6 July 2026</div>
+      </div>
+      <div class="print-meta-item">
+        <div class="print-meta-label">DEPARTMENT</div>
+        <div class="print-meta-val" id="print-department">Facilities</div>
+      </div>
+      <div class="print-meta-item">
+        <div class="print-meta-label">PRIORITY</div>
+        <div class="print-meta-val" id="print-priority">Medium</div>
+      </div>
+      <div class="print-meta-item" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+        <div class="print-meta-label" style="text-align: right; margin-bottom: 2px;">STATUS</div>
+        <div class="print-status-badge" id="print-status">Open</div>
+      </div>
+    </div>
+
+    <h3 class="print-sec-header">STUDENT INFORMATION</h3>
+    <table class="print-table">
+      <tr>
+        <td class="print-lbl">Full name</td>
+        <td class="print-val" id="print-student-name">Benin Paa Kofi</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Reference number</td>
+        <td class="print-val" id="print-ref-number">9012870422</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Phone number</td>
+        <td class="print-val" id="print-phone-number">054 000 0000</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Level</td>
+        <td class="print-val" id="print-level">300</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Faculty</td>
+        <td class="print-val" id="print-faculty">Faculty of Computing</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Department</td>
+        <td class="print-val" id="print-dept">Computer Science</td>
+      </tr>
+    </table>
+
+    <h3 class="print-sec-header">COMPLAINT DETAILS</h3>
+    <h4 class="print-subject" id="print-subject">Leaking pipe in Block C bathroom</h4>
+    <div class="print-desc-box" id="print-description">
+      There has been a leaking pipe under the second-floor bathroom sink...
+    </div>
+    <div class="print-tags" id="print-tags">
+      <!-- Tag spans injected dynamically -->
+    </div>
+
+    <h3 class="print-sec-header">PROCESSING LOG</h3>
+    <table class="print-log-table">
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>ACTION</th>
+          <th>BY</th>
+        </tr>
+      </thead>
+      <tbody id="print-log-rows">
+        <!-- Log rows injected dynamically -->
+      </tbody>
+    </table>
+
+    <div class="print-signature-area">
+      <div class="print-sig-labels">
+        <span>Student signature & date</span>
+        <span>Received by (staff signature & date)</span>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>Generated by Campus Complaint System — for internal record-keeping purposes</span>
+      <span style="float: right;">Page 1</span>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
 
   <!-- Load Seed Data Module (form dropdown reference data) -->
-  <script src="seedData.js?v=1.2"></script>
+  <script src="seedData.js?v=1.3"></script>
   <!-- Backend API client -->
-  <script src="api.js?v=1.0"></script>
+ <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=2.0"></script>
+  <script src="app.js?v=4.28"></script>
+  <!-- Scroll Chaining Controller & Portal Footer Visibility Manager -->
+  <script>
+    (function() {
+      // 1. Dynamic Scroll Chaining Logic
+      // 1. Collapsible Greeting Header Controller
+      function setupCollapsibleHeader() {
+        const header = document.getElementById('student-dashboard-header');
+        const ledgerList = document.getElementById('student-history-list');
+        const detailsBody = document.getElementById('active-ticket-scroll-body');
+        const workspace = document.getElementById('student-track-workspace');
+        if (!header) return;
+
+        function collapseHeader() {
+          if (!header.classList.contains('collapsed')) {
+            header.classList.add('collapsed');
+            header.style.marginTop = '-' + (header.offsetHeight + 24) + 'px';
+          }
+        }
+
+        // Expand header only if all lists are at top
+        function expandHeader() {
+          const ledgerScroll = ledgerList ? ledgerList.scrollTop : 0;
+          const detailsScroll = detailsBody ? detailsBody.scrollTop : 0;
+          if (ledgerScroll === 0 && detailsScroll === 0) {
+            header.classList.remove('collapsed');
+            header.style.marginTop = '0px';
+          }
+        }
+
+        function handleScroll() {
+          if (this.scrollTop > 10) {
+            collapseHeader();
+          } else if (this.scrollTop === 0) {
+            expandHeader();
+          }
+        }
+
+        // Attach scroll event listeners to inner scrollable containers
+        if (ledgerList) {
+          ledgerList.removeEventListener('scroll', handleScroll);
+          ledgerList.addEventListener('scroll', handleScroll);
+          // Initial check
+          if (ledgerList.scrollTop > 10) {
+            collapseHeader();
+          }
+        }
+
+        if (detailsBody) {
+          detailsBody.removeEventListener('scroll', handleScroll);
+          detailsBody.addEventListener('scroll', handleScroll);
+          // Initial check
+          if (detailsBody.scrollTop > 10) {
+            collapseHeader();
+          }
+        }
+
+        // Bind scroll wheel listeners on the workspace wrapper to catch scrolls anywhere
+        if (workspace) {
+          workspace.removeEventListener('wheel', workspace._wheelHandler);
+          workspace._wheelHandler = function(e) {
+            if (e.deltaY > 0) {
+              collapseHeader();
+            } else if (e.deltaY < 0) {
+              expandHeader();
+            }
+          };
+          workspace.addEventListener('wheel', workspace._wheelHandler, { passive: true });
+
+          // Touch drag gestures anywhere on the workspace
+          let touchStartY = 0;
+          workspace.removeEventListener('touchstart', workspace._touchStartHandler);
+          workspace._touchStartHandler = function(e) {
+            touchStartY = e.touches[0].clientY;
+          };
+          workspace.addEventListener('touchstart', workspace._touchStartHandler, { passive: true });
+
+          workspace.removeEventListener('touchmove', workspace._touchMoveHandler);
+          workspace._touchMoveHandler = function(e) {
+            const touchEndY = e.touches[0].clientY;
+            const deltaY = touchEndY - touchStartY;
+            if (deltaY < -10) {
+              collapseHeader();
+            } else if (deltaY > 10) {
+              expandHeader();
+            }
+          };
+          workspace.addEventListener('touchmove', workspace._touchMoveHandler, { passive: true });
+        }
+      }
+
+      // 2. Hide/Show Portal Landing Footer based on student login status & Reset Greeting
+      function togglePortalFooter() {
+        const footerEl = document.getElementById('portal-footer');
+        if (footerEl) {
+          const isStudentLoggedIn = window.app && window.app.state && window.app.state.loggedStudent;
+          footerEl.style.display = isStudentLoggedIn ? 'none' : 'block';
+        }
+        
+        // Reset greeting header on view toggle
+        const header = document.getElementById('student-dashboard-header');
+        if (header) {
+          header.classList.remove('collapsed');
+          header.style.marginTop = '0px';
+        }
+
+        // Sync html class tag for full viewport scrolling isolation
+        const currentView = window.location.hash || '#landing';
+        if (currentView.startsWith('#track')) {
+          document.documentElement.classList.add('view-track-active');
+        } else {
+          document.documentElement.classList.remove('view-track-active');
+        }
+      }
+
+      // 3. Mutation Observer to sync active ticket state class on workspace wrapper
+      function watchWorkspaceState() {
+        const workspace = document.getElementById('student-track-workspace');
+        const detailsContent = document.getElementById('student-workspace-content');
+        if (!workspace || !detailsContent) return;
+
+        if (workspace._stateObserver) {
+          workspace._stateObserver.disconnect();
+        }
+
+        workspace._stateObserver = new MutationObserver(() => {
+          const hasActiveTicket = detailsContent.style.display !== 'none';
+          if (hasActiveTicket) {
+            workspace.classList.add('has-active-ticket');
+          } else {
+            workspace.classList.remove('has-active-ticket');
+          }
+        });
+
+        workspace._stateObserver.observe(detailsContent, { attributes: true, attributeFilter: ['style'] });
+        
+        // Initial sync
+        const hasActiveTicket = detailsContent.style.display !== 'none';
+        if (hasActiveTicket) {
+          workspace.classList.add('has-active-ticket');
+        } else {
+          workspace.classList.remove('has-active-ticket');
+        }
+      }
+
+      // Initialize handlers on hash changes (views change) and initial load
+      window.addEventListener('hashchange', () => {
+        setTimeout(() => {
+          setupCollapsibleHeader();
+          watchWorkspaceState();
+        }, 200);
+        togglePortalFooter();
+      });
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          setupCollapsibleHeader();
+          watchWorkspaceState();
+        }, 200);
+        togglePortalFooter();
+      });
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('.complaint-list-item') || e.target.closest('.active-dept-display') || e.target.closest('[onclick*="showView"]')) {
+          setTimeout(() => {
+            setupCollapsibleHeader();
+            watchWorkspaceState();
+          }, 100);
+          togglePortalFooter();
+        }
+      });
+      
+      // Monkey patch app.showView to automatically handle view toggles
+      const origShowView = window.app ? window.app.showView : null;
+      function syncHtmlViewClass(viewName) {
+        if (viewName === 'track') {
+          document.documentElement.classList.add('view-track-active');
+        } else {
+          document.documentElement.classList.remove('view-track-active');
+        }
+      }
+
+      if (window.app) {
+        window.app.showView = function(viewName) {
+          if (origShowView) origShowView.apply(this, arguments);
+          togglePortalFooter();
+          syncHtmlViewClass(viewName);
+        };
+      } else {
+        window.addEventListener('DOMContentLoaded', () => {
+          if (window.app) {
+            const origShow = window.app.showView;
+            window.app.showView = function(viewName) {
+              origShow.apply(this, arguments);
+              togglePortalFooter();
+              syncHtmlViewClass(viewName);
+            };
+          }
+        });
+      }
+    })();
+  </script>
+  <!-- Floating Quick Complaint Action Button -->
+  <button class="btn-floating-quick" onclick="app.handleQuickComplaintClick()">
+    <i data-lucide="plus"></i>
+    <span>File Complaint</span>
+  </button>
+
 </body>
 </html>

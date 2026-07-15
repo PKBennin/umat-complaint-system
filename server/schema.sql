@@ -37,8 +37,10 @@ CREATE TABLE faculties (
 
 -- 2. Departments
 CREATE TABLE departments (
-  id   INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(150) NOT NULL UNIQUE
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  name        VARCHAR(150) NOT NULL UNIQUE,
+  faculty_key VARCHAR(10) NOT NULL,
+  FOREIGN KEY (faculty_key) REFERENCES faculties(faculty_key) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Programmes
@@ -62,7 +64,7 @@ CREATE TABLE categories (
 CREATE TABLE staff (
   staff_id      VARCHAR(20) PRIMARY KEY,
   name          VARCHAR(100) NOT NULL,
-  email         VARCHAR(100) NOT NULL UNIQUE,
+  email         VARCHAR(100) NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   type          ENUM('Dean','Finance','IT','HOD','SuperAdmin') NOT NULL,
   faculty_key   VARCHAR(10) NULL,
@@ -71,7 +73,7 @@ CREATE TABLE staff (
   -- (e.g. "Dean's Office (FCMS)", "finance_dept", "ict_dept"), not always a
   -- real department row, so it is stored verbatim here for routing/scoping.
   department_label VARCHAR(150) NULL,
-  portfolio     VARCHAR(150) NOT NULL,
+  portfolio     VARCHAR(150) NULL,
   FOREIGN KEY (faculty_key)   REFERENCES faculties(faculty_key) ON UPDATE CASCADE,
   FOREIGN KEY (department_id) REFERENCES departments(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -79,12 +81,14 @@ CREATE TABLE staff (
 -- 5. Students
 CREATE TABLE students (
   index_number  VARCHAR(15) PRIMARY KEY,
-  name          VARCHAR(100) NOT NULL,
+  name          VARCHAR(100) NULL,
   email         VARCHAR(100) NOT NULL UNIQUE,
-  phone         VARCHAR(20)  NOT NULL,
+  phone         VARCHAR(20)  NULL,
   password_hash VARCHAR(255) NOT NULL,
-  level         VARCHAR(10)  NOT NULL,
+  level         VARCHAR(10)  NULL,
   programme_id  INT NULL,
+  reference_number VARCHAR(50) NULL,
+  is_profile_complete TINYINT(1) DEFAULT 0,
   FOREIGN KEY (programme_id) REFERENCES programmes(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

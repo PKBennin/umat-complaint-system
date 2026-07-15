@@ -8,6 +8,7 @@ const adminApp = {
     loggedStaff: null, // { email, staffId, roleKey, name, roleName }
     currentInboxFilter: 'all', // 'all', 'pending', 'active', 'resolved'
     currentWorkspaceTab: 'overview', // 'overview', 'comments', 'notes'
+    loginMode: 'staff', // 'staff' | 'admin'
     charts: {} // ChartJS references
   },
 
@@ -16,6 +17,7 @@ const adminApp = {
     window.API.configure({ tokenKey: 'umat_staff_token' });
     this.loadTheme();
     this.populateLoginSelectors();
+    this.populateNewStaffFaculties();
     this.checkStaffSession();
     this.startAdminLoginBackgroundCycle();
 
@@ -59,6 +61,10 @@ const adminApp = {
 
   // Refresh from the API, then re-render the workstation + analytics.
   async loadAndRender() {
+    if (this.state.loggedStaff && this.state.loggedStaff.type === 'SuperAdmin') {
+      await this.loadStaffRoster();
+      return;
+    }
     await this.refreshComplaints();
     this.renderWorkstationSidebar();
     this.renderAdminWorkspace();
@@ -67,6 +73,10 @@ const adminApp = {
 
   // Refresh, then re-apply a single mutation's result to the active views.
   async refreshAndRenderActive() {
+    if (this.state.loggedStaff && this.state.loggedStaff.type === 'SuperAdmin') {
+      await this.loadStaffRoster();
+      return;
+    }
     await this.refreshComplaints();
     this.renderWorkstationSidebar();
     this.renderAdminWorkspace();
@@ -129,15 +139,28 @@ const adminApp = {
     // Populate profile widget values in the header
     const dbName = document.getElementById('db-profile-name');
     const dbRole = document.getElementById('db-profile-role');
+    const dbEmail = document.getElementById('db-profile-email');
     if (dbName) dbName.textContent = staff.name;
     if (dbRole) dbRole.textContent = staff.type;
+    if (dbEmail) dbEmail.textContent = staff.email || 'No email set';
 
-    // Toggle Workstation Tab based on HOD status (HOD is analytics-only)
+    // Toggle tabs visibility based on roles
     const tabWorkstation = document.getElementById('nav-tab-workstation');
-    if (staff.type === 'HOD') {
+    const tabAnalytics = document.getElementById('nav-tab-analytics');
+    const tabSystem = document.getElementById('nav-tab-system');
+
+    if (staff.type === 'SuperAdmin') {
       if (tabWorkstation) tabWorkstation.style.display = 'none';
+      if (tabAnalytics) tabAnalytics.style.display = 'none';
+      if (tabSystem) tabSystem.style.display = 'inline-flex';
+    } else if (staff.type === 'HOD') {
+      if (tabWorkstation) tabWorkstation.style.display = 'none';
+      if (tabAnalytics) tabAnalytics.style.display = 'inline-flex';
+      if (tabSystem) tabSystem.style.display = 'none';
     } else {
       if (tabWorkstation) tabWorkstation.style.display = 'inline-flex';
+      if (tabAnalytics) tabAnalytics.style.display = 'inline-flex';
+      if (tabSystem) tabSystem.style.display = 'none';
     }
   },
 
@@ -233,6 +256,23 @@ const adminApp = {
 
     window.API.setToken(result.token);
     const staff = result.staff; // { staffId, name, email, type, facultyKey, department, portfolio }
+
+    // Enforce login mode separation
+    if (this.state.loginMode === 'admin' && staff.type !== 'SuperAdmin') {
+      this.showToast('Access denied. This login is reserved for System Administrators only.', 'error');
+      window.API.clearToken();
+      localStorage.removeItem('current_staff_session');
+      this.state.loggedStaff = null;
+      return;
+    }
+    if (this.state.loginMode === 'staff' && staff.type === 'SuperAdmin') {
+      this.showToast('Access denied. Please use the System Admin login tab to access administrative tools.', 'error');
+      window.API.clearToken();
+      localStorage.removeItem('current_staff_session');
+      this.state.loggedStaff = null;
+      return;
+    }
+
     localStorage.setItem('current_staff_session', JSON.stringify(staff));
     this.state.loggedStaff = staff;
 
@@ -247,6 +287,16 @@ const adminApp = {
 
     this.updateStaffUI();
     this.showDashboard();
+
+    // Auto-switch to default starting tab based on role
+    if (staff.type === 'SuperAdmin') {
+      this.switchTab('system');
+    } else if (staff.type === 'HOD') {
+      this.switchTab('analytics');
+    } else {
+      this.switchTab('workstation');
+    }
+
     await this.loadAndRender();
     this.showToast(`Authenticated successfully as ${staff.name} (${staff.type}).`, "success");
   },
@@ -292,11 +342,15 @@ const adminApp = {
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('dashboard-view').style.display = 'block';
     
-    // Switch between Workstation and Analytics based on HOD status
-    if (this.state.loggedStaff && this.state.loggedStaff.type === 'HOD') {
-      this.switchTab('analytics');
-    } else {
-      this.switchTab('workstation');
+    // Switch to correct tab based on staff type
+    if (this.state.loggedStaff) {
+      if (this.state.loggedStaff.type === 'SuperAdmin') {
+        this.switchTab('system');
+      } else if (this.state.loggedStaff.type === 'HOD') {
+        this.switchTab('analytics');
+      } else {
+        this.switchTab('workstation');
+      }
     }
     if (window.lucide) lucide.createIcons();
   },
@@ -324,6 +378,9 @@ const adminApp = {
       this.renderWorkstation();
     } else if (tabName === 'analytics') {
       this.renderAnalytics();
+    } else if (tabName === 'system') {
+      this.loadStaffRoster();
+      this.switchSystemSubTab('overview');
     }
 
     if (window.lucide) lucide.createIcons();
@@ -1092,11 +1149,12 @@ const adminApp = {
     } else {
       // IT/University Scope: Compare all departments
       statsData = window.DEPARTMENTS.map(dept => {
-        const filed = filtered.filter(c => c.studentDept === dept).length;
-        const solved = filtered.filter(c => c.studentDept === dept && c.status === 'Resolved').length;
-        const open = filtered.filter(c => c.studentDept === dept && ['Submitted', 'Under Review', 'In Progress'].includes(c.status)).length;
+        const deptName = typeof dept === 'string' ? dept : dept.name;
+        const filed = filtered.filter(c => c.studentDept === deptName).length;
+        const solved = filtered.filter(c => c.studentDept === deptName && c.status === 'Resolved').length;
+        const open = filtered.filter(c => c.studentDept === deptName && ['Submitted', 'Under Review', 'In Progress'].includes(c.status)).length;
         const ratio = filed > 0 ? Math.round((solved / filed) * 100) : 0;
-        return { name: dept, filed, solved, open, ratio };
+        return { name: deptName, filed, solved, open, ratio };
       });
 
       document.getElementById('chart-rank-desc').textContent = "Complaints filed vs. resolved counts by department.";
@@ -1293,11 +1351,12 @@ const adminApp = {
     tableBody.innerHTML = '';
     
     const deptStats = window.DEPARTMENTS.map(dept => {
-      const filed = this.state.complaints.filter(c => c.studentDept === dept).length;
-      const solved = this.state.complaints.filter(c => c.studentDept === dept && c.status === 'Resolved').length;
-      const open = this.state.complaints.filter(c => c.studentDept === dept && ['Submitted', 'Under Review', 'In Progress'].includes(c.status)).length;
+      const deptName = typeof dept === 'string' ? dept : dept.name;
+      const filed = this.state.complaints.filter(c => c.studentDept === deptName).length;
+      const solved = this.state.complaints.filter(c => c.studentDept === deptName && c.status === 'Resolved').length;
+      const open = this.state.complaints.filter(c => c.studentDept === deptName && ['Submitted', 'Under Review', 'In Progress'].includes(c.status)).length;
       const ratio = filed > 0 ? Math.round((solved / filed) * 100) : 0;
-      return { name: dept, filed, solved, open, ratio };
+      return { name: deptName, filed, solved, open, ratio };
     });
     deptStats.sort((a, b) => b.filed - a.filed);
 
@@ -1505,6 +1564,58 @@ const adminApp = {
     this.showToast("Password updated successfully!", "success");
   },
 
+  openUpdateEmailModal(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    document.querySelectorAll('.profile-dropdown-menu').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.dashboard-profile-widget').forEach(w => w.classList.remove('active'));
+
+    const modal = document.getElementById('update-email-modal');
+    if (modal) {
+      const emailInput = document.getElementById('profile-email-input');
+      if (emailInput && this.state.loggedStaff) {
+        emailInput.value = this.state.loggedStaff.email || '';
+      }
+      modal.style.display = 'flex';
+    }
+  },
+
+  closeUpdateEmailModal() {
+    const modal = document.getElementById('update-email-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  },
+
+  async handleUpdateEmailSubmit(e) {
+    e.preventDefault();
+    if (!this.state.loggedStaff) return;
+
+    const emailVal = document.getElementById('profile-email-input').value.trim();
+
+    try {
+      await window.API.put('/auth/staff/profile', { email: emailVal });
+      this.state.loggedStaff.email = emailVal;
+      this.updateStaffUI();
+      
+      const session = JSON.parse(localStorage.getItem('current_staff_session') || '{}');
+      session.email = emailVal;
+      localStorage.setItem('current_staff_session', JSON.stringify(session));
+
+      this.closeUpdateEmailModal();
+      this.showToast("Email address updated successfully!", "success");
+      
+      // Refresh system roster if currently active
+      if (document.getElementById('panel-system').classList.contains('active')) {
+        this.loadStaffRoster();
+      }
+    } catch (err) {
+      this.showToast(err.message || 'Could not update your email address.', 'error');
+    }
+  },
+
   // Utilities
   formatDate(dateStr) {
     if (!dateStr) return "-";
@@ -1550,6 +1661,430 @@ const adminApp = {
       icon.setAttribute('data-lucide', 'eye');
     }
     if (window.lucide) lucide.createIcons();
+  },
+
+  setLoginMode(mode) {
+    this.state.loginMode = mode;
+    const tabStaff = document.getElementById('tab-staff-login');
+    const tabAdmin = document.getElementById('tab-admin-login');
+    const title = document.getElementById('login-title');
+    const desc = document.getElementById('login-desc');
+    const warning = document.getElementById('first-time-warning');
+    const label = document.getElementById('login-id-label');
+    const input = document.getElementById('login-staff-id');
+    const helper = document.getElementById('login-helper-text');
+    const footer = document.getElementById('login-footer-text');
+    const icon = document.getElementById('login-icon');
+
+    if (!tabStaff || !tabAdmin) return;
+
+    if (mode === 'staff') {
+      tabStaff.style.background = 'var(--accent)';
+      tabStaff.style.color = '#000';
+      tabAdmin.style.background = 'transparent';
+      tabAdmin.style.color = 'var(--text-muted)';
+
+      if (title) title.textContent = 'Official Staff Login';
+      if (desc) desc.textContent = 'Enter your official Staff ID and password to access your workstation.';
+      if (warning) warning.style.display = 'flex';
+      if (label) label.textContent = 'Staff ID';
+      if (input) { input.placeholder = 'e.g. PS101, CS102'; input.value = ''; }
+      if (helper) helper.style.display = 'inline';
+      if (footer) footer.textContent = 'Secured connection · Staff use only';
+      if (icon) icon.setAttribute('data-lucide', 'shield');
+    } else {
+      tabAdmin.style.background = 'var(--accent)';
+      tabAdmin.style.color = '#000';
+      tabStaff.style.background = 'transparent';
+      tabStaff.style.color = 'var(--text-muted)';
+
+      if (title) title.textContent = 'System Admin Login';
+      if (desc) desc.textContent = 'Enter your System Admin credentials to manage system administrative officers.';
+      if (warning) warning.style.display = 'none';
+      if (label) label.textContent = 'Admin Email / ID';
+      if (input) { input.placeholder = 'e.g. admin@umat.edu.gh'; input.value = ''; }
+      if (helper) helper.style.display = 'none';
+      if (footer) footer.textContent = 'Secured connection · Administrators only';
+      if (icon) icon.setAttribute('data-lucide', 'shield-alert');
+    }
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  populateNewStaffFaculties() {
+    const select = document.getElementById('new-staff-faculty');
+    if (!select) return;
+    select.innerHTML = '<option value="">None / Central Administration</option>';
+    Object.keys(window.FACULTIES).forEach(key => {
+      const name = window.FACULTIES[key];
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${name} (${key})`;
+      select.appendChild(opt);
+    });
+  },
+
+  handleNewStaffTypeChange(type) {
+    const deptGroup = document.getElementById('new-staff-dept-group');
+
+    if (type === 'Dean' || type === 'HOD') {
+      if (deptGroup) deptGroup.style.display = 'block';
+      const input = document.getElementById('new-staff-dept-label');
+      if (input) input.required = true;
+    } else {
+      if (deptGroup) deptGroup.style.display = 'none';
+      const input = document.getElementById('new-staff-dept-label');
+      if (input) { input.required = false; input.value = ''; }
+    }
+  },
+
+  async loadStaffRoster() {
+    try {
+      const staffList = await window.API.get('/auth/staff');
+      this.renderStaffRoster(staffList);
+    } catch (err) {
+      this.showToast(err.message || 'Failed to load staff roster.', 'error');
+    }
+  },
+
+  renderStaffRoster(staffList) {
+    // Update KPI counters
+    const totalStaff = staffList ? staffList.length : 0;
+    const deansCount = staffList ? staffList.filter(s => s.type === 'Dean').length : 0;
+    const financeCount = staffList ? staffList.filter(s => s.type === 'Finance').length : 0;
+    const itCount = staffList ? staffList.filter(s => s.type === 'IT' || s.type === 'SuperAdmin').length : 0;
+
+    const elTotal = document.getElementById('sys-kpi-total-staff');
+    const elDeans = document.getElementById('sys-kpi-deans');
+    const elFinance = document.getElementById('sys-kpi-finance');
+    const elIt = document.getElementById('sys-kpi-it');
+
+    if (elTotal) elTotal.textContent = totalStaff;
+    if (elDeans) elDeans.textContent = deansCount;
+    if (elFinance) elFinance.textContent = financeCount;
+    if (elIt) elIt.textContent = itCount;
+
+    const container = document.getElementById('system-staff-rows');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (!staffList || staffList.length === 0) {
+      container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No administrative staff registered.</td></tr>`;
+      return;
+    }
+
+    staffList.forEach(s => {
+      const tr = document.createElement('tr');
+      
+      const tdId = document.createElement('td');
+      tdId.style.fontWeight = 'bold';
+      tdId.textContent = s.staff_id;
+
+      const tdName = document.createElement('td');
+      tdName.textContent = s.name;
+
+      const tdEmail = document.createElement('td');
+      tdEmail.textContent = s.email;
+
+      const tdType = document.createElement('td');
+      tdType.innerHTML = `<span class="status-pill status-active" style="background: rgba(254, 203, 0, 0.1); color: var(--accent); font-weight: 700; border: 1px solid rgba(254, 203, 0, 0.25); font-size: 0.8rem; padding: 0.25rem 0.5rem;">${s.type}</span>`;
+
+      const tdPortfolio = document.createElement('td');
+      tdPortfolio.textContent = s.portfolio;
+
+      const tdJurisdiction = document.createElement('td');
+      const faculty = s.faculty_key ? s.faculty_key : '';
+      const dept = s.department_label ? s.department_label : '';
+      tdJurisdiction.textContent = [faculty, dept].filter(Boolean).join(' - ') || 'University-wide';
+
+      const tdActions = document.createElement('td');
+      tdActions.style.textAlign = 'center';
+      
+      if (s.staff_id !== this.state.loggedStaff.staffId) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary';
+        btn.style.padding = '0.35rem 0.6rem';
+        btn.style.color = '#e63946';
+        btn.style.border = '1px solid rgba(230, 57, 70, 0.3)';
+        btn.style.background = 'rgba(230, 57, 70, 0.05)';
+        btn.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle;"></i>`;
+        btn.onclick = () => this.handleRemoveStaff(s.staff_id);
+        tdActions.appendChild(btn);
+      } else {
+        tdActions.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Current User</span>`;
+      }
+
+      tr.appendChild(tdId);
+      tr.appendChild(tdName);
+      tr.appendChild(tdEmail);
+      tr.appendChild(tdType);
+      tr.appendChild(tdPortfolio);
+      tr.appendChild(tdJurisdiction);
+      tr.appendChild(tdActions);
+
+      container.appendChild(tr);
+    });
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  async handleRemoveStaff(staffId) {
+    if (!confirm(`Are you sure you want to delete staff account ${staffId}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await window.API.del(`/auth/staff/${staffId}`);
+      this.showToast(`Staff member ${staffId} removed successfully.`, 'success');
+      this.loadStaffRoster();
+      this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to remove staff member.', 'error');
+    }
+  },
+
+  async handleRemoveAllStaff() {
+    if (!confirm("Are you sure you want to delete ALL staff accounts in the directory? This action will wipe all staff profiles except your current administrator account and cannot be undone.")) {
+      return;
+    }
+    try {
+      await window.API.del('/auth/staff');
+      this.showToast('All staff officer accounts deleted successfully.', 'success');
+      this.loadStaffRoster();
+      this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to wipe staff directory.', 'error');
+    }
+  },
+
+  async handleRegisterStaffSubmit(event) {
+    event.preventDefault();
+    const staff_id = document.getElementById('new-staff-id').value.trim();
+    const title = document.getElementById('new-staff-title').value;
+    const typedName = document.getElementById('new-staff-name').value.trim();
+    const name = title + " " + typedName;
+    const email = null;
+    const password = document.getElementById('new-staff-password').value;
+    const type = document.getElementById('new-staff-type').value;
+    const faculty_key = document.getElementById('new-staff-faculty').value || null;
+    const department_label = document.getElementById('new-staff-dept-label').value.trim() || null;
+    
+    let portfolio = type;
+    if (faculty_key) {
+      portfolio += ` (${faculty_key})`;
+    }
+    if (department_label) {
+      portfolio += ` - ${department_label}`;
+    }
+
+    try {
+      await window.API.post('/auth/staff', {
+        staff_id,
+        name,
+        email,
+        password,
+        type,
+        faculty_key,
+        department_label,
+        portfolio
+      });
+      this.showToast(`New staff officer ${name} registered successfully!`, 'success');
+      document.getElementById('system-add-staff-form').reset();
+      this.handleNewStaffTypeChange('');
+      this.loadStaffRoster();
+      this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to register staff.', 'error');
+    }
+  },
+
+  switchSystemSubTab(tabName) {
+    document.querySelectorAll('.sys-tab-btn').forEach(btn => {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+      btn.style.boxShadow = 'none';
+      btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(`sys-tab-${tabName}`);
+    if (activeBtn) {
+      activeBtn.style.background = '#0b311d';
+      activeBtn.style.color = '#ffffff';
+      activeBtn.style.boxShadow = '0 4px 12px rgba(11, 49, 29, 0.2)';
+      activeBtn.classList.add('active');
+    }
+
+    document.getElementById('sys-sub-overview').style.display = tabName === 'overview' ? 'block' : 'none';
+    document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'grid' : 'none';
+    document.getElementById('sys-sub-faculties').style.display = tabName === 'faculties' ? 'grid' : 'none';
+
+    if (tabName === 'overview' || tabName === 'faculties') {
+      this.loadSystemDashboardData();
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  async loadSystemDashboardData() {
+    try {
+      const data = await window.API.get('/meta/admin-dashboard');
+      
+      const elTotal = document.getElementById('sys-kpi-total-staff');
+      const elDeans = document.getElementById('sys-kpi-deans');
+      const elFinance = document.getElementById('sys-kpi-finance');
+      const elIt = document.getElementById('sys-kpi-it');
+
+      if (elTotal) elTotal.textContent = data.stats.activeStaff;
+      if (elDeans) elDeans.textContent = data.faculties.reduce((acc, f) => acc + (f.staff_count || 0), 0);
+      
+      const elComplaintsTotal = document.getElementById('sys-kpi-total-complaints');
+      const elComplaintsOpen = document.getElementById('sys-kpi-open-complaints');
+      const elComplaintsResolved = document.getElementById('sys-kpi-resolved-complaints');
+
+      if (elComplaintsTotal) elComplaintsTotal.textContent = data.stats.totalComplaints;
+      if (elComplaintsOpen) elComplaintsOpen.textContent = data.stats.openComplaints;
+      if (elComplaintsResolved) elComplaintsResolved.textContent = data.stats.resolvedComplaints;
+
+      const recentTbody = document.getElementById('sys-recent-complaints-rows');
+      if (recentTbody) {
+        recentTbody.innerHTML = '';
+        if (!data.recentComplaints || data.recentComplaints.length === 0) {
+          recentTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No recent grievances filed.</td></tr>`;
+        } else {
+          data.recentComplaints.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="mono" style="font-weight: 700;">${c.id}</td>
+              <td>${c.subject}</td>
+              <td><span class="status-pill" style="background: rgba(255,255,255,0.05); color: var(--text-color); font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color);">${c.category_name || c.category_id}</span></td>
+              <td><span class="status-pill" style="background: ${this.getStatusColor(c.status)}20; color: ${this.getStatusColor(c.status)}; border: 1px solid ${this.getStatusColor(c.status)}40; font-weight: 700; font-size: 0.8rem; padding: 0.25rem 0.5rem;">${c.status}</span></td>
+              <td style="color: var(--text-muted); font-size: 0.8rem;">${new Date(c.created_at).toLocaleDateString()}</td>
+            `;
+            recentTbody.appendChild(tr);
+          });
+        }
+      }
+
+      const directoryContainer = document.getElementById('sys-academic-directory');
+      const facultySelect = document.getElementById('new-staff-faculty');
+      const deptParentSelect = document.getElementById('sys-dept-parent-faculty');
+
+      if (facultySelect) {
+        facultySelect.innerHTML = '<option value="">None / Central Administration</option>';
+      }
+      if (deptParentSelect) {
+        deptParentSelect.innerHTML = '<option value="" disabled selected>Select parent faculty...</option>';
+      }
+
+      data.faculties.forEach(f => {
+        const name = f.name;
+        const key = f.faculty_key;
+        
+        // Add option to staff registration selector
+        if (facultySelect) {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = `${name} (${key})`;
+          facultySelect.appendChild(opt);
+        }
+
+        // Add option to department registration selector
+        if (deptParentSelect) {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = `${name} (${key})`;
+          deptParentSelect.appendChild(opt);
+        }
+      });
+
+      if (directoryContainer) {
+        directoryContainer.innerHTML = '';
+        data.faculties.forEach(f => {
+          const name = f.name;
+          const key = f.faculty_key;
+          const count = f.staff_count;
+
+          // Filter departments belonging to this faculty
+          const depts = data.departments.filter(d => d.faculty_key === key);
+
+          const card = document.createElement('div');
+          card.className = 'directory-card';
+          card.style.cssText = 'background: var(--bg-card); border: 1px solid var(--border-color); border-left: 4px solid #fecb00; padding: 0.85rem 1rem; border-radius: 8px; margin-bottom: 0.75rem; box-shadow: var(--shadow-sm); transition: all 0.2s ease;';
+          
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="const dl = this.nextElementSibling; dl.style.display = dl.style.display === 'none' ? 'block' : 'none';">
+              <div style="font-weight: 700; color: var(--text-color); font-size: 0.88rem; display: flex; align-items: center; gap: 0.35rem;">
+                <i data-lucide="folder-open" style="width: 14px; height: 14px; color: var(--accent);"></i>
+                ${name} <span style="color: var(--text-muted); font-size: 0.75rem; font-weight: 500;">(${key})</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="background: rgba(254, 203, 0, 0.15); color: #856404; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  <i data-lucide="git-branch" style="width: 10px; height: 10px;"></i> ${depts.length} Depts
+                </span>
+                <i data-lucide="chevron-down" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+              </div>
+            </div>
+            <div class="dept-sublist" style="margin-top: 0.75rem; display: block; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+              ${depts.length === 0 ? `
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-style: italic; padding: 0.35rem 0.5rem;">No departments registered under this faculty.</div>
+              ` : depts.map(d => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-left: 3px solid #0b311d; padding: 0.55rem 0.75rem; border-radius: 6px; margin-bottom: 0.4rem; font-size: 0.8rem;">
+                  <span style="font-weight: 600; color: var(--text-color);">${d.name}</span>
+                  <span style="background: rgba(11, 49, 29, 0.08); color: #0b311d; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;">
+                    <i data-lucide="users" style="width: 10px; height: 10px;"></i> ${d.staff_count} Staff
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          directoryContainer.appendChild(card);
+        });
+      }
+
+      if (window.lucide) lucide.createIcons();
+    } catch (err) {
+      console.error('Failed to load system dashboard data:', err);
+      this.showToast('Failed to load system metrics.', 'error');
+    }
+  },
+
+  async handleAddDepartmentSubmit(e) {
+    if (e) e.preventDefault();
+    const parentSelect = document.getElementById('sys-dept-parent-faculty');
+    const input = document.getElementById('sys-new-dept-name');
+    const facultyKey = parentSelect.value;
+    const nameVal = input.value.trim();
+    
+    if (!nameVal || !facultyKey) {
+      this.showToast("Please select a faculty and type a department name.", "warning");
+      return;
+    }
+
+    try {
+      await window.API.post('/meta/departments', { name: nameVal, faculty_key: facultyKey });
+      this.showToast(`Department "${nameVal}" added successfully.`, 'success');
+      input.value = '';
+      parentSelect.value = '';
+      await this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to add department.', 'error');
+    }
+  },
+
+  async handleAddFacultySubmit(e) {
+    if (e) e.preventDefault();
+    const keyInput = document.getElementById('sys-new-faculty-key');
+    const nameInput = document.getElementById('sys-new-faculty-name');
+    const keyVal = keyInput.value.trim().toUpperCase();
+    const nameVal = nameInput.value.trim();
+    if (!keyVal || !nameVal) return;
+
+    try {
+      await window.API.post('/meta/faculties', { faculty_key: keyVal, name: nameVal });
+      this.showToast(`Faculty "${nameVal}" added successfully.`, 'success');
+      keyInput.value = '';
+      nameInput.value = '';
+      await this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to add faculty.', 'error');
+    }
   }
 };
 

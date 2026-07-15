@@ -6,7 +6,7 @@
 async function assembleComplaint(conn, id) {
   const [[row]] = await conn.query(
     `SELECT c.*,
-            s.name  AS student_name, s.email AS student_email, s.phone AS student_phone, s.level AS student_level,
+            s.name  AS student_name, s.email AS student_email, s.phone AS student_phone, s.level AS student_level, s.reference_number AS student_ref,
             cat.name AS category_name,
             fac.name AS faculty_name,
             prog.name AS programme_name,
@@ -36,7 +36,7 @@ async function assembleMany(conn, rows) {
 
 const LIST_SELECT = `
   SELECT c.*,
-         s.name  AS student_name, s.email AS student_email, s.phone AS student_phone, s.level AS student_level,
+         s.name  AS student_name, s.email AS student_email, s.phone AS student_phone, s.level AS student_level, s.reference_number AS student_ref,
          cat.name AS category_name,
          fac.name AS faculty_name,
          prog.name AS programme_name,
@@ -74,17 +74,19 @@ async function assembleFromRow(conn, row) {
     [id],
   );
 
+  const isAnon = row.student_index === '9099999999';
   return {
     id: row.id,
-    studentName: row.student_name,
-    studentIndex: row.student_index,
-    studentProgramme: row.programme_name || 'N/A',
-    studentDept: row.dept_name || 'N/A',
-    studentFaculty: row.faculty_name || 'N/A',
-    studentFacultyKey: row.faculty_key || '',
-    studentLevel: row.student_level || 'N/A',
-    studentEmail: row.student_email || 'N/A',
-    studentPhone: row.student_phone || 'N/A',
+    studentName: isAnon ? 'Anonymous Student' : row.student_name,
+    studentIndex: isAnon ? '9099999999' : row.student_index,
+    studentRef: isAnon ? 'N/A' : (row.student_ref || 'N/A'),
+    studentProgramme: isAnon ? 'N/A' : (row.programme_name || 'N/A'),
+    studentDept: isAnon ? 'N/A' : (row.dept_name || 'N/A'),
+    studentFaculty: isAnon ? 'N/A' : (row.faculty_name || 'N/A'),
+    studentFacultyKey: isAnon ? '' : (row.faculty_key || ''),
+    studentLevel: isAnon ? 'N/A' : (row.student_level || 'N/A'),
+    studentEmail: isAnon ? 'N/A' : (row.student_email || 'N/A'),
+    studentPhone: isAnon ? 'N/A' : (row.student_phone || 'N/A'),
     category: row.category_name,
     subject: row.subject,
     description: row.description,

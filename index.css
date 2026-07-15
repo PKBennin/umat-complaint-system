@@ -327,7 +327,7 @@ h3 {
 
 .section-desc {
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   margin-bottom: 2rem;
 }
 
@@ -1100,6 +1100,7 @@ textarea {
   flex-direction: column;
   height: 100%;
   background: transparent;
+  min-width: 0;
 }
 
 .admin-workspace-placeholder {
@@ -1739,6 +1740,238 @@ body.theme-dark .hero-section {
   color: #ffffff;
 }
 
+/* Premium Grid Matrix Hero Landing */
+.landing-hero {
+  background-color: #04120a !important;
+  background-image:
+    radial-gradient(circle at center, rgba(34, 197, 94, 0.18) 0%, transparent 70%),
+    linear-gradient(rgba(34, 197, 94, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.08) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 24px 24px, 24px 24px !important;
+  border: 1px solid rgba(34, 197, 94, 0.25) !important;
+  color: #ffffff !important;
+  box-shadow: 0 15px 35px rgba(13,82,44,0.15) !important;
+}
+
+body.theme-dark .landing-hero {
+  background-color: #020905 !important;
+  background-image:
+    radial-gradient(circle at center, rgba(34, 197, 94, 0.15) 0%, transparent 75%),
+    linear-gradient(rgba(34, 197, 94, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 197, 94, 0.06) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 24px 24px, 24px 24px !important;
+  border: 1px solid rgba(34, 197, 94, 0.18) !important;
+}
+
+.landing-hero h2 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
+}
+
+.landing-hero p {
+  color: rgba(255,255,255,0.85) !important;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.4) !important;
+}
+
+.badge-official {
+  display: inline-block;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+/* Submit Options grid cards styling */
+.submit-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.submit-option-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  position: relative;
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 340px;
+}
+
+.submit-option-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.submit-option-card.recommended {
+  border: 2px solid var(--accent);
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.06);
+}
+
+.submit-option-card.recommended:hover {
+  box-shadow: 0 15px 35px rgba(34, 197, 94, 0.1);
+}
+
+.card-badge {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  background: var(--accent);
+  color: #000000;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+}
+
+.card-icon-wrapper {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.card-icon-wrapper svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--accent);
+}
+
+.submit-option-card h4 {
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.submit-option-card p {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.submit-option-card .btn {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1.0rem;
+}
+
+/* Category Pills Row */
+.category-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.category-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 0.8rem 1.6rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 1.05rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.category-pill:hover {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.05);
+  transform: translateY(-2px);
+}
+
+.category-pill.alert-flagged {
+  border-color: rgba(229, 62, 62, 0.35);
+}
+
+.category-pill.alert-flagged:hover {
+  border-color: #f56565;
+  background: rgba(229, 62, 62, 0.05);
+}
+
+.alert-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f56565;
+  border: 2px solid var(--bg-card);
+  box-shadow: 0 0 6px #f56565;
+}
+
+/* Institutional Grievance Principles */
+.principles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.principle-card {
+  background: transparent;
+  border: 1px solid rgba(34, 197, 94, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 1.75rem;
+  text-align: left;
+  transition: all var(--transition-normal);
+}
+
+.principle-card:hover {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.02);
+  box-shadow: 0 5px 20px rgba(34, 197, 94, 0.02);
+}
+
+.principle-card h4 {
+  font-size: 1.15rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--text-color);
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.principle-card p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
 .hero-bg-slides {
   position: absolute;
   top: 0;
@@ -1788,13 +2021,13 @@ body.theme-dark .hero-section {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(235, 248, 241, 0.7) 0%, rgba(190, 230, 208, 0.78) 100%);
+  background: none;
   z-index: 2;
   transition: background var(--transition-normal);
 }
 
 body.theme-dark .hero-bg-slides::after {
-  background: linear-gradient(135deg, rgba(6, 43, 22, 0.65) 0%, rgba(13, 82, 44, 0.75) 100%);
+  background: none;
 }
 
 .hero-section h2 {
@@ -1836,7 +2069,7 @@ body.theme-dark .hero-section p {
 
 .home-section-title {
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 2.1rem;
   font-weight: 700;
   color: var(--primary);
   margin-bottom: 2.5rem;
@@ -1965,11 +2198,11 @@ body.theme-dark .hero-section p {
   font-size: 0.92rem;
 }
 
-/* Floating quick complaint button (Bottom Right) */
+/* Floating quick complaint button (Bottom Left) */
 .btn-floating-quick {
   position: fixed;
   bottom: 2rem;
-  right: 2rem;
+  left: 2rem;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -1988,6 +2221,12 @@ body.theme-dark .hero-section p {
   animation: pulseGlow 3s infinite ease-in-out;
 }
 
+/* Hide floating action button on the filing form page itself */
+body.viewing-file-form .btn-floating-quick,
+main:has(#file-view.active) ~ .btn-floating-quick {
+  display: none !important;
+}
+
 .btn-floating-quick:hover {
   transform: translateY(-4px) scale(1.03);
   box-shadow: 0 15px 30px rgba(13,82,44,0.4);
@@ -2002,6 +2241,23 @@ body.theme-dark .hero-section p {
 
 .btn-floating-quick:hover svg {
   transform: rotate(90deg);
+}
+
+/* Custom dashed file upload zone styling */
+.file-upload-drag-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(34, 197, 94, 0.015);
+  transition: all var(--transition-fast);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.file-upload-drag-zone:hover {
+  border-color: var(--accent);
+  background: rgba(34, 197, 94, 0.04);
 }
 
 /* Modern Login Card and overlays */
@@ -2205,6 +2461,20 @@ body.theme-dark .btn-outline-white {
 body.theme-dark .btn-outline-white:hover {
   background: #fff;
   color: var(--primary) !important;
+}
+
+.btn-hero-track {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 2px solid #ffffff !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  transition: all var(--transition-normal);
+}
+
+.btn-hero-track:hover {
+  background: #ffffff !important;
+  color: #0d522c !important;
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
 }
 
 .btn-lg {
@@ -2783,6 +3053,26 @@ body.theme-dark .analytics-scope-btn.active {
   background: var(--accent) !important;
 }
 
+body.theme-dark .admin-tabs-list {
+  background: var(--bg-input) !important;
+  border-color: var(--border-color) !important;
+}
+
+body.theme-dark .admin-sidebar-tab {
+  color: var(--text-muted) !important;
+}
+
+body.theme-dark .admin-sidebar-tab:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+body.theme-dark .admin-sidebar-tab.active {
+  background: var(--accent) !important;
+  color: #000000 !important;
+  border-color: transparent !important;
+}
+
 body.theme-dark .btn-outline-white:hover {
   background: #ffffff !important;
   color: #000000 !important;
@@ -2910,6 +3200,21 @@ body.admin-portal-body.logged-out #login-view {
     width: 100%;
     max-width: 460px;
   }
+}
+
+/* Guest/Anonymous Single Complaint tracking view styles */
+#student-track-workspace.anonymous-tracking-mode .admin-sidebar {
+  display: none !important;
+}
+
+#student-track-workspace.anonymous-tracking-mode .admin-layout {
+  grid-template-columns: 1fr !important;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+#student-track-workspace.anonymous-tracking-mode .admin-workspace {
+  padding: 1.5rem 0;
 }
 
 /* End of stylesheets */

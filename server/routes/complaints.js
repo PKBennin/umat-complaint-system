@@ -24,6 +24,31 @@ function validationGuard(req, res) {
   return false;
 }
 
+async function checkAndAlertStaffUnattended(conn, staffId) {
+  if (!staffId) return;
+  const [[countRow]] = await conn.query(
+    "SELECT COUNT(*) AS count FROM complaints WHERE assigned_staff_id = ? AND status = 'Submitted'",
+    [staffId]
+  );
+  const unattendedCount = countRow ? countRow.count : 0;
+  
+  if (unattendedCount > 0 && unattendedCount % 10 === 0) {
+    const [[staffRow]] = await conn.query(
+      "SELECT email, name FROM staff WHERE staff_id = ?",
+      [staffId]
+    );
+    if (staffRow && staffRow.email) {
+      const { sendEmail } = require('../utils/email');
+      const staffMsg = `Hello ${staffRow.name}, you have ${unattendedCount} unattended complaints pending on your desk. Please log in to the administrator portal to review them.`;
+      sendEmail({
+        to: staffRow.email,
+        subject: `Urgent: ${unattendedCount} Unattended Complaints Pending`,
+        text: staffMsg
+      }).catch((err) => console.error('[Staff Email Alert Error]', err.message));
+    }
+  }
+}
+
 // Generate a UMAT ticket id, retrying on the (unlikely) collision.
 async function generateTicketId(conn) {
   for (let i = 0; i < 5; i++) {
@@ -122,6 +147,7 @@ router.post('/', handleAttachmentUpload,
     try {
       await conn.beginTransaction();
       const { studentName, studentIndex, subject, category, urgency, description, programmeName } = req.body;
+      console.log('[API POST /api/complaints] Parsed Body:', { studentName, studentIndex, subject, category, urgency, description, programmeName });
       const routing = await computeRouting(conn, category, programmeName);
       if (!routing.categoryId || !routing.programmeId) {
         await conn.rollback();
@@ -143,8 +169,30 @@ router.post('/', handleAttachmentUpload,
           file ? file.mimetype : null, file ? file.size : null],
       );
       await addLog(conn, id, 'System Engine', 'Complaint Submitted',
-        `Complaint successfully registered under Reference Number ${studentIndex} and routed to the ${routing.role}.`);
+        `Complaint successfully registered under Ticket ID ${id} and routed to the ${routing.role}.`);
       await conn.commit();
+
+      // Trigger real-time SMS & Email to student
+      const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [studentIndex]);
+      if (stRow) {
+        const msg = `Your complaint on "${subject}" has been submitted successfully.`;
+        if (stRow.phone && stRow.phone !== 'N/A') {
+          const { sendSMS } = require('../utils/sms');
+          sendSMS(stRow.phone, msg).catch((err) => console.error('[SMS Service Error]', err.message));
+        }
+        if (stRow.email) {
+          const { sendEmail } = require('../utils/email');
+          sendEmail({
+            to: stRow.email,
+            subject: 'Complaint Submitted Successfully',
+            text: `${msg} Ticket ID: ${id}. You can track progress on the student portal.`
+          }).catch((err) => console.error('[Email Service Error]', err.message));
+        }
+      }
+
+      // Check and send unattended complaints notification to staff
+      await checkAndAlertStaffUnattended(conn, routing.assignedStaffId);
+
       const complaint = await assembleComplaint(pool, id);
       return res.status(201).json(redactForStudent(complaint));
     } catch (e) {
@@ -181,6 +229,20 @@ router.get('/staff/:staffId', verifyJWT, requireStaff, async (req, res, next) =>
       scope.params,
     );
     res.json(await assembleMany(pool, rows));
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
+// GET public track single complaint (does not require JWT/login)
+// GET /api/complaints/public/track/:id
+// =============================================================================
+router.get('/public/track/:id', async (req, res, next) => {
+  try {
+    const row = await loadRawComplaint(req.params.id);
+    if (!row) return res.status(404).json({ error: 'Complaint not found' });
+    const assembled = await assembleComplaint(pool, req.params.id);
+    // Redact internal notes and return for student tracking
+    return res.json(redactForStudent(assembled));
   } catch (e) { next(e); }
 });
 
@@ -263,6 +325,32 @@ router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
         await addLog(conn, c.id, operator, 'Officer Assigned', 'Ticket ownership reassigned.');
       }
       await conn.commit();
+
+      // Trigger real-time SMS & Email on status update
+      if (req.body.status && req.body.status !== c.status) {
+        const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [c.student_index]);
+        if (stRow) {
+          const msg = `Your complaint (${c.id}) IS ${req.body.status.toUpperCase()}.`;
+          if (stRow.phone && stRow.phone !== 'N/A') {
+            const { sendSMS } = require('../utils/sms');
+            sendSMS(stRow.phone, msg).catch((err) => console.error('[SMS Service Error]', err.message));
+          }
+          if (stRow.email) {
+            const { sendEmail } = require('../utils/email');
+            sendEmail({
+              to: stRow.email,
+              subject: 'Grievance Status Updated',
+              text: `${msg} You can check detailed updates on the student portal.`
+            }).catch((err) => console.error('[Email Service Error]', err.message));
+          }
+        }
+      }
+
+      // Check and send unattended complaints notification to staff
+      if (req.body.assignedStaffId && req.body.assignedStaffId !== c.assigned_staff_id) {
+        await checkAndAlertStaffUnattended(conn, req.body.assignedStaffId);
+      }
+
       res.json(await assembleComplaint(pool, c.id));
     } catch (e) { await conn.rollback(); next(e); } finally { conn.release(); }
   });
@@ -408,6 +496,27 @@ router.post('/:id/appointment', verifyJWT, requireStaff, attachComplaintForStaff
         await addLog(conn, c.id, req.user.name, 'Status Updated', 'Status advanced to In Progress.');
       }
       await conn.commit();
+
+      // Trigger real-time SMS & Email for counselor appointment
+      const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [c.student_index]);
+      if (stRow) {
+        const smsMsg = `UMaT Appointment: A session has been scheduled for you regarding ticket ${c.id}.\nVenue: ${venue}\nDate/Time: ${dateTime}`;
+        const emailMsg = `UMaT Appointment: A session has been scheduled for you regarding ticket ${c.id}.\nVenue: ${venue}\nDate/Time: ${dateTime}\nAdvisor: ${counselorName || 'Counselor'}`;
+        
+        if (stRow.phone && stRow.phone !== 'N/A') {
+          const { sendSMS } = require('../utils/sms');
+          sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
+        }
+        if (stRow.email) {
+          const { sendEmail } = require('../utils/email');
+          sendEmail({
+            to: stRow.email,
+            subject: 'New Appointment Scheduled',
+            text: `${emailMsg}\nInstructions: ${instructions || 'Please attend on time.'}`
+          }).catch((err) => console.error('[Email Service Error]', err.message));
+        }
+      }
+
       res.status(201).json(await assembleComplaint(pool, c.id));
     } catch (e) { await conn.rollback(); next(e); } finally { conn.release(); }
   });

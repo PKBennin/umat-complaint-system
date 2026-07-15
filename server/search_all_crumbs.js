@@ -1,0 +1,10 @@
+const fs = require('fs');
+
+const content = fs.readFileSync('../index.html', 'utf8');
+const lines = content.split('\n');
+
+lines.forEach((line, idx) => {
+  if (line.includes('crumb') || line.includes('Back to home')) {
+    console.log(`L${idx+1}: ${line.trim()}`);
+  }
+});

@@ -41,9 +41,9 @@ const DEFAULT_PASSWORD = 'password123';
 
     // Departments -> capture name->id
     const deptId = {};
-    for (const name of DEPARTMENTS) {
-      const [res] = await conn.query('INSERT INTO departments (name) VALUES (?)', [name]);
-      deptId[name] = res.insertId;
+    for (const d of DEPARTMENTS) {
+      const [res] = await conn.query('INSERT INTO departments (name, faculty_key) VALUES (?, ?)', [d.name, d.facultyKey]);
+      deptId[d.name] = res.insertId;
     }
 
     // Programmes
@@ -64,26 +64,28 @@ const DEFAULT_PASSWORD = 'password123';
 
     const hash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
-    // Staff
+    // Staff (default password is their staff_id)
     for (const s of STAFF_DATABASE) {
+      const staffHash = await bcrypt.hash(s.staffId, 10);
       // department may be a real department name or a free-text office label.
       const realDeptId = deptId[s.department] ?? null;
       await conn.query(
         `INSERT INTO staff
            (staff_id, name, email, password_hash, type, faculty_key, department_id, department_label, portfolio)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [s.staffId, s.name, s.email, hash, s.type, s.facultyKey || null, realDeptId, s.department, s.portfolio],
+        [s.staffId, s.name, s.email, staffHash, s.type, s.facultyKey || null, realDeptId, s.department, s.portfolio],
       );
     }
 
-    // Students (no programme in seed data -> programme_id NULL)
-    for (const st of STUDENT_DATABASE) {
-      await conn.query(
-        `INSERT INTO students (index_number, name, email, phone, password_hash, level, programme_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [st.index, st.name, st.email, st.phone, hash, st.level, null],
-      );
+    // Map programmes by name to their auto-incremented MySQL IDs
+    const [progRows] = await conn.query('SELECT id, name FROM programmes');
+    const progId = {};
+    for (const row of progRows) {
+      progId[row.name] = row.id;
     }
+
+    // Students are not seeded; they sign up fresh via the student email registration flow.
+    console.log('  students skipped (signup required)');
 
     await conn.commit();
     console.log('✓ Seed complete');

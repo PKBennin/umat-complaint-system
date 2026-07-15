@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UMaT Campus Complaint System - Backend & Database Specification</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0d522c;
+      --accent: #f4c430;
+      --text-dark: #1a202c;
+      --text-light: #4a5568;
+      --bg-light: #f7fafc;
+      --border: #e2e8f0;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text-dark);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+    }
+
+    h1, h2, h3, h4, h5 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--primary);
+      margin-top: 0;
+    }
+
+    .doc-container {
+      max-width: 900px;
+      margin: 3rem auto;
+      background: #ffffff;
+      padding: 4rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+    }
+
+    /* Cover Page styling */
+    .cover-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 800px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 3rem;
+      margin-bottom: 4rem;
+    }
+
+    .cover-header {
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .cover-logo {
+      width: 100px;
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-title {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    .cover-subtitle {
+      font-size: 1.5rem;
+      color: var(--text-light);
+      font-weight: 400;
+      margin-bottom: 2rem;
+    }
+
+    .cover-meta {
+      margin-top: auto;
+      font-size: 0.95rem;
+      color: var(--text-light);
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    /* Document Sections */
+    section {
+      margin-bottom: 3.5rem;
+    }
+
+    h2.section-heading {
+      font-size: 2rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h2.section-heading::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 4px;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: var(--text-light);
+      margin-bottom: 1.25rem;
+      text-align: justify;
+    }
+
+    /* Database Schema details */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--bg-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+
+    .pk {
+      color: #b7791f;
+      font-weight: bold;
+    }
+
+    .fk {
+      color: #2b6cb0;
+      font-weight: bold;
+    }
+
+    /* Code Blocks */
+    pre {
+      background: #2d3748;
+      color: #f7fafc;
+      padding: 1.25rem;
+      border-radius: 6px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .endpoint-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: white;
+      margin-right: 0.5rem;
+      font-family: monospace;
+    }
+
+    .get { background: #3182ce; }
+    .post { background: #38a169; }
+    .put { background: #dd6b20; }
+    .delete { background: #e53e3e; }
+
+    .api-endpoint-box {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      background: var(--bg-light);
+    }
+
+    .api-header {
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--text-dark);
+    }
+
+    /* Printing rules */
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+        font-size: 11pt;
+      }
+
+      .doc-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      .cover-page {
+        min-height: 95vh;
+        page-break-after: always;
+      }
+
+      .page-break {
+        page-break-before: always;
+      }
+
+      pre, table, .api-endpoint-box {
+        page-break-inside: avoid;
+      }
+
+      pre {
+        background: #f7fafc;
+        color: #1a202c;
+        border: 1px solid #cbd5e0;
+      }
+
+      th {
+        background: #edf2f7;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="doc-container">
+    
+    <!-- COVER PAGE -->
+    <div class="cover-page">
+      <div class="cover-header">
+        <img class="cover-logo" src="logo.jpg" alt="UMaT Logo" onerror="this.style.display='none'">
+        <div class="cover-title">UMaT Campus Complaint System</div>
+        <div class="cover-subtitle">Backend Architecture & MySQL Database Specification</div>
+      </div>
+      
+      <div class="cover-meta">
+        <div>
+          <strong>Document Version:</strong> 1.0.0<br>
+          <strong>Status:</strong> Draft Architecture Spec<br>
+          <strong>Author:</strong> Antigravity AI Architect
+        </div>
+        <div>
+          <strong>Target Database System:</strong> MySQL 8.0+<br>
+          <strong>Target Server Stack:</strong> Node.js (Express) or Python (Flask/Django)<br>
+          <strong>Date Generated:</strong> July 6, 2026
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1 -->
+    <section>
+      <h2 class="section-heading">1. Introduction & Overview</h2>
+      <p>
+        The <strong>UMaT Campus Complaint System</strong> is designed to manage and resolve student complaints and grievances. The backend is designed as a secure, transactional, stateless RESTful API that handles user authentication (students and staff/administrators), grievance filing, automated routing rules to specific university authorities (Deans, Finance, IT Directorate), internal commenting/messaging, counselor appointments, and operational logs.
+      </p>
+      <p>
+        The backend will connect to a relational <strong>MySQL Database</strong>, enforcing high integrity through relational constraints (foreign keys), schemas optimized for index lookup speed, and transactional audit trails.
+      </p>
+    </section>
+
+    <!-- SECTION 2 -->
+    <div class="page-break"></div>
+    <section>
+      <h2 class="section-heading">2. MySQL Database Schema</h2>
+      <p>
+        The MySQL schema contains tables representing faculties, departments, academic programmes, student profiles, administrative staff, tickets/complaints, workflow action records, messaging threads, and counselor appointments.
+      </p>
+
+      <h3>Entity-Relationship Mapping Diagram</h3>
+      <pre>
+[faculties] 1 ------&lt; [departments] 1 ------&lt; [programmes]
+     1                     1                      1
+     |                     |                      |
+     | (Dean/Finance)      | (HOD)                |
+     v                     v                      v
+  [staff]               [staff]               [students]
+     1                     1                      1
+     |                     |                      |
+     +---------+-----------+                      |
+               | (Assigned)                       | (Filed By)
+               v                                  v
+            [complaints] &gt;------------------------+
+               1
+               |
+               +-------&lt; [appointments] (1:1 Relationship)
+               |
+               +-------&lt; [comments] (1:N Thread)
+               |
+               +-------&lt; [action_logs] (Audit Trail)
+      </pre>
+
+      <h3>MySQL Table Schemas</h3>
+
+      <h4>2.1 Faculties (`faculties`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">faculty_key</td>
+            <td>VARCHAR(10)</td>
+            <td>PRIMARY KEY</td>
+            <td>Short key (e.g. FMMT, FCMS, FGES)</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL</td>
+            <td>Full name of the faculty</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2.2 Departments (`departments`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>INT</td>
+            <td>PRIMARY KEY, AUTO_INCREMENT</td>
+            <td>Unique identifier for departments</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL, UNIQUE</td>
+            <td>Full name of the department</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-break"></div>
+      <h4>2.3 Programmes (`programmes`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>INT</td>
+            <td>PRIMARY KEY, AUTO_INCREMENT</td>
+            <td>Unique identifier for academic programs</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL</td>
+            <td>Name of degree (e.g. BSc Computer Science)</td>
+          </tr>
+          <tr>
+            <td class="fk">department_id</td>
+            <td>INT</td>
+            <td>FOREIGN KEY</td>
+            <td>References `departments(id)`</td>
+          </tr>
+          <tr>
+            <td class="fk">faculty_key</td>
+            <td>VARCHAR(10)</td>
+            <td>FOREIGN KEY</td>
+            <td>References `faculties(faculty_key)`</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2.4 Administrative Staff / Admins (`staff`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">staff_id</td>
+            <td>VARCHAR(20)</td>
+            <td>PRIMARY KEY</td>
+            <td>University Staff ID (e.g. DEC-102)</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL</td>
+            <td>Full name of staff member</td>
+          </tr>
+          <tr>
+            <td>email</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL, UNIQUE</td>
+            <td>Official university email</td>
+          </tr>
+          <tr>
+            <td>password_hash</td>
+            <td>VARCHAR(255)</td>
+            <td>NOT NULL</td>
+            <td>BCrypt hashed password</td>
+          </tr>
+          <tr>
+            <td>type</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'Dean', 'Finance', 'IT', 'HOD', 'SuperAdmin'</td>
+          </tr>
+          <tr>
+            <td class="fk">faculty_key</td>
+            <td>VARCHAR(10)</td>
+            <td>NULL, FOREIGN KEY</td>
+            <td>References `faculties` (for Deans/Finance)</td>
+          </tr>
+          <tr>
+            <td class="fk">department_id</td>
+            <td>INT</td>
+            <td>NULL, FOREIGN KEY</td>
+            <td>References `departments` (for HODs)</td>
+          </tr>
+          <tr>
+            <td>portfolio</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL</td>
+            <td>Job designation description</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2.5 Students (`students`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">index_number</td>
+            <td>VARCHAR(15)</td>
+            <td>PRIMARY KEY</td>
+            <td>Student Registration Index (e.g. 9021020)</td>
+          </tr>
+          <tr>
+            <td>name</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL</td>
+            <td>Full name of student</td>
+          </tr>
+          <tr>
+            <td>email</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL, UNIQUE</td>
+            <td>Official student email</td>
+          </tr>
+          <tr>
+            <td>phone</td>
+            <td>VARCHAR(20)</td>
+            <td>NOT NULL</td>
+            <td>Active telephone contact</td>
+          </tr>
+          <tr>
+            <td>password_hash</td>
+            <td>VARCHAR(255)</td>
+            <td>NOT NULL</td>
+            <td>BCrypt hashed password</td>
+          </tr>
+          <tr>
+            <td>level</td>
+            <td>VARCHAR(10)</td>
+            <td>NOT NULL</td>
+            <td>Year status (100, 200, 300, 400, etc.)</td>
+          </tr>
+          <tr>
+            <td class="fk">programme_id</td>
+            <td>INT</td>
+            <td>FOREIGN KEY</td>
+            <td>References `programmes(id)`</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-break"></div>
+      <h4>2.6 Complaints / Grievance Tickets (`complaints`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>VARCHAR(25)</td>
+            <td>PRIMARY KEY</td>
+            <td>Ticket Reference Code (e.g. UMAT-2026-X12Y)</td>
+          </tr>
+          <tr>
+            <td class="fk">student_index</td>
+            <td>VARCHAR(15)</td>
+            <td>FOREIGN KEY</td>
+            <td>References `students(index_number)`</td>
+          </tr>
+          <tr>
+            <td>subject</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL</td>
+            <td>Brief grievance title</td>
+          </tr>
+          <tr>
+            <td>category_id</td>
+            <td>VARCHAR(20)</td>
+            <td>NOT NULL</td>
+            <td>'academic', 'finance', 'ict', 'harassment', 'other'</td>
+          </tr>
+          <tr>
+            <td>urgency</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'Low', 'Medium', 'High', 'Urgent'</td>
+          </tr>
+          <tr>
+            <td>description</td>
+            <td>TEXT</td>
+            <td>NOT NULL</td>
+            <td>Detailed explanation of issue</td>
+          </tr>
+          <tr>
+            <td>status</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'Submitted', 'Under Review', 'In Progress', 'Resolved', 'Rejected'</td>
+          </tr>
+          <tr>
+            <td class="fk">assigned_staff_id</td>
+            <td>VARCHAR(20)</td>
+            <td>NULL, FOREIGN KEY</td>
+            <td>References `staff(staff_id)`</td>
+          </tr>
+          <tr>
+            <td>created_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT CURRENT_TIMESTAMP</td>
+            <td>Time filed</td>
+          </tr>
+          <tr>
+            <td>updated_at</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT CURRENT_TIMESTAMP ON UPDATE</td>
+            <td>Last updated</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2.7 Activity & Action Logs (`action_logs`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>INT</td>
+            <td>PRIMARY KEY, AUTO_INCREMENT</td>
+            <td>Unique identifier for logs</td>
+          </tr>
+          <tr>
+            <td class="fk">complaint_id</td>
+            <td>VARCHAR(25)</td>
+            <td>FOREIGN KEY</td>
+            <td>References `complaints(id)` ON DELETE CASCADE</td>
+          </tr>
+          <tr>
+            <td>operator_name</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL</td>
+            <td>Name of staff making modification</td>
+          </tr>
+          <tr>
+            <td>action_type</td>
+            <td>VARCHAR(50)</td>
+            <td>NOT NULL</td>
+            <td>e.g. status_changed, appointment_booked</td>
+          </tr>
+          <tr>
+            <td>details</td>
+            <td>TEXT</td>
+            <td>NOT NULL</td>
+            <td>Detailed change logs</td>
+          </tr>
+          <tr>
+            <td>timestamp</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT CURRENT_TIMESTAMP</td>
+            <td>Time event logged</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="page-break"></div>
+      <h4>2.8 Counselor Appointments (`appointments`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>INT</td>
+            <td>PRIMARY KEY, AUTO_INCREMENT</td>
+            <td>Unique identifier for meetings</td>
+          </tr>
+          <tr>
+            <td class="fk">complaint_id</td>
+            <td>VARCHAR(25)</td>
+            <td>FOREIGN KEY, UNIQUE</td>
+            <td>References `complaints(id)` (1-to-1 Mapping)</td>
+          </tr>
+          <tr>
+            <td>type</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'Counselor Session', 'In-Person Dean Meeting', 'Finance Office Visit', 'IT Helpdesk Visit'</td>
+          </tr>
+          <tr>
+            <td>date_time</td>
+            <td>DATETIME</td>
+            <td>NOT NULL</td>
+            <td>Scheduled date and hour of appointment</td>
+          </tr>
+          <tr>
+            <td>venue</td>
+            <td>VARCHAR(150)</td>
+            <td>NOT NULL</td>
+            <td>Room / Office location details</td>
+          </tr>
+          <tr>
+            <td>checklist</td>
+            <td>TEXT</td>
+            <td>NOT NULL</td>
+            <td>JSON formatted requirements checklist array</td>
+          </tr>
+          <tr>
+            <td>counselor_name</td>
+            <td>VARCHAR(100)</td>
+            <td>NULL</td>
+            <td>Counseling officer assigned</td>
+          </tr>
+          <tr>
+            <td>status</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'Scheduled', 'Completed', 'Cancelled'</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>2.9 Thread Comments (`comments`)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Constraints</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pk">id</td>
+            <td>INT</td>
+            <td>PRIMARY KEY, AUTO_INCREMENT</td>
+            <td>Unique message id</td>
+          </tr>
+          <tr>
+            <td class="fk">complaint_id</td>
+            <td>VARCHAR(25)</td>
+            <td>FOREIGN KEY</td>
+            <td>References `complaints(id)` ON DELETE CASCADE</td>
+          </tr>
+          <tr>
+            <td>sender_type</td>
+            <td>ENUM</td>
+            <td>NOT NULL</td>
+            <td>'student', 'staff'</td>
+          </tr>
+          <tr>
+            <td>sender_name</td>
+            <td>VARCHAR(100)</td>
+            <td>NOT NULL</td>
+            <td>Display name of sender</td>
+          </tr>
+          <tr>
+            <td>message</td>
+            <td>TEXT</td>
+            <td>NOT NULL</td>
+            <td>Content body of text</td>
+          </tr>
+          <tr>
+            <td>timestamp</td>
+            <td>TIMESTAMP</td>
+            <td>DEFAULT CURRENT_TIMESTAMP</td>
+            <td>Sending time</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 3 -->
+    <div class="page-break"></div>
+    <section>
+      <h2 class="section-heading">3. MySQL Database Initial Setup SQL Script</h2>
+      <p>
+        The following raw SQL script initializes the tables, relationships, and basic indexes needed for performance optimizations:
+      </p>
+      <pre>
+CREATE DATABASE IF NOT EXISTS umat_complaints_db;
+USE umat_complaints_db;
+
+-- 1. Faculties
+CREATE TABLE faculties (
+    faculty_key VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(150) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Departments
+CREATE TABLE departments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Programmes
+CREATE TABLE programmes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    department_id INT NOT NULL,
+    faculty_key VARCHAR(10) NOT NULL,
+    FOREIGN KEY (department_id) REFERENCES departments(id) ON UPDATE CASCADE,
+    FOREIGN KEY (faculty_key) REFERENCES faculties(faculty_key) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Administrative Staff
+CREATE TABLE staff (
+    staff_id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    type ENUM('Dean', 'Finance', 'IT', 'HOD', 'SuperAdmin') NOT NULL,
+    faculty_key VARCHAR(10) NULL,
+    department_id INT NULL,
+    portfolio VARCHAR(150) NOT NULL,
+    FOREIGN KEY (faculty_key) REFERENCES faculties(faculty_key) ON UPDATE CASCADE,
+    FOREIGN KEY (department_id) REFERENCES departments(id) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Students
+CREATE TABLE students (
+    index_number VARCHAR(15) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    level VARCHAR(10) NOT NULL,
+    programme_id INT NOT NULL,
+    FOREIGN KEY (programme_id) REFERENCES programmes(id) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 6. Complaints (Tickets)
+CREATE TABLE complaints (
+    id VARCHAR(25) PRIMARY KEY,
+    student_index VARCHAR(15) NOT NULL,
+    subject VARCHAR(150) NOT NULL,
+    category_id VARCHAR(20) NOT NULL,
+    urgency ENUM('Low', 'Medium', 'High', 'Urgent') NOT NULL,
+    description TEXT NOT NULL,
+    status ENUM('Submitted', 'Under Review', 'In Progress', 'Resolved', 'Rejected') DEFAULT 'Submitted',
+    assigned_staff_id VARCHAR(20) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_index) REFERENCES students(index_number) ON UPDATE CASCADE,
+    FOREIGN KEY (assigned_staff_id) REFERENCES staff(staff_id) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Action / Audit Logs
+CREATE TABLE action_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    complaint_id VARCHAR(25) NOT NULL,
+    operator_name VARCHAR(100) NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    details TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Counselor/Meeting Appointments
+CREATE TABLE appointments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    complaint_id VARCHAR(25) NOT NULL UNIQUE,
+    type ENUM('Counselor Session', 'In-Person Dean Meeting', 'Finance Office Visit', 'IT Helpdesk Visit') NOT NULL,
+    date_time DATETIME NOT NULL,
+    venue VARCHAR(150) NOT NULL,
+    checklist TEXT NOT NULL, -- JSON string representation
+    counselor_name VARCHAR(100) NULL,
+    status ENUM('Scheduled', 'Completed', 'Cancelled') DEFAULT 'Scheduled',
+    FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Thread Comments
+CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    complaint_id VARCHAR(25) NOT NULL,
+    sender_type ENUM('student', 'staff') NOT NULL,
+    sender_name VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- INDEX OPTIMISATIONS FOR LOOKUP PERFORMANCE
+CREATE INDEX idx_complaints_student ON complaints(student_index);
+CREATE INDEX idx_complaints_assigned ON complaints(assigned_staff_id);
+CREATE INDEX idx_complaints_status ON complaints(status);
+CREATE INDEX idx_comments_complaint ON comments(complaint_id);
+      </pre>
+    </section>
+
+    <!-- SECTION 4 -->
+    <div class="page-break"></div>
+    <section>
+      <h2 class="section-heading">4. Backend RESTful API Specification</h2>
+      <p>
+        The backend service exposes JSON REST endpoints. All authenticated requests (except login) must transmit a JWT token in the <code>Authorization: Bearer &lt;TOKEN&gt;</code> header.
+      </p>
+
+      <h3>4.1 Authentication</h3>
+      
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge post">POST</span> `/api/auth/student/login`
+        </div>
+        <p><strong>Description:</strong> Standard login endpoint for student credentials verification.</p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "index_number": "9021020",
+  "password": "password123"
+}</pre>
+        <p><strong>Response (200 OK):</strong></p>
+        <pre>{
+  "token": "eyJhbGciOiJIUzI1NiIsIn...",
+  "student": {
+    "index_number": "9021020",
+    "name": "Adjoa Mansah",
+    "email": "amansah020@umat.edu.gh",
+    "level": "300",
+    "programme": "BSc Computer Science and Engineering"
+  }
+}</pre>
+      </div>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge post">POST</span> `/api/auth/staff/login`
+        </div>
+        <p><strong>Description:</strong> Verification endpoint for official administrator/staff credentials.</p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "staff_id": "DEC-102",
+  "password": "password123"
+}</pre>
+      </div>
+
+      <h3>4.2 Complaints Management</h3>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge post">POST</span> `/api/complaints`
+        </div>
+        <p><strong>Description:</strong> Creates a new grievance ticket. The backend automatically determines the initial routing (to specific Faculty Deans or IT Directorate) based on the database routing config map.</p>
+        <p><strong>Request Headers:</strong> <code>Authorization: Bearer &lt;Token&gt;</code></p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "subject": "Missing Grade for CSE 352",
+  "category_id": "academic",
+  "urgency": "High",
+  "description": "My grades for Database Systems have not been posted on my dashboard..."
+}</pre>
+      </div>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge get">GET</span> `/api/complaints/student/:index`
+        </div>
+        <p><strong>Description:</strong> Fetches all complaints filed by a particular student index.</p>
+      </div>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge get">GET</span> `/api/complaints/staff/:staffId`
+        </div>
+        <p><strong>Description:</strong> Admin-only. Retrieves all grievances routed to a staff member's jurisdiction (e.g. Dean of FCMS retrieves FCMS students' academic disputes).</p>
+      </div>
+
+      <div class="page-break"></div>
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge put">PUT</span> `/api/complaints/:id/status`
+        </div>
+        <p><strong>Description:</strong> Admin-only. Modifies status of a grievance ticket and registers an action log entry.</p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "status": "In Progress",
+  "operator_name": "Prof. Anthony Simons",
+  "reason": "Moving ticket to active investigation with registry offices."
+}</pre>
+      </div>
+
+      <h3>4.3 Comments & Chat Threads</h3>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge get">GET</span> `/api/complaints/:id/comments`
+        </div>
+        <p><strong>Description:</strong> Retrieves the message history logged in the thread under a complaint ticket.</p>
+      </div>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge post">POST</span> `/api/complaints/:id/comments`
+        </div>
+        <p><strong>Description:</strong> Sends a comment on a ticket thread.</p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "sender_type": "student",
+  "sender_name": "Adjoa Mansah",
+  "message": "Thank you, I will bring the printed slip on Friday."
+}</pre>
+      </div>
+
+      <h3>4.4 Appointments Management</h3>
+
+      <div class="api-endpoint-box">
+        <div class="api-header">
+          <span class="endpoint-badge post">POST</span> `/api/appointments`
+        </div>
+        <p><strong>Description:</strong> Admin-only. Books a counselor or dean appointment and sets up action ledger items.</p>
+        <p><strong>Request Body:</strong></p>
+        <pre>{
+  "complaint_id": "UMAT-2026-X12Y",
+  "type": "In-Person Dean Meeting",
+  "date_time": "2026-07-10 10:00:00",
+  "venue": "Dean's Office, Room 4",
+  "counselor_name": "Prof. Anthony Simons",
+  "checklist": ["Bring student ID card", "Bring printed payment receipt history"]
+}</pre>
+      </div>
+
+    </section>
+
+    <!-- SECTION 5 -->
+    <section>
+      <h2 class="section-heading">5. Security, Validation & Business Logic Rules</h2>
+      <p>
+        To ensure transaction consistency and database security, the following backend principles must be implemented in code:
+      </p>
+      <ul>
+        <li><strong>Password Encryption:</strong> Use strong one-way hashing functions (such as BCrypt with 10 salt rounds or Argon2id) to encrypt student and staff passwords before database persistence.</li>
+        <li><strong>Role-Based Access Control (RBAC):</strong> Standard students must only be allowed to access their own filed tickets, action logs, and thread conversations. Admin endpoints (e.g. updating statuses, listing department tickets, scheduling counselor dates) must reject standard student JWT claims.</li>
+        <li><strong>Transaction Enforcements:</strong> When creating counselor appointments or updating status codes, perform the actions within a SQL transaction block so that the ticket status update, the log entry creation, and the appointment assignment succeed or fail as a single atomic write.</li>
+        <li><strong>Sanitization:</strong> Input fields (especially VARCHAR descriptions, text message comments, and subjects) must be sanitized and parameterised to prevent SQL Injection vectors (which is natively supported by modern ORMs like Sequelize, Knex, or raw SQL queries with placeholders <code>?</code>).</li>
+      </ul>
+    </section>
+
+  </div>
+
+</body>
+</html>

@@ -10,9 +10,10 @@ const app = {
   },
 
   // Initialize Application
-  init() {
+  async init() {
     window.API.configure({ tokenKey: 'umat_student_token' });
     this.loadTheme();
+    await this.initMetadata();
     this.checkStudentSession();
     this.populateSelectors();
     this.startClock();
@@ -33,6 +34,50 @@ const app = {
         e.returnValue = '';
       }
     });
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  async initMetadata() {
+    try {
+      const data = await window.API.get('/meta');
+      this.state.dbProgrammes = data.programmes;
+      this.state.dbFaculties = {};
+      data.faculties.forEach(f => {
+        this.state.dbFaculties[f.faculty_key] = f.name;
+      });
+    } catch (err) {
+      console.error('Failed to load DB metadata:', err);
+      // Fallback: build temporary database mapping from local seedData
+      this.state.dbProgrammes = window.PROGRAMMES.map((p, idx) => ({
+        id: idx + 1,
+        name: p.name,
+        facultyKey: p.facultyKey,
+        department: p.department
+      }));
+      this.state.dbFaculties = window.FACULTIES;
+    }
+  },
+
+  // Navigate to filing form with selected category pre-filled
+  selectCategoryAndFile(category) {
+    this.state.preSelectedCategory = category;
+    this.showView('file');
+  },
+
+  // Handle floating quick complaint button click by routing to landing and scrolling to submission options
+  handleQuickComplaintClick() {
+    if (this.state.loggedStudent) {
+      this.showView('file');
+      return;
+    }
+    this.showView('landing');
+    setTimeout(() => {
+      const section = document.getElementById('submit-methods-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 80);
   },
 
   // State Management (backend API).
@@ -47,6 +92,7 @@ const app = {
     try {
       const idx = this.state.loggedStudent.index;
       this.state.complaints = await window.API.get(`/complaints/student/${encodeURIComponent(idx)}`);
+      this.checkNotifications(this.state.complaints);
     } catch (err) {
       if (err.status === 401) { this.forceLogout(); return; }
       console.error('Failed to load complaints:', err);
@@ -58,6 +104,7 @@ const app = {
   async loadAndRenderStudent() {
     await this.refreshComplaints();
     this.renderStudentHistory();
+    this.renderStudentDashboard();
     if (this.state.activeStudentComplaintId) this.renderStudentTracker();
   },
 
@@ -74,6 +121,155 @@ const app = {
     this.showView('landing');
   },
 
+  formatStudentName(name) {
+    if (!name) return 'STUDENT';
+    if (name.includes(',')) return name;
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return name.toUpperCase();
+    const lastName = parts[parts.length - 1].toUpperCase();
+    const otherParts = parts.slice(0, parts.length - 1).map(p => {
+      return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    });
+    return `${lastName}, ${otherParts.join(' ')}`;
+  },
+
+  checkNotifications(newComplaints) {
+    if (!this.state.loggedStudent) return;
+    const studentIdx = this.state.loggedStudent.index;
+    const cacheKeyStatus = `past_complaint_statuses_${studentIdx}`;
+    const cacheKeyNotifs = `student_notifications_${studentIdx}`;
+    
+    let pastStatuses = JSON.parse(localStorage.getItem(cacheKeyStatus) || '{}');
+    let notifications = JSON.parse(localStorage.getItem(cacheKeyNotifs) || '[]');
+    
+    const isFirstRun = Object.keys(pastStatuses).length === 0;
+    let updatedStatuses = {};
+    let hasNewNotification = false;
+    
+    newComplaints.forEach(c => {
+      updatedStatuses[c.id] = c.status;
+      
+      if (!isFirstRun && pastStatuses[c.id] && pastStatuses[c.id] !== c.status) {
+        notifications.unshift({
+          id: Date.now() + Math.random().toString(36).substr(2, 5),
+          complaintId: c.id,
+          text: `Your complaint ${c.id} status has been updated to ${c.status}.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread: true
+        });
+        hasNewNotification = true;
+      }
+    });
+    
+    localStorage.setItem(cacheKeyStatus, JSON.stringify(updatedStatuses));
+    localStorage.setItem(cacheKeyNotifs, JSON.stringify(notifications));
+    
+    this.renderNotifications();
+    if (hasNewNotification) {
+      this.showToast('You have a new status update notification!', 'info');
+    }
+  },
+
+  renderNotifications() {
+    if (!this.state.loggedStudent) {
+      const widget = document.getElementById('student-notification-widget');
+      if (widget) widget.style.display = 'none';
+      return;
+    }
+    
+    const studentIdx = this.state.loggedStudent.index;
+    const cacheKeyNotifs = `student_notifications_${studentIdx}`;
+    const notifications = JSON.parse(localStorage.getItem(cacheKeyNotifs) || '[]');
+    
+    const widget = document.getElementById('student-notification-widget');
+    if (widget) widget.style.display = 'flex';
+    
+    const btn = document.getElementById('student-notification-btn');
+    const badge = document.getElementById('student-notification-badge');
+    const list = document.getElementById('student-notification-list');
+    
+    const unreadCount = notifications.filter(n => n.unread).length;
+    
+    if (unreadCount > 0) {
+      if (badge) {
+        badge.style.display = 'block';
+        badge.textContent = unreadCount;
+      }
+      if (btn) btn.classList.add('pulse');
+    } else {
+      if (badge) badge.style.display = 'none';
+      if (btn) btn.classList.remove('pulse');
+    }
+    
+    if (list) {
+      list.innerHTML = '';
+      if (notifications.length === 0) {
+        list.innerHTML = `
+          <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            No notifications yet.
+          </div>
+        `;
+      } else {
+        notifications.forEach(n => {
+          const item = document.createElement('div');
+          item.className = `notification-item ${n.unread ? 'unread' : ''}`;
+          item.innerHTML = `
+            <span class="notification-item-text">${n.text}</span>
+            <span class="notification-item-time">${n.timestamp}</span>
+          `;
+          item.onclick = () => {
+            this.handleNotificationClick(n);
+          };
+          list.appendChild(item);
+        });
+      }
+    }
+  },
+
+  handleNotificationClick(notification) {
+    if (!this.state.loggedStudent) return;
+    const studentIdx = this.state.loggedStudent.index;
+    const cacheKeyNotifs = `student_notifications_${studentIdx}`;
+    let notifications = JSON.parse(localStorage.getItem(cacheKeyNotifs) || '[]');
+    const notif = notifications.find(n => n.id === notification.id);
+    if (notif) notif.unread = false;
+    localStorage.setItem(cacheKeyNotifs, JSON.stringify(notifications));
+    
+    const dropdown = document.getElementById('student-notification-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    
+    this.state.activeStudentComplaintId = notification.complaintId;
+    this.loadAndRenderStudent();
+    this.showView('track');
+    
+    this.renderNotifications();
+  },
+
+  markAllNotificationsRead() {
+    if (!this.state.loggedStudent) return;
+    const studentIdx = this.state.loggedStudent.index;
+    const cacheKeyNotifs = `student_notifications_${studentIdx}`;
+    let notifications = JSON.parse(localStorage.getItem(cacheKeyNotifs) || '[]');
+    notifications.forEach(n => n.unread = false);
+    localStorage.setItem(cacheKeyNotifs, JSON.stringify(notifications));
+    
+    this.renderNotifications();
+  },
+
+  toggleNotificationDropdown(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const dropdown = document.getElementById('student-notification-dropdown');
+    if (dropdown) {
+      const isVisible = dropdown.style.display === 'block';
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    const profileDropdown = document.getElementById('db-profile-dropdown');
+    if (profileDropdown) profileDropdown.style.display = 'none';
+  },
+
   // Check if student session is persistent
   checkStudentSession() {
     const session = localStorage.getItem('current_student_session');
@@ -85,11 +281,20 @@ const app = {
     if (session && window.API.getToken()) {
       try {
         this.state.loggedStudent = JSON.parse(session);
-        // Pull fresh complaints from the backend for the restored session.
-        this.loadAndRenderStudent();
+        
+        // Check if student profile is incomplete
+        if (this.state.loggedStudent && !this.state.loggedStudent.is_profile_complete) {
+          this.showProfileCompletionModal();
+        } else {
+          this.closeProfileCompletionModal();
+          // Pull fresh complaints from the backend for the restored session.
+          this.loadAndRenderStudent();
+        }
+
         // Show session badge in header
-        document.getElementById('logged-student-name').textContent = this.state.loggedStudent.name;
+        document.getElementById('logged-student-name').textContent = this.formatStudentName(this.state.loggedStudent.name);
         document.getElementById('student-session-badge').style.display = 'flex';
+        this.renderNotifications();
         
         if (navTabTrack) {
           navTabTrack.innerHTML = '<i data-lucide="layout-dashboard"></i> Dashboard';
@@ -97,7 +302,7 @@ const app = {
         
         const dbName = document.getElementById('db-profile-name');
         if (dbName) {
-          dbName.textContent = this.state.loggedStudent.name;
+          dbName.textContent = this.formatStudentName(this.state.loggedStudent.name);
         }
       } catch (e) {
         localStorage.removeItem('current_student_session');
@@ -106,6 +311,7 @@ const app = {
       if (navTabTrack) {
         navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
       }
+      this.closeProfileCompletionModal();
     }
     if (window.lucide) lucide.createIcons();
   },
@@ -270,6 +476,12 @@ const app = {
 
   // Simple SPA Routing Engine
   showView(viewName) {
+    if (this.state.loggedStudent && !this.state.loggedStudent.is_profile_complete) {
+      this.showProfileCompletionModal();
+      return;
+    }
+    this.closeProfileCompletionModal();
+
     const currentView = this.state.currentView || 'landing';
     if (currentView === 'file' && viewName !== 'file' && this.isFormDirty()) {
       if (!confirm("You have unsaved changes in your complaint form. Are you sure you want to leave?")) {
@@ -281,6 +493,27 @@ const app = {
       }
     }
     this.state.currentView = viewName;
+    
+    // Toggle body class helper for CSS targeting
+    if (viewName === 'file') {
+      document.body.classList.add('viewing-file-form');
+    } else {
+      document.body.classList.remove('viewing-file-form');
+    }
+    if (viewName === 'track') {
+      document.body.classList.add('view-track-active');
+      document.documentElement.classList.add('view-track-active');
+    } else {
+      document.body.classList.remove('view-track-active');
+      document.documentElement.classList.remove('view-track-active');
+    }
+
+    
+    // Hide floating action button on the filing form page itself
+    const floatingBtn = document.querySelector('.btn-floating-quick');
+    if (floatingBtn) {
+      floatingBtn.style.display = (viewName === 'file') ? 'none' : 'flex';
+    }
 
     document.querySelectorAll('.view-section').forEach(view => {
       view.classList.remove('active');
@@ -296,20 +529,29 @@ const app = {
       if (tabEl) tabEl.classList.add('active');
       window.location.hash = '#track';
 
-      if (!this.state.loggedStudent) {
+      if (!this.state.loggedStudent && !this.state.activeStudentComplaintId) {
         document.getElementById('student-login-panel-container').style.display = 'flex';
         document.getElementById('student-track-workspace').style.display = 'none';
       } else {
         document.getElementById('student-login-panel-container').style.display = 'none';
         document.getElementById('student-track-workspace').style.display = 'block';
-        
-        this.renderStudentHistory();
-        
+
+        // Always default to the empty state first. Only renderStudentTracker()
+        // (once it confirms a real, loaded complaint) is allowed to reveal
+        // #student-workspace-content — this prevents the unpopulated
+        // template (all "-" placeholders / "Subject Title") from ever
+        // flashing on screen before a ticket has actually loaded.
+        document.getElementById('student-workspace-placeholder').style.display = 'flex';
+        document.getElementById('student-workspace-content').style.display = 'none';
+
+        if (this.state.loggedStudent) {
+          this.renderStudentHistory();
+        }
+
         if (this.state.activeStudentComplaintId) {
           this.renderStudentTracker();
         } else {
-          document.getElementById('student-workspace-placeholder').style.display = 'flex';
-          document.getElementById('student-workspace-content').style.display = 'none';
+          this.renderStudentDashboard();
         }
       }
     } else {
@@ -324,7 +566,7 @@ const app = {
       }
       window.location.hash = `#${viewName}`;
       
-      if (viewName === 'file') {
+      if (viewName === 'file' && currentView !== 'file') {
         this.resetFilingForm();
       }
     }
@@ -362,24 +604,62 @@ const app = {
     const receiptVisible = document.getElementById('student-receipt-panel')?.style.display === 'block';
     if (receiptVisible) return false;
     
-    const name = document.getElementById('stud-name')?.value.trim();
-    const index = document.getElementById('stud-index')?.value.trim();
-    const prog = document.getElementById('stud-programme-search')?.value.trim();
-    const category = document.getElementById('comp-category')?.value;
     const subject = document.getElementById('comp-subject')?.value.trim();
     const desc = document.getElementById('comp-desc')?.value.trim();
     
-    return !!(name || index || prog || category || subject || desc);
+    return !!(subject || desc);
   },
 
-  // Student Authentication Submit (backend JWT auth)
+  // Student Authentication / Anonymous Ticket Checking Submit
   async handleLoginSubmit(e) {
     if (e) e.preventDefault();
-    const indexVal = document.getElementById('login-index').value.trim();
-    const passwordVal = document.getElementById('login-password').value.trim();
+    const ticketIdInput = document.getElementById('login-index');
+    const ticketIdVal = ticketIdInput ? ticketIdInput.value.trim().toUpperCase() : '';
+
+    if (!ticketIdVal) return;
+
+    if (!ticketIdVal.startsWith('UMAT-')) {
+      this.showToast("Please enter a valid Ticket ID (e.g., UMAT-2026-0001). To sign in with your student account, click 'Sign In' in the header.", "warning");
+      return;
+    }
+
+    try {
+      const ticket = await window.API.get(`/complaints/public/track/${encodeURIComponent(ticketIdVal)}`);
+      if (!ticket) {
+        this.showToast("No ticket found with that Ticket ID.", "error");
+        return;
+      }
+      
+      // Load into state as the single complaint
+      this.state.complaints = [ticket];
+      this.state.activeStudentComplaintId = ticket.id;
+      this.state.loggedStudent = null; // guest mode
+      
+      // Hide session badges
+      document.getElementById('student-session-badge').style.display = 'none';
+      
+      // Reset nav tab wording if present
+      const navTabTrack = document.getElementById('nav-tab-track');
+      if (navTabTrack) {
+        navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+      }
+      
+      // Toggle view
+      this.showView('track');
+      this.showToast("Ticket status loaded successfully!", "success");
+    } catch (err) {
+      this.showToast(err.message || 'Ticket not found. Check the Ticket ID.', 'error');
+    }
+  },
+
+  // Student Account Login Modal Submission
+  async handleStudentLoginSubmit(e) {
+    if (e) e.preventDefault();
+    const indexVal = document.getElementById('signin-student-id').value.trim();
+    const passwordVal = document.getElementById('signin-password').value.trim();
 
     if (!indexVal || !passwordVal) {
-      this.showToast("Please enter both index number and password.", "warning");
+      this.showToast("Please enter both student ID and password.", "warning");
       return;
     }
 
@@ -387,7 +667,7 @@ const app = {
     try {
       result = await window.API.post('/auth/student/login', { index_number: indexVal, password: passwordVal });
     } catch (err) {
-      this.showToast(err.message || 'Login failed. Check your index number and password.', 'error');
+      this.showToast(err.message || 'Login failed. Check your student ID and password.', 'error');
       return;
     }
 
@@ -400,6 +680,8 @@ const app = {
       phone: result.student.phone,
       level: result.student.level,
       programme: result.student.programme,
+      reference_number: result.student.reference_number,
+      is_profile_complete: result.student.is_profile_complete,
     };
     localStorage.setItem('current_student_session', JSON.stringify(matched));
     this.state.loggedStudent = matched;
@@ -417,10 +699,463 @@ const app = {
       dbName.textContent = matched.name;
     }
 
-    await this.refreshComplaints();
-    this.showView('track');
-    this.showToast(`Welcome back, ${matched.name}!`, "success");
+    this.closeSignInModal();
+    this.checkStudentSession();
+
+    if (this.state.loggedStudent && this.state.loggedStudent.is_profile_complete) {
+      await this.refreshComplaints();
+      if (this.state.preSelectedCategoryAfterLogin) {
+        const cat = this.state.preSelectedCategoryAfterLogin;
+        this.state.preSelectedCategoryAfterLogin = null;
+        this.setAnonymous(false);
+        this.selectCategoryAndFile(cat);
+      } else {
+        this.showView('track');
+      }
+      this.showToast(`Welcome back, ${matched.name}!`, "success");
+    }
   },
+
+  togglePasswordVisibility(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btnEl.innerHTML = '<i data-lucide="eye-off" style="width: 18px; height: 18px;"></i>';
+    } else {
+      input.type = 'password';
+      btnEl.innerHTML = '<i data-lucide="eye" style="width: 18px; height: 18px;"></i>';
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  setStudentAuthMode(mode) {
+    const tabLogin = document.getElementById('auth-tab-login');
+    const tabSignup = document.getElementById('auth-tab-signup');
+    const formLogin = document.getElementById('student-login-form');
+    const formSignup = document.getElementById('student-signup-form');
+    const headerTitle = document.getElementById('student-auth-title');
+    const headerDesc = document.getElementById('student-auth-desc');
+    
+    if (mode === 'signup') {
+      if (tabLogin) {
+        tabLogin.style.color = 'var(--text-muted)';
+        tabLogin.style.borderBottomColor = 'transparent';
+        tabLogin.style.fontWeight = '600';
+      }
+      if (tabSignup) {
+        tabSignup.style.color = 'var(--accent)';
+        tabSignup.style.borderBottomColor = 'var(--accent)';
+        tabSignup.style.fontWeight = '700';
+      }
+      if (formLogin) formLogin.style.display = 'none';
+      if (formSignup) formSignup.style.display = 'block';
+      if (headerTitle) headerTitle.textContent = 'Student Sign Up';
+      if (headerDesc) headerDesc.textContent = 'Create an account using your school email to file and track grievances.';
+    } else {
+      if (tabLogin) {
+        tabLogin.style.color = 'var(--accent)';
+        tabLogin.style.borderBottomColor = 'var(--accent)';
+        tabLogin.style.fontWeight = '700';
+      }
+      if (tabSignup) {
+        tabSignup.style.color = 'var(--text-muted)';
+        tabSignup.style.borderBottomColor = 'transparent';
+        tabSignup.style.fontWeight = '600';
+      }
+      if (formLogin) formLogin.style.display = 'block';
+      if (formSignup) formSignup.style.display = 'none';
+      if (headerTitle) headerTitle.textContent = 'Student Sign In';
+      if (headerDesc) headerDesc.textContent = 'Sign in with your student credentials to view and manage all your complaints.';
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  async handleStudentSignupSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    
+    if (!email.toLowerCase().endsWith('@st.umat.edu.gh')) {
+      this.showToast('Please use your official student email address ending with @st.umat.edu.gh', 'error');
+      return;
+    }
+    
+    try {
+      const result = await window.API.post('/auth/student/signup', {
+        email, password
+      });
+      
+      window.API.setToken(result.token);
+      this.state.loggedStudent = result.student;
+      localStorage.setItem('current_student_session', JSON.stringify(result.student));
+      
+      this.closeSignInModal();
+      this.checkStudentSession();
+      this.showView('track');
+      this.showToast('Registration successful! Please complete your profile details.', 'success');
+    } catch (err) {
+      this.showToast(err.message || 'Registration failed.', 'error');
+    }
+  },
+
+  showProfileCompletionModal() {
+    const modal = document.getElementById('profile-completion-modal');
+    if (modal) {
+      this.state.isProfileViewMode = false;
+
+      // Restore editable states
+      const fnInput = document.getElementById('onboarding-profile-firstname');
+      const mnInput = document.getElementById('onboarding-profile-middlename');
+      const lnInput = document.getElementById('onboarding-profile-lastname');
+      const phoneInput = document.getElementById('onboarding-profile-phone');
+      const refInput = document.getElementById('onboarding-profile-ref-num');
+      const levelSelect = document.getElementById('onboarding-profile-level');
+      const progInput = document.getElementById('onboarding-profile-prog-search');
+      const facInput = document.getElementById('onboarding-profile-faculty-search');
+      const deptInput = document.getElementById('onboarding-profile-dept-search');
+
+      if (fnInput) {
+        fnInput.value = '';
+        fnInput.readOnly = false;
+        fnInput.style.background = '#ffffff';
+        fnInput.style.cursor = 'text';
+      }
+      if (mnInput) {
+        mnInput.value = '';
+        mnInput.readOnly = false;
+        mnInput.style.background = '#ffffff';
+        mnInput.style.cursor = 'text';
+      }
+      if (lnInput) {
+        lnInput.value = '';
+        lnInput.readOnly = false;
+        lnInput.style.background = '#ffffff';
+        lnInput.style.cursor = 'text';
+      }
+      if (phoneInput) {
+        phoneInput.value = this.state.loggedStudent ? this.state.loggedStudent.phone || '' : '';
+        phoneInput.readOnly = false;
+        phoneInput.style.background = '#ffffff';
+        phoneInput.style.cursor = 'text';
+      }
+      if (refInput) {
+        refInput.value = '';
+        refInput.readOnly = false;
+        refInput.style.background = '#ffffff';
+        refInput.style.cursor = 'text';
+      }
+      if (levelSelect) {
+        levelSelect.value = '';
+        levelSelect.disabled = false;
+        levelSelect.style.background = '#ffffff';
+        levelSelect.style.cursor = 'pointer';
+      }
+      if (progInput) {
+        progInput.value = '';
+        progInput.readOnly = false;
+        progInput.style.background = '#ffffff';
+        progInput.style.cursor = 'text';
+      }
+      if (facInput) {
+        facInput.value = '';
+        facInput.readOnly = false;
+        facInput.style.background = '#ffffff';
+        facInput.style.cursor = 'text';
+      }
+      if (deptInput) {
+        deptInput.value = '';
+        deptInput.readOnly = false;
+        deptInput.style.background = '#ffffff';
+        deptInput.style.cursor = 'text';
+      }
+
+      // Restore double panels
+      const leftPanel = document.querySelector('.onboarding-left-panel');
+      const rightPanel = document.querySelector('.onboarding-right-panel');
+      if (leftPanel) leftPanel.style.display = 'flex';
+      if (rightPanel) {
+        rightPanel.style.width = '';
+        rightPanel.style.flex = '';
+      }
+
+      // Restore Title & Subtitle
+      const titleSpan = document.querySelector('.onboarding-right-panel span');
+      const titleH3 = document.querySelector('.onboarding-right-panel h3');
+      const titleP = document.querySelector('.onboarding-right-panel p');
+      if (titleSpan) titleSpan.textContent = 'Step 2 of 3';
+      if (titleH3) titleH3.textContent = 'Complete your student profile';
+      if (titleP) titleP.textContent = 'This helps us route complaints to the right office and verify who submitted them.';
+
+      // Restore Submit Button
+      const submitBtn = document.querySelector('.onboarding-btn-submit');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<span>Save and continue</span> <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>';
+      }
+
+      // Restore Navigation tabs
+      const nav = document.getElementById('onboarding-nav');
+      if (nav) {
+        nav.innerHTML = `
+          <button class="nav-tab active" style="background: var(--accent); color: #ffffff; border: none; padding: 0.5rem 1.25rem; border-radius: 30px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-family: inherit; cursor: not-allowed;" disabled>
+            <i data-lucide="user-cog" style="width: 16px; height: 16px; stroke: #ffffff;"></i> Account Setup
+          </button>
+        `;
+      }
+
+      modal.style.display = 'flex';
+      if (this.state.loggedStudent) {
+        const onboardingNameEl = document.getElementById('onboarding-logged-name');
+        if (onboardingNameEl) {
+          onboardingNameEl.textContent = this.formatStudentName(this.state.loggedStudent.name || 'Student');
+        }
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+  },
+
+  toggleOnboardingDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('onboarding-profile-dropdown');
+    if (dropdown) {
+      const isVisible = dropdown.style.display === 'block';
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+  },
+
+  closeProfileCompletionModal() {
+    const modal = document.getElementById('profile-completion-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  handleProfileProgSearch(input) {
+    const inputVal = input.value.trim().toLowerCase();
+    const listContainer = document.getElementById('onboarding-profile-prog-autocomplete-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    if (!inputVal) {
+      listContainer.style.display = 'none';
+      this.state.selectedProfileProgramme = null;
+      document.getElementById('onboarding-profile-faculty-search').value = '';
+      document.getElementById('onboarding-profile-dept-search').value = '';
+      return;
+    }
+    
+    const programmes = this.state.dbProgrammes || [];
+    const matches = programmes.filter(p => p.name.toLowerCase().includes(inputVal));
+    
+    if (matches.length === 0) {
+      listContainer.style.display = 'none';
+      return;
+    }
+    
+    matches.slice(0, 10).forEach(prog => {
+      const div = document.createElement('div');
+      div.className = 'autocomplete-item';
+      div.textContent = prog.name;
+      div.onclick = () => {
+        input.value = prog.name;
+        listContainer.style.display = 'none';
+        this.state.selectedProfileProgramme = prog;
+        
+        // Auto-populate searchable Faculty and Department inputs
+        const facultyName = this.state.dbFaculties[prog.facultyKey] || prog.facultyKey || 'General';
+        document.getElementById('onboarding-profile-faculty-search').value = facultyName;
+        document.getElementById('onboarding-profile-dept-search').value = prog.department || '';
+      };
+      listContainer.appendChild(div);
+    });
+    
+    listContainer.style.display = 'block';
+  },
+
+  handleProfileFacultySearch(input) {
+    const inputVal = input.value.trim().toLowerCase();
+    const listContainer = document.getElementById('onboarding-profile-faculty-autocomplete-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    if (!inputVal) {
+      listContainer.style.display = 'none';
+      return;
+    }
+    
+    const faculties = this.state.dbFacultiesList || [];
+    const matches = faculties.filter(f => f.name.toLowerCase().includes(inputVal));
+    
+    if (matches.length === 0) {
+      listContainer.style.display = 'none';
+      return;
+    }
+    
+    matches.slice(0, 5).forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'autocomplete-item';
+      div.textContent = f.name;
+      div.onclick = () => {
+        input.value = f.name;
+        listContainer.style.display = 'none';
+      };
+      listContainer.appendChild(div);
+    });
+    
+    listContainer.style.display = 'block';
+  },
+
+  handleProfileDeptSearch(input) {
+    const inputVal = input.value.trim().toLowerCase();
+    const listContainer = document.getElementById('onboarding-profile-dept-autocomplete-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    if (!inputVal) {
+      listContainer.style.display = 'none';
+      return;
+    }
+    
+    const departments = this.state.dbDepartments || [];
+    const matches = departments.filter(d => d.name.toLowerCase().includes(inputVal));
+    
+    if (matches.length === 0) {
+      listContainer.style.display = 'none';
+      return;
+    }
+    
+    matches.slice(0, 5).forEach(d => {
+      const div = document.createElement('div');
+      div.className = 'autocomplete-item';
+      div.textContent = d.name;
+      div.onclick = () => {
+        input.value = d.name;
+        listContainer.style.display = 'none';
+      };
+      listContainer.appendChild(div);
+    });
+    
+    listContainer.style.display = 'block';
+  },
+
+  closeAllAutocompletes() {
+    const listProg = document.getElementById('onboarding-profile-prog-autocomplete-list');
+    const listFaculty = document.getElementById('onboarding-profile-faculty-autocomplete-list');
+    const listDept = document.getElementById('onboarding-profile-dept-autocomplete-list');
+    if (listProg) listProg.style.display = 'none';
+    if (listFaculty) listFaculty.style.display = 'none';
+    if (listDept) listDept.style.display = 'none';
+  },
+
+  async handleProfileCompletionSubmit(e) {
+    e.preventDefault();
+    const firstname = document.getElementById('onboarding-profile-firstname').value.trim();
+    const middlename = document.getElementById('onboarding-profile-middlename').value.trim();
+    const lastname = document.getElementById('onboarding-profile-lastname').value.trim();
+
+    if (!firstname) {
+      this.showToast('Please enter your First Name.', 'warning');
+      return;
+    }
+    if (!lastname) {
+      this.showToast('Please enter your Last Name.', 'warning');
+      return;
+    }
+
+    const titleCase = (str) => {
+      if (!str) return '';
+      return str.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    };
+    const cleanMiddleName = (str) => {
+      const val = str.trim().toLowerCase();
+      if (!val || ['non', 'none', 'n/a', '-', 'nil'].includes(val)) {
+        return '';
+      }
+      return str.trim();
+    };
+    
+    const formattedLastName = lastname.toUpperCase();
+    const formattedFirstName = titleCase(firstname);
+    const mname = cleanMiddleName(middlename);
+    const formattedMiddleName = mname ? titleCase(mname) : '';
+    const name = `${formattedLastName}, ${formattedMiddleName ? formattedMiddleName + ' ' : ''}${formattedFirstName}`;
+    const phone = document.getElementById('onboarding-profile-phone').value.trim();
+    const level = document.getElementById('onboarding-profile-level').value;
+    const ref_num = document.getElementById('onboarding-profile-ref-num').value.trim();
+    let prog = this.state.selectedProfileProgramme;
+    if (!prog) {
+      const progInput = document.getElementById('onboarding-profile-prog-search');
+      if (progInput) {
+        const query = progInput.value.trim().toLowerCase();
+        if (query) {
+          const programmes = this.state.dbProgrammes || [];
+          const match = programmes.find(p => p.name.toLowerCase() === query) ||
+                        programmes.find(p => p.name.toLowerCase().includes(query));
+          if (match) {
+            prog = match;
+            this.state.selectedProfileProgramme = match;
+            progInput.value = match.name;
+            const facultyName = this.state.dbFaculties[match.facultyKey] || match.facultyKey || 'General';
+            const facInput = document.getElementById('onboarding-profile-faculty-search');
+            const deptInput = document.getElementById('onboarding-profile-dept-search');
+            if (facInput) facInput.value = facultyName;
+            if (deptInput) deptInput.value = match.department || '';
+          }
+        }
+      }
+    }
+    
+    if (!ref_num) {
+      this.showToast('Please enter your Reference Number.', 'warning');
+      return;
+    }
+    
+    if (!prog) {
+      this.showToast('Please search and select a valid course/programme from the list.', 'warning');
+      return;
+    }
+    
+    try {
+      console.log('[Onboarding] Submitting payload:', {
+        name,
+        index_number: ref_num,
+        phone,
+        level,
+        programme_id: prog.id,
+        reference_number: ref_num
+      });
+      const result = await window.API.post('/auth/student/complete-profile', {
+        name,
+        index_number: ref_num,
+        phone,
+        level,
+        programme_id: prog.id,
+        reference_number: ref_num
+      });
+      
+      // Update JWT token if re-signed
+      if (result.token) {
+        window.API.setToken(result.token);
+      }
+      
+      this.state.loggedStudent = result.student;
+      localStorage.setItem('current_student_session', JSON.stringify(result.student));
+      
+      this.closeProfileCompletionModal();
+      this.checkStudentSession();
+      this.loadAndRenderStudent();
+      this.showView('track');
+      this.showToast('Profile completed successfully! Welcome to your dashboard.', 'success');
+    } catch (err) {
+      console.error('[Onboarding] Profile completion failed:', err);
+      let detailMsg = '';
+      if (err.data && err.data.details) {
+        detailMsg = '\n\nDetails:\n' + err.data.details.map(d => `- ${d.path || d.param}: ${d.msg}`).join('\n');
+      }
+      alert('Error during submission: ' + (err.message || 'Unknown network error') + detailMsg);
+      this.showToast(err.message || 'Failed to save profile.', 'error');
+    }
+  },
+
+
 
   // Student Logout
   handleLogout() {
@@ -434,6 +1169,7 @@ const app = {
     this.state.complaints = [];
     
     document.getElementById('student-session-badge').style.display = 'none';
+    this.renderNotifications();
     
     const navTabTrack = document.getElementById('nav-tab-track');
     if (navTabTrack) {
@@ -444,14 +1180,332 @@ const app = {
     this.showToast("You have been logged out successfully.", "info");
   },
 
+  // Handle category selection from home pills (checks for Harassment warning)
+  handleCategoryPillClick(category) {
+    if (category === 'Harassment') {
+      const modal = document.getElementById('harassment-priority-modal');
+      if (modal) modal.style.display = 'flex';
+      if (window.lucide) lucide.createIcons();
+    } else {
+      this.selectCategory(category);
+    }
+  },
+
+  closeHarassmentModal() {
+    const modal = document.getElementById('harassment-priority-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  proceedToChoiceFromHarassment() {
+    this.closeHarassmentModal();
+    this.selectCategory('Harassment');
+  },
+
+  selectCategory(category) {
+    this.state.tempSelectedCategory = category;
+    const lede = document.getElementById('catEntryLede');
+    if (lede) {
+      if (category === 'Harassment') {
+        lede.textContent = 'Signing in lets the Title IX coordinator follow up directly, which matters most for this category.';
+      } else {
+        lede.textContent = 'Both options are reviewed the same way — the difference is whether the office can follow up with you directly.';
+      }
+    }
+    const modal = document.getElementById('submit-method-choice-modal');
+    if (modal) modal.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+  },
+
+  closeChoiceModal() {
+    const modal = document.getElementById('submit-method-choice-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  choiceContinueWithId() {
+    this.closeChoiceModal();
+    if (this.state.loggedStudent) {
+      // Already logged in, go straight to form with ID
+      this.setAnonymous(false);
+      this.selectCategoryAndFile(this.state.tempSelectedCategory);
+    } else {
+      // Save choice and prompt login
+      this.state.preSelectedCategoryAfterLogin = this.state.tempSelectedCategory;
+      this.showSignInModal();
+    }
+  },
+
+  choiceContinueAnonymously() {
+    this.closeChoiceModal();
+    this.setAnonymous(true);
+    this.selectCategoryAndFile(this.state.tempSelectedCategory);
+  },
+
+  setAnonymous(isAnon) {
+    this.state.isAnonymousSubmission = isAnon;
+    const chip = document.getElementById('idchip');
+
+    if (isAnon) {
+      if (chip) {
+        chip.style.background = 'rgba(229, 62, 62, 0.08)';
+        chip.style.color = 'var(--status-rejected)';
+        chip.style.borderColor = 'rgba(229, 62, 62, 0.2)';
+        chip.innerHTML = '<i data-lucide="user-minus"></i> <span id="idchip-text">Submitting anonymously</span>';
+      }
+      
+      // Load anonymous default values under-the-hood
+      const inputName = document.getElementById('stud-name');
+      const inputIndex = document.getElementById('stud-index');
+      const inputProg = document.getElementById('stud-programme-search');
+      if (inputName) inputName.value = 'Anonymous Student';
+      if (inputIndex) inputIndex.value = '9099999999';
+      if (inputProg) inputProg.value = 'BSc Computer Science and Engineering';
+      this.state.selectedProgramme = { name: 'BSc Computer Science and Engineering' };
+    } else {
+      const name = this.formatStudentName(this.state.loggedStudent ? this.state.loggedStudent.name : 'Bennin Paa Kofi');
+      if (chip) {
+        chip.style.background = 'rgba(34, 197, 94, 0.08)';
+        chip.style.color = 'var(--accent)';
+        chip.style.borderColor = 'rgba(34, 197, 94, 0.2)';
+        chip.innerHTML = `<i data-lucide="id-badge"></i> <span id="idchip-text">Signed in as ${name}</span>`;
+      }
+      
+      // Use logged-in student credentials
+      if (this.state.loggedStudent) {
+        const inputName = document.getElementById('stud-name');
+        const inputIndex = document.getElementById('stud-index');
+        const inputProg = document.getElementById('stud-programme-search');
+        if (inputName) inputName.value = this.formatStudentName(this.state.loggedStudent.name);
+        if (inputIndex) inputIndex.value = this.state.loggedStudent.index;
+        if (inputProg) inputProg.value = this.state.loggedStudent.programme;
+        
+        const matchedProg = window.PROGRAMMES.find(p => p.name === this.state.loggedStudent.programme);
+        this.state.selectedProgramme = matchedProg || { name: this.state.loggedStudent.programme };
+      }
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  goToAnonymousForm() {
+    this.setAnonymous(true);
+    this.showView('file');
+  },
+
+  showLoginOverlayFromTracker(e) {
+    if (e) e.preventDefault();
+    
+    let prefillIndex = '';
+    if (this.state.activeStudentComplaintId) {
+      const activeComp = this.state.complaints.find(c => c.id === this.state.activeStudentComplaintId);
+      if (activeComp && activeComp.studentIndex !== '9099999999') {
+        prefillIndex = activeComp.studentIndex;
+      }
+    }
+
+    this.showSignInModal(prefillIndex);
+  },
+
+  showSignInModal(prefilledIndex = '') {
+    if (prefilledIndex && typeof prefilledIndex === 'object') {
+      // Handle event argument if called from event handler
+      if (prefilledIndex.preventDefault) prefilledIndex.preventDefault();
+      prefilledIndex = '';
+    }
+
+    if (this.state.loggedStudent) {
+      this.showView('track');
+      return;
+    }
+
+    const modal = document.getElementById('student-signin-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      const idInput = document.getElementById('signin-student-id');
+      const passInput = document.getElementById('signin-password');
+      if (idInput) {
+        idInput.value = prefilledIndex;
+      }
+      if (passInput) {
+        passInput.value = '';
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+  },
+
+  closeSignInModal() {
+    const modal = document.getElementById('student-signin-modal');
+    if (modal) modal.style.display = 'none';
+    this.setStudentAuthMode('login');
+  },
+
   // Reset form views
   resetFilingForm() {
     document.getElementById('student-file-panel').style.display = 'block';
     document.getElementById('student-receipt-panel').style.display = 'none';
     document.getElementById('complaint-form').reset();
-    this.state.selectedProgramme = null;
-    document.getElementById('stud-programme-search').value = '';
+    
+    // Dynamically apply any saved category selection state from routing/home pills
+    if (window.debugLog) window.debugLog(`[resetFilingForm] preSelectedCategory at start: ${this.state.preSelectedCategory}`);
+    if (this.state.preSelectedCategory) {
+      const categorySelect = document.getElementById('comp-category');
+      if (categorySelect) {
+        const options = Array.from(categorySelect.options);
+        const targetCategory = this.state.preSelectedCategory;
+        if (window.debugLog) window.debugLog(`[resetFilingForm] Available options: ${options.map(o => o.value).join(', ')}`);
+        const match = options.find(opt => {
+          const val = opt.value.toLowerCase();
+          if (!val) return false;
+          const txt = opt.text.toLowerCase();
+          const target = targetCategory.toLowerCase();
+          const isFinanceMatch = (target.includes('finan') || target.includes('finac')) && (val.includes('finance') || val.includes('fees'));
+          const res = val === target || txt.includes(target) || target.includes(val) || isFinanceMatch;
+          if (window.debugLog) window.debugLog(`Compare: val='${val}' txt='${txt}' target='${target}' -> res=${res}`);
+          return res;
+        });
+        if (window.debugLog) window.debugLog(`[resetFilingForm] Found match: ${match ? match.value : 'none'}`);
+        if (match) {
+          categorySelect.value = match.value;
+          if (window.debugLog) window.debugLog(`[resetFilingForm] Set value to: ${categorySelect.value}`);
+        }
+      }
+      this.state.preSelectedCategory = null;
+    }
+    
+    // Reset custom file upload zone text
+    const fileTxt = document.getElementById('file-upload-text');
+    if (fileTxt) {
+      fileTxt.textContent = 'Click to upload evidence, screenshots, or documents';
+      fileTxt.style.color = 'var(--text-muted)';
+    }
+    
+    const groupName = document.getElementById('group-stud-name');
+    const groupIndex = document.getElementById('group-stud-index');
+    const groupProg = document.getElementById('group-stud-programme');
+    const inputName = document.getElementById('stud-name');
+    const inputIndex = document.getElementById('stud-index');
+    const inputProg = document.getElementById('stud-programme-search');
+
+    if (this.state.loggedStudent) {
+      // Prefill with session state
+      if (inputName) {
+        inputName.value = this.state.loggedStudent.name;
+        inputName.removeAttribute('required');
+      }
+      if (inputIndex) {
+        inputIndex.value = this.state.loggedStudent.index;
+        inputIndex.removeAttribute('required');
+      }
+      if (inputProg) {
+        inputProg.value = this.state.loggedStudent.programme;
+        inputProg.removeAttribute('required');
+      }
+      const matchedProg = window.PROGRAMMES.find(p => p.name === this.state.loggedStudent.programme);
+      this.state.selectedProgramme = matchedProg || { name: this.state.loggedStudent.programme };
+    } else {
+      // Under-the-hood fallback for anonymous submission
+      if (inputName) {
+        inputName.value = 'Anonymous Student';
+        inputName.removeAttribute('required');
+      }
+      if (inputIndex) {
+        inputIndex.value = '9099999999';
+        inputIndex.removeAttribute('required');
+      }
+      if (inputProg) {
+        inputProg.value = 'BSc Computer Science and Engineering';
+        inputProg.removeAttribute('required');
+      }
+      this.state.selectedProgramme = { name: 'BSc Computer Science and Engineering' };
+    }
+
+    // Always hide personal details fields (either prefilled from session or submitted anonymously)
+    if (groupName) groupName.style.display = 'none';
+    if (groupIndex) groupIndex.style.display = 'none';
+    if (groupProg) groupProg.style.display = 'none';
+
+    // Submitter Identity Selector (Visible only when student is logged in)
+    const identitySelector = document.getElementById('submitter-identity-selector');
+    if (identitySelector) {
+      if (this.state.loggedStudent) {
+        identitySelector.style.display = 'block';
+        const radioReal = document.getElementById('filing-id-real');
+        const radioAnon = document.getElementById('filing-id-anon');
+        if (radioReal) radioReal.checked = true;
+        if (radioAnon) radioAnon.checked = false;
+        this.toggleFilingIdentity('real');
+      } else {
+        identitySelector.style.display = 'none';
+        this.setAnonymous(true);
+      }
+    }
+    
     this.updateRoutingPreview();
+  },
+
+  toggleFilingIdentity(mode) {
+    if (!this.state.loggedStudent) return;
+    
+    const idchip = document.getElementById('idchip');
+    const idchipText = document.getElementById('idchip-text');
+    const metaText = document.getElementById('identity-meta-text');
+    
+    const studName = document.getElementById('stud-name');
+    const studIndex = document.getElementById('stud-index');
+    const studProg = document.getElementById('stud-programme-search');
+    
+    if (mode === 'anon') {
+      this.state.isAnonymousSubmission = true;
+      if (studName) studName.value = 'Anonymous Student';
+      if (studIndex) studIndex.value = '9099999999';
+      if (studProg) studProg.value = this.state.loggedStudent.programme || 'BSc Computer Science and Engineering';
+      
+      const matchedProg = window.PROGRAMMES.find(p => p.name === studProg.value);
+      this.state.selectedProgramme = matchedProg || { name: studProg.value };
+      
+      if (idchipText) idchipText.textContent = 'Submitting anonymously';
+      if (idchip) {
+        idchip.style.borderColor = 'rgba(229, 62, 62, 0.2)';
+        idchip.style.color = 'var(--status-rejected)';
+        idchip.style.background = 'rgba(229, 62, 62, 0.08)';
+        idchip.innerHTML = '<i data-lucide="user-minus"></i> <span id="idchip-text">Submitting anonymously</span>';
+      }
+      if (metaText) metaText.textContent = 'Your student details are hidden; this complaint will be filed anonymously.';
+      if (window.lucide) lucide.createIcons();
+    } else {
+      this.state.isAnonymousSubmission = false;
+      const formattedName = this.formatStudentName(this.state.loggedStudent.name);
+      if (studName) studName.value = formattedName;
+      if (studIndex) studIndex.value = this.state.loggedStudent.index;
+      if (studProg) studProg.value = this.state.loggedStudent.programme || 'BSc Computer Science and Engineering';
+      
+      const matchedProg = window.PROGRAMMES.find(p => p.name === studProg.value);
+      this.state.selectedProgramme = matchedProg || { name: studProg.value };
+      
+      const capitalizedProgram = (this.state.loggedStudent.programme || '').replace('BSc ', '');
+      if (idchipText) idchipText.textContent = `Signed in as ${formattedName}`;
+      if (idchip) {
+        idchip.style.borderColor = 'rgba(34, 197, 94, 0.2)';
+        idchip.style.color = 'var(--accent)';
+        idchip.style.background = 'rgba(34, 197, 94, 0.08)';
+        idchip.innerHTML = `<i data-lucide="id-badge"></i> <span id="idchip-text">Signed in as ${formattedName}</span>`;
+      }
+      if (metaText) metaText.textContent = `Submitting as: ${formattedName} (${this.state.loggedStudent.index}) — ${capitalizedProgram}`;
+      if (window.lucide) lucide.createIcons();
+    }
+    this.updateRoutingPreview();
+  },
+
+  // Handle custom drag-zone file uploads
+  handleFileSelectionChange(input) {
+    const text = document.getElementById('file-upload-text');
+    if (text) {
+      if (input.files && input.files[0]) {
+        text.textContent = `Selected file: ${input.files[0].name}`;
+        text.style.color = 'var(--accent)';
+      } else {
+        text.textContent = 'Click to upload evidence, screenshots, or documents';
+        text.style.color = 'var(--text-muted)';
+      }
+    }
   },
 
   // Form Submission (Public — no login required, per the "instant public
@@ -511,6 +1565,29 @@ const app = {
     document.getElementById('receipt-category').textContent = category;
     document.getElementById('receipt-routed-to').textContent = `${recipient.role} (${recipient.name})`;
 
+    // Dynamic Confirmation screen wording toggle
+    const recTitle = document.getElementById('receipt-title');
+    const recSubtitle = document.getElementById('receipt-subtitle');
+    const recLabel = document.getElementById('receipt-label-title');
+    const warningNote = document.getElementById('receipt-anonymous-warning-note');
+
+    const filerItems = document.querySelectorAll('.receipt-filer-item');
+    filerItems.forEach(item => {
+      item.style.display = this.state.isAnonymousSubmission ? 'none' : 'flex';
+    });
+
+    if (this.state.isAnonymousSubmission) {
+      if (recTitle) recTitle.textContent = 'Complaint submitted anonymously';
+      if (recSubtitle) recSubtitle.textContent = "Your identity was not recorded. Save the code below — it's the only way to check this complaint's status.";
+      if (recLabel) recLabel.textContent = 'Your reference code';
+      if (warningNote) warningNote.style.display = 'flex';
+    } else {
+      if (recTitle) recTitle.textContent = 'Complaint submitted';
+      if (recSubtitle) recSubtitle.textContent = "Your complaint has been received and routed to the appropriate office. You'll be notified as it moves through review.";
+      if (recLabel) recLabel.textContent = 'Ticket ID';
+      if (warningNote) warningNote.style.display = 'none';
+    }
+
     const attRow = document.getElementById('receipt-attachment-row');
     const attLink = document.getElementById('receipt-attachment-link');
     if (ticket.attachment) {
@@ -546,6 +1623,49 @@ const app = {
 
   goToTrackAfterFiling() {
     this.showView('track');
+  },
+
+  showDashboardOverview() {
+    this.state.activeStudentComplaintId = null;
+    document.querySelectorAll('.complaint-list-item').forEach(el => el.classList.remove('active'));
+    this.renderStudentTracker();
+  },
+
+  renderStudentDashboard() {
+    if (!this.state.loggedStudent) return;
+    
+    // Extract Last Name (before comma if formatted, else last word)
+    const fullName = this.state.loggedStudent.name || 'Student';
+    let displayLastName = 'STUDENT';
+    if (fullName.includes(',')) {
+      displayLastName = fullName.split(',')[0].trim().toUpperCase();
+    } else {
+      const parts = fullName.trim().split(/\s+/).filter(Boolean);
+      displayLastName = parts[parts.length - 1].toUpperCase();
+    }
+    
+    const welcomeTitle = document.getElementById('dash-welcome-title');
+    if (welcomeTitle) {
+      welcomeTitle.textContent = `Welcome, ${displayLastName}`;
+    }
+    
+    // Count student complaints by status
+    const studentIndex = this.state.loggedStudent.index;
+    const studentComplaints = this.state.complaints.filter(c => c.studentIndex === studentIndex);
+    
+    const awaitingCount = studentComplaints.filter(c => c.status === 'Submitted').length;
+    const progressCount = studentComplaints.filter(c => c.status === 'In Review' || c.status === 'In Progress').length;
+    const resolvedCount = studentComplaints.filter(c => c.status === 'Resolved').length;
+    
+    const countAwaiting = document.getElementById('dash-count-awaiting');
+    const countProgress = document.getElementById('dash-count-progress');
+    const countResolved = document.getElementById('dash-count-resolved');
+    
+    if (countAwaiting) countAwaiting.textContent = awaitingCount;
+    if (countProgress) countProgress.textContent = progressCount;
+    if (countResolved) countResolved.textContent = resolvedCount;
+    
+    if (window.lucide) lucide.createIcons();
   },
 
   // Student Search (Deprecated / Redirects to history load)
@@ -592,6 +1712,8 @@ const app = {
       `;
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
+      // Nothing exists to show — make sure no stale complaint id lingers.
+      this.state.activeStudentComplaintId = null;
     } else {
       // Auto-load active student complaint if not set
       if (!this.state.activeStudentComplaintId && studentComplaints.length > 0) {
@@ -664,20 +1786,29 @@ const app = {
 
         list.appendChild(item);
       });
+
+      // We now have complaints and a resolved active id — let
+      // renderStudentTracker() populate + reveal the content pane.
+      // (Called explicitly here as a safety net in case a caller invokes
+      // renderStudentHistory() without a follow-up renderStudentTracker().)
+      if (this.state.activeStudentComplaintId) {
+        this.renderStudentTracker();
+      }
     }
 
     if (window.lucide) lucide.createIcons();
   },
 
-  // Render Student Tracker Workspace
   renderStudentTracker() {
     const id = this.state.activeStudentComplaintId;
     const placeholder = document.getElementById('student-workspace-placeholder');
     const content = document.getElementById('student-workspace-content');
+    const dashHeader = document.getElementById('student-dashboard-header');
 
     if (!id) {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
+      if (dashHeader) dashHeader.style.display = 'flex';
       return;
     }
 
@@ -686,11 +1817,23 @@ const app = {
     if (!complaint) {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
+      if (dashHeader) dashHeader.style.display = 'flex';
       return;
     }
 
     if (placeholder) placeholder.style.display = 'none';
     if (content) content.style.display = 'flex';
+    if (dashHeader) dashHeader.style.display = 'flex';
+
+    // Toggle anonymous layout view (hides sidebar for single ticket guest tracking)
+    const workspace = document.getElementById('student-track-workspace');
+    if (workspace) {
+      if (!this.state.loggedStudent) {
+        workspace.classList.add('anonymous-tracking-mode');
+      } else {
+        workspace.classList.remove('anonymous-tracking-mode');
+      }
+    }
 
     // Populate Metadata
     document.getElementById('track-meta-id').textContent = complaint.id;
@@ -699,6 +1842,12 @@ const app = {
     document.getElementById('track-meta-owner').textContent = complaint.assignedTo || "Unassigned";
 
     // Filer Info Metadata
+    const isAnonymousTicket = (complaint.studentIndex === '9099999999' || complaint.studentName === 'Anonymous Student');
+    const filerRow = document.getElementById('track-meta-student-info-row');
+    if (filerRow) {
+      filerRow.style.display = isAnonymousTicket ? 'none' : 'grid';
+    }
+
     const nameEl = document.getElementById('track-meta-student-name');
     const indexEl = document.getElementById('track-meta-student-index');
     const progEl = document.getElementById('track-meta-student-prog');
@@ -706,7 +1855,7 @@ const app = {
     if (nameEl) nameEl.textContent = complaint.studentName || "N/A";
     if (indexEl) indexEl.textContent = complaint.studentIndex || "N/A";
     if (progEl) progEl.textContent = complaint.studentProgramme || "N/A";
-    if (levelEl) levelEl.textContent = (complaint.studentLevel || "N/A") + " L";
+    if (levelEl) levelEl.textContent = (complaint.studentLevel && complaint.studentLevel !== 'N/A') ? (complaint.studentLevel + " L") : "N/A";
     
     // Status Badge
     const badgeContainer = document.getElementById('track-status-badge-container');
@@ -745,51 +1894,155 @@ const app = {
     this.renderAppointmentCard(complaint);
 
     // Render Timeline Progress Bar
-    const statusSequence = ["Submitted", "Under Review", "In Progress", "Resolved"];
+    const isGuestMode = !this.state.loggedStudent;
     const timelineProgress = document.getElementById('track-timeline-progress');
-    const nodes = {
-      "Submitted": document.getElementById('node-submitted'),
-      "Under Review": document.getElementById('node-review'),
-      "In Progress": document.getElementById('node-progress'),
-      "Resolved": document.getElementById('node-resolved')
-    };
+    const nodeSubmitted = document.getElementById('node-submitted');
+    const nodeReview = document.getElementById('node-review');
+    const nodeProgress = document.getElementById('node-progress');
+    const nodeResolved = document.getElementById('node-resolved');
 
-    Object.keys(nodes).forEach(k => {
-      if (nodes[k]) nodes[k].classList.remove('active', 'completed');
-    });
+    const lbl1 = document.getElementById('lbl-node-1');
+    const lbl2 = document.getElementById('lbl-node-2');
+    const lbl3 = document.getElementById('lbl-node-3');
+    const lbl4 = document.getElementById('lbl-node-4');
 
-    let activeStepIndex = statusSequence.indexOf(complaint.status);
-    if (complaint.status === "Rejected") {
-      activeStepIndex = 3;
-      if (nodes["Resolved"]) {
-        nodes["Resolved"].querySelector('.timeline-label').textContent = "Rejected";
-        nodes["Resolved"].querySelector('.timeline-label').style.color = 'var(--status-rejected)';
-        nodes["Resolved"].querySelector('.timeline-icon').style.background = 'var(--status-rejected)';
-        nodes["Resolved"].querySelector('.timeline-icon').style.borderColor = 'var(--status-rejected)';
+    if (isGuestMode) {
+      // 3-step timeline: Received -> Under review -> Resolved
+      if (nodeProgress) nodeProgress.style.display = 'none';
+      if (lbl1) lbl1.textContent = 'Received';
+      if (lbl2) lbl2.textContent = 'Under review';
+      if (lbl4) lbl4.textContent = (complaint.status === 'Rejected') ? 'Rejected' : 'Resolved';
+
+      // Reset classes
+      [nodeSubmitted, nodeReview, nodeResolved].forEach(node => {
+        if (node) node.classList.remove('active', 'completed');
+      });
+
+      let progressWidth = 0;
+      if (complaint.status === 'Submitted') {
+        progressWidth = 0;
+        if (nodeSubmitted) nodeSubmitted.classList.add('active');
+      } else if (complaint.status === 'Under Review' || complaint.status === 'In Progress') {
+        progressWidth = 50;
+        if (nodeSubmitted) nodeSubmitted.classList.add('completed');
+        if (nodeReview) nodeReview.classList.add('active');
+      } else if (complaint.status === 'Resolved' || complaint.status === 'Rejected') {
+        progressWidth = 100;
+        if (nodeSubmitted) nodeSubmitted.classList.add('completed');
+        if (nodeReview) nodeReview.classList.add('completed');
+        if (nodeResolved) nodeResolved.classList.add('completed');
+        
+        // Handle Rejected color style
+        if (complaint.status === 'Rejected') {
+          if (nodeResolved) {
+            nodeResolved.querySelector('.timeline-label').style.color = 'var(--status-rejected)';
+            nodeResolved.querySelector('.timeline-icon').style.background = 'var(--status-rejected)';
+            nodeResolved.querySelector('.timeline-icon').style.borderColor = 'var(--status-rejected)';
+          }
+        } else {
+          if (nodeResolved) {
+            nodeResolved.querySelector('.timeline-label').style.color = '';
+            nodeResolved.querySelector('.timeline-icon').style.background = '';
+            nodeResolved.querySelector('.timeline-icon').style.borderColor = '';
+          }
+        }
       }
+      if (timelineProgress) timelineProgress.style.width = `${progressWidth}%`;
     } else {
-      if (nodes["Resolved"]) {
-        nodes["Resolved"].querySelector('.timeline-label').textContent = "Resolved";
-        nodes["Resolved"].querySelector('.timeline-label').style.color = '';
-        nodes["Resolved"].querySelector('.timeline-icon').style.background = '';
-        nodes["Resolved"].querySelector('.timeline-icon').style.borderColor = '';
+      // 4-step timeline: Submitted -> Under Review -> In Progress -> Resolved
+      if (nodeProgress) nodeProgress.style.display = 'flex';
+      if (lbl1) lbl1.textContent = 'Submitted';
+      if (lbl2) lbl2.textContent = 'Under Review';
+      if (lbl3) lbl3.textContent = 'In Progress';
+      if (lbl4) lbl4.textContent = (complaint.status === 'Rejected') ? 'Rejected' : 'Resolved';
+
+      const statusSequence = ["Submitted", "Under Review", "In Progress", "Resolved"];
+      const nodes = {
+        "Submitted": nodeSubmitted,
+        "Under Review": nodeReview,
+        "In Progress": nodeProgress,
+        "Resolved": nodeResolved
+      };
+
+      Object.keys(nodes).forEach(k => {
+        if (nodes[k]) nodes[k].classList.remove('active', 'completed');
+      });
+
+      let activeStepIndex = statusSequence.indexOf(complaint.status);
+      if (complaint.status === "Rejected") {
+        activeStepIndex = 3;
+        if (nodeResolved) {
+          nodeResolved.querySelector('.timeline-label').style.color = 'var(--status-rejected)';
+          nodeResolved.querySelector('.timeline-icon').style.background = 'var(--status-rejected)';
+          nodeResolved.querySelector('.timeline-icon').style.borderColor = 'var(--status-rejected)';
+        }
+      } else {
+        if (nodeResolved) {
+          nodeResolved.querySelector('.timeline-label').style.color = '';
+          nodeResolved.querySelector('.timeline-icon').style.background = '';
+          nodeResolved.querySelector('.timeline-icon').style.borderColor = '';
+        }
+      }
+
+      if (activeStepIndex >= 0) {
+        const widthPercent = (activeStepIndex / 3) * 100;
+        if (timelineProgress) timelineProgress.style.width = `${widthPercent}%`;
+
+        for (let i = 0; i <= activeStepIndex; i++) {
+          const stepVal = statusSequence[i];
+          const node = nodes[stepVal];
+          if (node) {
+            if (i === activeStepIndex && complaint.status !== "Resolved" && complaint.status !== "Rejected") {
+              node.classList.add('active');
+            } else {
+              node.classList.add('completed');
+            }
+          }
+        }
       }
     }
 
-    if (activeStepIndex >= 0) {
-      const widthPercent = (activeStepIndex / 3) * 100;
-      timelineProgress.style.width = `${widthPercent}%`;
-
-      for (let i = 0; i <= activeStepIndex; i++) {
-        const stepVal = statusSequence[i];
-        const node = nodes[stepVal];
-        if (node) {
-          if (i === activeStepIndex && complaint.status !== "Resolved" && complaint.status !== "Rejected") {
-            node.classList.add('active');
-          } else {
-            node.classList.add('completed');
-          }
+    // Dynamic status text message banner population
+    const msgCard = document.getElementById('track-status-message-card');
+    const msgText = document.getElementById('track-status-message-text');
+    if (msgCard && msgText) {
+      let customMsg = "";
+      if (complaint.status === 'Submitted') {
+        customMsg = "Your complaint has been successfully received by the department and is awaiting initial review.";
+      } else if (complaint.status === 'Under Review' || complaint.status === 'In Progress') {
+        if (complaint.category === 'Harassment') {
+          customMsg = "The Title IX coordinator is currently reviewing this case. You'll be notified when a decision is made.";
+        } else {
+          customMsg = "The department is currently reviewing this case. You'll be notified when a decision is made.";
         }
+      } else if (complaint.status === 'Resolved') {
+        customMsg = "This grievance has been resolved. You can check the final response details.";
+      } else if (complaint.status === 'Rejected') {
+        customMsg = "This grievance has been closed/rejected. Please contact the department for further guidance.";
+      }
+      
+      msgText.textContent = customMsg;
+      msgCard.style.display = 'block';
+    }
+
+    // Show/hide 'Login to see all tickets' banner and 'Full Details Area' based on anonymous vs authenticated tickets
+    const isGuestTrackingRegularTicket = (isGuestMode && !isAnonymousTicket);
+
+    const fullDetailsArea = document.getElementById('track-full-details-area');
+    if (fullDetailsArea) {
+      fullDetailsArea.style.display = isGuestTrackingRegularTicket ? 'none' : 'block';
+    }
+
+    const loginBanner = document.getElementById('track-login-banner');
+    if (loginBanner) {
+      if (isGuestTrackingRegularTicket) {
+        loginBanner.style.display = 'flex';
+        const bannerTitle = loginBanner.querySelector('h5');
+        if (bannerTitle) {
+          bannerTitle.textContent = "This complaint is associated with a student account. Please log in to view the full details, description, and admin guidelines.";
+        }
+      } else {
+        loginBanner.style.display = 'none';
       }
     }
 
@@ -905,6 +2158,110 @@ const app = {
     }
 
     if (window.lucide) lucide.createIcons();
+  },
+
+  // Dynamic Print-Only Complaint Document Formatter
+  printComplaintTicket() {
+    const id = this.state.activeStudentComplaintId;
+    if (!id) return;
+    const complaint = this.state.complaints.find(c => c.id === id);
+    if (!complaint) return;
+
+    // Helper functions for formatting dates in professional style
+    const formatPrintDate = (isoString) => {
+      if (!isoString) return '—';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+      const day = date.getDate();
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${day} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    };
+
+    const formatPrintDateTime = (isoString) => {
+      if (!isoString) return '—';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+      const day = date.getDate();
+      const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day} ${shortMonths[date.getMonth()]} ${date.getFullYear()}, ${hours}:${minutes} ${ampm}`;
+    };
+
+    // Populate print template fields
+    document.getElementById('print-ticket-id').textContent = `Ticket ${complaint.id}`;
+    document.getElementById('print-date-filed').textContent = formatPrintDate(complaint.createdAt);
+    document.getElementById('print-department').textContent = complaint.routingDept || 'General';
+    document.getElementById('print-priority').textContent = complaint.urgency || 'Normal';
+    
+    const statusEl = document.getElementById('print-status');
+    statusEl.textContent = complaint.status;
+    statusEl.className = `print-status-badge print-status-${complaint.status.replace(' ', '-').toLowerCase()}`;
+
+    // Student Info
+    const isAnon = (complaint.studentIndex === '9099999999' || complaint.studentName === 'Anonymous Student');
+    document.getElementById('print-student-name').textContent = complaint.studentName || '—';
+    
+    let refVal = '—';
+    if (isAnon) {
+      refVal = 'N/A';
+    } else if (complaint.studentRef && complaint.studentRef !== 'N/A') {
+      refVal = complaint.studentRef;
+    } else if (this.state.loggedStudent && this.state.loggedStudent.reference_number) {
+      refVal = this.state.loggedStudent.reference_number;
+    }
+    document.getElementById('print-ref-number').textContent = refVal;
+    document.getElementById('print-phone-number').textContent = complaint.studentPhone || '—';
+    document.getElementById('print-level').textContent = isAnon ? 'N/A' : (complaint.studentLevel || '—');
+    document.getElementById('print-faculty').textContent = complaint.studentFaculty || '—';
+    document.getElementById('print-dept').textContent = complaint.studentDept || '—';
+
+    // Subject & Description
+    document.getElementById('print-subject').textContent = complaint.subject || 'No Subject';
+    document.getElementById('print-description').textContent = complaint.description || 'No Description';
+
+    // Tags
+    const tagsContainer = document.getElementById('print-tags');
+    tagsContainer.innerHTML = '';
+    if (complaint.category) {
+      const catSpan = document.createElement('span');
+      catSpan.className = 'print-tag';
+      catSpan.textContent = complaint.category;
+      tagsContainer.appendChild(catSpan);
+    }
+    if (complaint.studentProgramme && complaint.studentProgramme !== 'N/A') {
+      const progSpan = document.createElement('span');
+      progSpan.className = 'print-tag';
+      progSpan.textContent = complaint.studentProgramme;
+      tagsContainer.appendChild(progSpan);
+    }
+
+    // Processing logs
+    const logRowsContainer = document.getElementById('print-log-rows');
+    logRowsContainer.innerHTML = '';
+    
+    // Sort timeline logs chronologically
+    const sortedTimeline = [...complaint.timeline].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    if (sortedTimeline.length === 0) {
+      logRowsContainer.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #718096; font-style: italic;">No actions logged yet.</td></tr>`;
+    } else {
+      sortedTimeline.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${formatPrintDateTime(log.date)}</td>
+          <td>${log.message}</td>
+          <td>${log.by}</td>
+        `;
+        logRowsContainer.appendChild(tr);
+      });
+    }
+
+    // Open browser native print utility
+    window.print();
   },
 
   // Calculate delay metrics and toggle reminder alerts
@@ -1129,6 +2486,26 @@ const app = {
     }
   },
 
+  toggleOnboardingDropdown(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById('onboarding-profile-dropdown');
+    const widget = document.getElementById('onboarding-profile-badge');
+    if (dropdown) {
+      const isVisible = dropdown.style.display === 'block';
+      dropdown.style.display = isVisible ? 'none' : 'block';
+      if (widget) {
+        widget.classList.toggle('active', !isVisible);
+      }
+    }
+  },
+
+  closeProfileCompletionModal() {
+    const modal = document.getElementById('profile-completion-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  },
+
   // Themes support
   loadTheme() {
     const savedTheme = localStorage.getItem('umat_selected_theme') || 'light';
@@ -1143,7 +2520,7 @@ const app = {
     localStorage.setItem('umat_selected_theme', themeName);
     
     // Update all theme dropdown elements in DOM
-    const themeSelects = document.querySelectorAll('#theme-selector, #theme-selector-analytics');
+    const themeSelects = document.querySelectorAll('#theme-selector, #theme-selector-analytics, #theme-selector-onboarding');
     themeSelects.forEach(select => {
       select.value = themeName;
     });
@@ -1205,6 +2582,84 @@ const app = {
     this.showToast("Password updated successfully!", "success");
   },
 
+  // Profile Modals
+  openProfileModal(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Close the dropdown first
+    const dropdown = document.getElementById('db-profile-dropdown');
+    const widget = document.querySelector('.dashboard-profile-widget');
+    if (dropdown) dropdown.style.display = 'none';
+    if (widget) widget.classList.remove('active');
+
+    if (!this.state.loggedStudent) return;
+
+    // Prefill modal form
+    document.getElementById('profile-index').value = this.state.loggedStudent.index || this.state.loggedStudent.index_number || '';
+    document.getElementById('profile-name').value = this.formatStudentName(this.state.loggedStudent.name || '');
+    document.getElementById('profile-programme').value = this.state.loggedStudent.programme || '';
+    document.getElementById('profile-level').value = this.state.loggedStudent.level || '';
+    document.getElementById('profile-phone').value = this.state.loggedStudent.phone || '';
+    document.getElementById('profile-email').value = this.state.loggedStudent.email || '';
+
+    const modal = document.getElementById('student-profile-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+    if (window.lucide) lucide.createIcons();
+  },
+
+  closeProfileModal() {
+    const modal = document.getElementById('student-profile-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  },
+
+  async handleProfileUpdateSubmit(e) {
+    e.preventDefault();
+    if (!this.state.loggedStudent) return;
+
+    const phone = document.getElementById('profile-phone').value.trim();
+    const email = this.state.loggedStudent.email;
+
+    try {
+      const result = await window.API.put('/auth/student/profile', { phone, email });
+      if (result.ok && result.student) {
+        // Update local session
+        const updated = {
+          index: result.student.index_number,
+          name: result.student.name,
+          email: result.student.email,
+          phone: result.student.phone,
+          level: result.student.level,
+          programme: result.student.programme,
+          reference_number: result.student.reference_number,
+          is_profile_complete: result.student.is_profile_complete,
+        };
+        localStorage.setItem('current_student_session', JSON.stringify(updated));
+        this.state.loggedStudent = updated;
+        
+        // Update header UI
+        document.getElementById('logged-student-name').textContent = updated.name;
+        const dbName = document.getElementById('db-profile-name');
+        if (dbName) dbName.textContent = updated.name;
+
+        // Sync quick complaint form if open
+        this.resetFilingForm();
+        
+        this.closeProfileModal();
+        this.showToast("Profile details updated successfully!", "success");
+      }
+    } catch (err) {
+      if (err.status === 401) { this.forceLogout(); return; }
+      this.showToast(err.message || 'Could not update your profile details.', 'error');
+    }
+  },
+
   startClock() {
     // Dismiss dropdown on outside clicks
     document.addEventListener('click', () => {
@@ -1212,6 +2667,12 @@ const app = {
       const widget = document.querySelector('.dashboard-profile-widget');
       if (dropdown) dropdown.style.display = 'none';
       if (widget) widget.classList.remove('active');
+
+      const onboardingDropdown = document.getElementById('onboarding-profile-dropdown');
+      if (onboardingDropdown) onboardingDropdown.style.display = 'none';
+
+      const notifDropdown = document.getElementById('student-notification-dropdown');
+      if (notifDropdown) notifDropdown.style.display = 'none';
     });
   },
 

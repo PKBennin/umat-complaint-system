@@ -41,7 +41,7 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
   console.log(`\nUMaT API smoke test → ${BASE}\n`);
 
   // 1. Student login
-  const login = await api('POST', '/api/auth/student/login', { body: { index_number: '9012870422', password: 'password123' } });
+  const login = await api('POST', '/api/auth/student/login', { body: { index_number: '9012870422', password: '9012870422' } });
   check('student login 200', login.status === 200, `got ${login.status}`);
   check('student login returns token', !!login.json?.token);
   check('bad password rejected', (await api('POST', '/api/auth/student/login', { body: { index_number: '9012870422', password: 'wrong' } })).status === 401);
@@ -81,17 +81,17 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
   // 2c. File with a real attachment (multipart) — allowed type, under 5MB.
   const withAttachment = await apiForm('POST', '/api/complaints', {
     fields: {
-      studentName: 'Isaac Mensah', studentIndex: '9010123456',
+      studentName: 'Leticia oppong', studentIndex: '8012470422',
       subject: 'Damaged transcript request', category: 'Academic & Exams', urgency: 'Medium',
       description: 'Attaching my original transcript request receipt for reference.',
-      programmeName: 'BSc Mathematics',
+      programmeName: 'BSc Renewable Energy Engineering',
     },
     file: { name: 'receipt.pdf', mimetype: 'application/pdf', content: '%PDF-1.4 test attachment content' },
   });
   check('filing with attachment 201', withAttachment.status === 201, `got ${withAttachment.status} ${JSON.stringify(withAttachment.json)}`);
   check('attachment metadata recorded', withAttachment.json?.attachment?.originalName === 'receipt.pdf', JSON.stringify(withAttachment.json?.attachment));
 
-  const attLogin = await api('POST', '/api/auth/student/login', { body: { index_number: '9010123456', password: 'password123' } });
+  const attLogin = await api('POST', '/api/auth/student/login', { body: { index_number: '8012470422', password: '8012470422' } });
   const attToken = attLogin.json.token;
   const dl = await fetch(`${BASE}/api/complaints/${withAttachment.json.id}/attachment`, { headers: { Authorization: `Bearer ${attToken}` } });
   check('owner can download attachment (200)', dl.status === 200, `got ${dl.status}`);
@@ -99,7 +99,7 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
   check('downloaded content matches upload', dlText.includes('test attachment content'), dlText);
   const dlNoAuth = await fetch(`${BASE}/api/complaints/${withAttachment.json.id}/attachment`);
   check('download without token is 401', dlNoAuth.status === 401, `got ${dlNoAuth.status}`);
-  const wrongLogin = await api('POST', '/api/auth/student/login', { body: { index_number: '9012870422', password: 'password123' } });
+  const wrongLogin = await api('POST', '/api/auth/student/login', { body: { index_number: '9012870422', password: '9012870422' } });
   const dlWrongOwner = await fetch(`${BASE}/api/complaints/${withAttachment.json.id}/attachment`, { headers: { Authorization: `Bearer ${wrongLogin.json.token}` } });
   check('download by non-owner student is 403', dlWrongOwner.status === 403, `got ${dlWrongOwner.status}`);
 
@@ -131,14 +131,14 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
   check('student blocked from other index list', (await api('GET', '/api/complaints/student/9013456789', { token: sToken })).status === 403);
 
   // 4. Staff (Dean PS102, FCMS) login + scoped list
-  const sfLogin = await api('POST', '/api/auth/staff/login', { body: { staff_id: 'PS102', password: 'password123' } });
+  const sfLogin = await api('POST', '/api/auth/staff/login', { body: { staff_id: 'PS102', password: 'PS102' } });
   check('staff login 200', sfLogin.status === 200, `got ${sfLogin.status}`);
   const fToken = sfLogin.json.token;
   const inbox = await api('GET', '/api/complaints/staff/PS102', { token: fToken });
   check('staff scoped list includes ticket', (inbox.json || []).some((c) => c.id === ticket.id));
 
   // RBAC: a Dean of another faculty (PS101 / FMMT) must NOT see it
-  const otherDean = await api('POST', '/api/auth/staff/login', { body: { staff_id: 'PS101', password: 'password123' } });
+  const otherDean = await api('POST', '/api/auth/staff/login', { body: { staff_id: 'PS101', password: 'PS101' } });
   const otherInbox = await api('GET', '/api/complaints/staff/PS101', { token: otherDean.json.token });
   check('out-of-scope dean does NOT see ticket', !(otherInbox.json || []).some((c) => c.id === ticket.id));
   check('out-of-scope dean cannot GET ticket', (await api('GET', `/api/complaints/${ticket.id}`, { token: otherDean.json.token })).status === 403);

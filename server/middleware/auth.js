@@ -1,6 +1,7 @@
 // JWT verification + role-based access helpers (PDF §5).
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
+const pool = require('../db');
 
 const SECRET = process.env.JWT_SECRET || 'umat-dev-secret-change-me';
 const EXPIRES_IN = process.env.JWT_EXPIRES_IN || '12h';
@@ -22,11 +23,19 @@ function verifyJWT(req, res, next) {
   }
 }
 
-function requireStudent(req, res, next) {
+async function requireStudent(req, res, next) {
   if (!req.user || req.user.role !== 'student') {
     return res.status(403).json({ error: 'Student access required' });
   }
-  return next();
+  try {
+    const [[student]] = await pool.query('SELECT index_number FROM students WHERE index_number = ?', [req.user.index]);
+    if (!student) {
+      return res.status(401).json({ error: 'Session expired. Please log in again.' });
+    }
+    return next();
+  } catch (e) {
+    return next(e);
+  }
 }
 
 function requireStaff(req, res, next) {

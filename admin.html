@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Workstation | Campus Complaint System</title>
-  <link rel="stylesheet" href="style.css?v=1.1">
+  <link rel="stylesheet" href="style.css?v=2.3">
   <!-- Load Chart.js CDN for beautiful interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load Lucide Icons CDN for sleek UI icons -->
@@ -32,6 +32,9 @@
       <button class="nav-tab" onclick="adminApp.switchTab('analytics')" id="nav-tab-analytics">
         <i data-lucide="bar-chart-3"></i> Analytics Dashboard
       </button>
+      <button class="nav-tab" onclick="adminApp.switchTab('system')" id="nav-tab-system" style="display: none;">
+        <i data-lucide="shield"></i> System Admin
+      </button>
     </nav>
 
     <!-- Staff Session Badge (Interactive Profile Dropdown) -->
@@ -47,7 +50,8 @@
       
       <!-- Dropdown Menu -->
       <div class="profile-dropdown-menu" id="db-profile-dropdown" style="display: none;" onclick="event.stopPropagation()">
-        <div class="dropdown-header">Admin Profile & Settings</div>
+        <div class="dropdown-header" style="padding-bottom: 0.25rem;">Admin Profile & Settings</div>
+        <div id="db-profile-email" style="font-size: 0.75rem; color: var(--text-muted); padding: 0 1rem 0.75rem 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem; word-break: break-all;">No email set</div>
         
         <!-- Theme Selection -->
         <div class="dropdown-item dropdown-theme-select">
@@ -60,6 +64,12 @@
             </select>
           </div>
         </div>
+        
+        <!-- Update Email -->
+        <button type="button" class="dropdown-item-btn" onclick="adminApp.openUpdateEmailModal(event)">
+          <i data-lucide="mail"></i>
+          <span>Update Email</span>
+        </button>
         
         <!-- Change Password -->
         <button type="button" class="dropdown-item-btn" onclick="adminApp.openChangePasswordModal(event)">
@@ -137,14 +147,21 @@
 
         <!-- Right Side: Login card pad -->
         <div class="glass-card login-card" style="width: 100%; max-width: 460px; padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;">
-          <div style="text-align: center; margin-bottom: 2rem;">
-            <i data-lucide="shield" style="width: 44px; height: 44px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
-            <h3>Official Staff Login</h3>
-            <p class="section-desc">Enter your official Staff ID and password to access the administrative workspace.</p>
+          
+          <!-- Portal Selection Tabs -->
+          <div style="display: flex; background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 4px; margin-bottom: 2rem; border: 1px solid var(--border-color);">
+            <button id="tab-staff-login" type="button" onclick="adminApp.setLoginMode('staff')" style="flex: 1; border: none; background: var(--accent); color: #000; padding: 0.65rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 700; transition: all 0.2s;">Staff Portal</button>
+            <button id="tab-admin-login" type="button" onclick="adminApp.setLoginMode('admin')" style="flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 0.65rem 1rem; border-radius: 6px; cursor: pointer; font-weight: 700; transition: all 0.2s;">System Admin</button>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 1.5rem;">
+            <i data-lucide="shield" id="login-icon" style="width: 44px; height: 44px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+            <h3 id="login-title">Official Staff Login</h3>
+            <p class="section-desc" id="login-desc">Enter your official Staff ID and password to access your workstation.</p>
           </div>
 
           <!-- First time signing in warning box -->
-          <div style="display: flex; gap: 0.75rem; padding: 1rem; background: rgba(244, 196, 48, 0.08); border: 1px solid rgba(244, 196, 48, 0.35); border-radius: 8px; margin-bottom: 1.5rem; text-align: left; align-items: flex-start;">
+          <div id="first-time-warning" style="display: flex; gap: 0.75rem; padding: 1rem; background: rgba(244, 196, 48, 0.08); border: 1px solid rgba(244, 196, 48, 0.35); border-radius: 8px; margin-bottom: 1.5rem; text-align: left; align-items: flex-start;">
             <i data-lucide="info" style="width: 18px; height: 18px; stroke: #f4c430; flex-shrink: 0; margin-top: 2px;"></i>
             <p style="font-size: 0.8rem; color: var(--text-dark); margin: 0; line-height: 1.4;">
               <strong>First time signing in?</strong> Your default password is the same as your staff ID. You'll be asked to change it after logging in.
@@ -154,29 +171,29 @@
           <form id="staff-login-form" onsubmit="adminApp.handleLoginSubmit(event)">
             
             <div class="input-group" style="margin-bottom: 1.25rem;">
-              <label for="login-staff-id">Staff ID</label>
+              <label for="login-staff-id" id="login-id-label">Staff ID</label>
               <input type="text" id="login-staff-id" placeholder="e.g. PS101, CS102" required>
             </div>
 
             <div class="input-group" style="margin-bottom: 1.75rem;">
               <label for="login-password">Password</label>
               <div style="position: relative; width: 100%;">
-                <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem;">
-                <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted);">
+                <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem;" maxlength="8">
+                <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%;">
                   <i data-lucide="eye" id="password-toggle-icon" style="width: 18px; height: 18px;"></i>
                 </button>
               </div>
-              <span class="helper-text">Haven't changed your password yet? Enter your staff ID here.</span>
+              <span class="helper-text" id="login-helper-text">Haven't changed your password yet? Enter your staff ID here.</span>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem; justify-content: center; font-weight: 700;">
               <i data-lucide="unlock"></i> LOG IN
             </button>
           </form>
           
           <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
             <i data-lucide="shield-check" style="width: 14px; height: 14px; stroke: var(--text-muted);"></i>
-            <span>Secured connection · Staff use only</span>
+            <span id="login-footer-text">Secured connection · Staff use only</span>
           </div>
         </div>
 
@@ -635,7 +652,264 @@
         </div>
 
       </div>
+    <!-- TAB C: SYSTEM MANAGEMENT (SUPERADMIN ONLY) -->
+    <section id="panel-system" class="dashboard-panel-view" style="padding: 2rem; box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto;">
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="margin: 0; font-size: 1.75rem;">System Management Portal</h2>
+          <p class="section-desc" style="margin: 0.25rem 0 0 0;">Manage administrative officers, departments, faculties, and track ledger metrics.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="adminApp.loadSystemDashboardData(); adminApp.loadStaffRoster();" style="display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem;">
+          <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i> Sync System Data
+        </button>
+      </div>
 
+      <!-- Sub-navigation tabs inside System Admin Panel -->
+      <div style="display: inline-flex; gap: 0.5rem; background: rgba(13, 82, 44, 0.05); border: 1px solid var(--border-color); padding: 6px; border-radius: 12px; margin-bottom: 2rem;">
+        <button class="sys-tab-btn active" onclick="adminApp.switchSystemSubTab('overview')" id="sys-tab-overview" style="background: #0b311d; color: #ffffff; border: none; font-weight: 700; padding: 0.65rem 1.25rem; font-size: 0.9rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.25s ease; box-shadow: 0 4px 12px rgba(11, 49, 29, 0.2);">
+          <i data-lucide="layout-dashboard" style="width: 16px; height: 16px;"></i> Overview
+        </button>
+        <button class="sys-tab-btn" onclick="adminApp.switchSystemSubTab('roster')" id="sys-tab-roster" style="background: transparent; color: var(--text-muted); border: none; font-weight: 700; padding: 0.65rem 1.25rem; font-size: 0.9rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.25s ease;">
+          <i data-lucide="users" style="width: 16px; height: 16px;"></i> Staff Roster & Registration
+        </button>
+        <button class="sys-tab-btn" onclick="adminApp.switchSystemSubTab('faculties')" id="sys-tab-faculties" style="background: transparent; color: var(--text-muted); border: none; font-weight: 700; padding: 0.65rem 1.25rem; font-size: 0.9rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.25s ease;">
+          <i data-lucide="building-2" style="width: 16px; height: 16px;"></i> Faculties & Departments
+        </button>
+      </div>
+
+      <!-- SUB-TAB 1: OVERVIEW METRICS & RECENT ACTIVITIES -->
+      <div id="sys-sub-overview" style="display: block;">
+        <div class="kpi-row" style="margin-bottom: 2rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+          
+          <!-- KPI 1: Total Complaints -->
+          <div class="glass-card kpi-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem;">
+            <div class="kpi-icon" style="background: rgba(58, 134, 200, 0.1); color: var(--info); display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;">
+              <i data-lucide="folder-git" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Grievances</h4>
+              <div class="kpi-number" id="sys-kpi-total-complaints" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color); margin-top: 0.25rem;">0</div>
+            </div>
+          </div>
+
+          <!-- KPI 2: Open -->
+          <div class="glass-card kpi-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem;">
+            <div class="kpi-icon" style="background: rgba(254, 203, 0, 0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;">
+              <i data-lucide="alert-circle" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Open / Pending</h4>
+              <div class="kpi-number" id="sys-kpi-open-complaints" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color); margin-top: 0.25rem;">0</div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Resolved -->
+          <div class="glass-card kpi-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem;">
+            <div class="kpi-icon" style="background: rgba(46, 196, 182, 0.1); color: var(--status-resolved); display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;">
+              <i data-lucide="check-circle-2" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Resolved</h4>
+              <div class="kpi-number" id="sys-kpi-resolved-complaints" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color); margin-top: 0.25rem;">0</div>
+            </div>
+          </div>
+
+          <!-- KPI 4: Staff Officers -->
+          <div class="glass-card kpi-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.5rem;">
+            <div class="kpi-icon" style="background: rgba(11, 49, 29, 0.1); color: #0b311d; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;">
+              <i data-lucide="users" style="width: 24px; height: 24px;"></i>
+            </div>
+            <div class="kpi-meta">
+              <h4 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Staff Officers</h4>
+              <div class="kpi-number" id="sys-kpi-total-staff" style="font-size: 1.8rem; font-weight: 800; color: var(--text-color); margin-top: 0.25rem;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Complaints Card -->
+        <div class="glass-card" style="padding: 2rem;">
+          <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="activity" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Recent Grievance Activity Log
+          </h3>
+          <div style="overflow-x: auto;">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Grievance Subject</th>
+                  <th>Category</th>
+                  <th>Resolution Status</th>
+                  <th>Filing Date</th>
+                </tr>
+              </thead>
+              <tbody id="sys-recent-complaints-rows">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-TAB 2: ROSTER & REGISTRATION FORM -->
+      <div id="sys-sub-roster" style="display: none; grid-template-columns: 1.8fr 1fr; gap: 2rem; align-items: flex-start;">
+        <!-- Left side: Staff List Card -->
+        <div class="glass-card" style="padding: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="users" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Administrative Staff Roster</h3>
+            <button class="btn" onclick="adminApp.handleRemoveAllStaff()" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.35); color: #e63946; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
+              <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Wipe Staff Directory
+            </button>
+          </div>
+          
+          <div style="overflow-x: auto;">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Staff ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Portfolio</th>
+                  <th>Jurisdiction</th>
+                  <th style="text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="system-staff-rows">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right side: Add New Staff Card -->
+        <div class="glass-card" style="padding: 2rem;">
+          <h3 style="margin-top: 0; margin-bottom: 1.25rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="user-plus" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Register New Staff</h3>
+          
+          <form id="system-add-staff-form" onsubmit="adminApp.handleRegisterStaffSubmit(event)">
+            <div class="input-group" style="margin-bottom: 1rem;">
+              <label for="new-staff-id" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Staff ID</label>
+              <input type="text" id="new-staff-id" placeholder="e.g. PS204, CS301" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="input-group">
+                <label for="new-staff-title" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Title</label>
+                <select id="new-staff-title" required style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; padding: 0.6rem 0.75rem; border-radius: 6px;">
+                  <option value="Mr.">Mr.</option>
+                  <option value="Mrs.">Mrs.</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Dr.">Dr.</option>
+                  <option value="Prof.">Prof.</option>
+                  <option value="Rev.">Rev.</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="new-staff-name" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Full Name</label>
+                <input type="text" id="new-staff-name" placeholder="e.g. Ebenezer Mensah" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+              </div>
+            </div>
+
+
+            <div class="input-group" style="margin-bottom: 1rem;">
+              <label for="new-staff-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Password (4-8 chars)</label>
+              <input type="password" id="new-staff-password" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;" maxlength="8" minlength="4">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 1rem;">
+              <label for="new-staff-type" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Role Type</label>
+              <select id="new-staff-type" required onchange="adminApp.handleNewStaffTypeChange(this.value)" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; padding: 0.6rem 0.75rem; border-radius: 6px;">
+                <option value="" disabled selected>Select role...</option>
+                <option value="Dean">Dean</option>
+                <option value="Finance">Finance Officer</option>
+                <option value="IT">IT Support</option>
+                <option value="HOD">Head of Department (HOD)</option>
+                <option value="SuperAdmin">System Administrator</option>
+              </select>
+            </div>
+
+            <!-- Faculty Selector (Always Visible) -->
+            <div class="input-group" id="new-staff-faculty-group" style="margin-bottom: 1rem;">
+              <label for="new-staff-faculty" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Assign Faculty</label>
+              <select id="new-staff-faculty" style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; padding: 0.6rem 0.75rem; border-radius: 6px;">
+                <option value="">None / Central Administration</option>
+              </select>
+            </div>
+
+            <!-- Department Label Selector / Text (Conditional) -->
+            <div class="input-group" id="new-staff-dept-group" style="margin-bottom: 1.5rem; display: none;">
+              <label for="new-staff-dept-label" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Office / Department Label</label>
+              <input type="text" id="new-staff-dept-label" placeholder="e.g. Dean's Office (FCMS)" style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; border-radius: 8px;">
+              <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Add Staff
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- SUB-TAB 3: FACULTIES & DEPARTMENTS MANAGEMENT -->
+      <div id="sys-sub-faculties" style="display: none; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: flex-start;">
+        
+        <!-- Left Side: Academic Directory (Faculties & Nested Departments) -->
+        <div class="glass-card" style="padding: 2rem;">
+          <h3 style="margin-top: 0; margin-bottom: 1.25rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="graduation-cap" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Academic Directory
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; margin-top: -0.5rem;">Click on a faculty card to toggle the visibility of its nested departments.</p>
+          <div id="sys-academic-directory" style="margin-bottom: 1.5rem; min-height: 100px; max-height: 500px; overflow-y: auto; padding-right: 0.25rem;">
+            <!-- Rendered dynamically as collapsible folders/trees -->
+          </div>
+        </div>
+
+        <!-- Right Side: Add Entities Forms -->
+        <div class="glass-card" style="padding: 2rem;">
+          <h3 style="margin-top: 0; margin-bottom: 1.25rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="plus-circle" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Add Academic Entities
+          </h3>
+          
+          <!-- Form A: Add New Faculty -->
+          <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem; color: var(--text-color);">
+            <i data-lucide="building" style="width: 16px; height: 16px; color: var(--accent);"></i> Add New Faculty
+          </h4>
+          <form id="sys-add-faculty-form" onsubmit="adminApp.handleAddFacultySubmit(event)" style="display: grid; gap: 1rem; margin-bottom: 2rem;">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+              <div class="input-group">
+                <label for="sys-new-faculty-key" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px;">Faculty Key</label>
+                <input type="text" id="sys-new-faculty-key" placeholder="e.g. FOT" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+              </div>
+              <div class="input-group">
+                <label for="sys-new-faculty-name" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px;">Faculty Name</label>
+                <input type="text" id="sys-new-faculty-name" placeholder="e.g. Faculty of Technology" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Register Faculty
+            </button>
+          </form>
+
+          <!-- Form B: Add New Department -->
+          <h4 style="margin-top: 1rem; margin-bottom: 1rem; font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem; color: var(--text-color);">
+            <i data-lucide="git-branch" style="width: 16px; height: 16px; color: var(--accent);"></i> Add New Department
+          </h4>
+          <form id="sys-add-dept-form" onsubmit="adminApp.handleAddDepartmentSubmit(event)" style="display: grid; gap: 1rem;">
+            <div class="input-group">
+              <label for="sys-dept-parent-faculty" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px;">Select Parent Faculty</label>
+              <select id="sys-dept-parent-faculty" required style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; padding: 0.6rem 0.75rem; border-radius: 6px;">
+                <option value="" disabled selected>Select parent faculty...</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="sys-new-dept-name" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px;">Department Name</label>
+              <input type="text" id="sys-new-dept-name" placeholder="e.g. Department of Computer Science" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="justify-content: center; padding: 0.75rem; border-radius: 6px; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Register Department
+            </button>
+          </form>
+        </div>
+
+      </div>
     </section>
 
     <!-- 3. SEMESTER END REPORT DOCUMENT (OVERLAY) -->
@@ -768,14 +1042,34 @@
     </div>
   </div>
 
+  <!-- Update Email Modal -->
+  <div id="update-email-modal" class="modal-overlay" style="display: none;" onclick="adminApp.closeUpdateEmailModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i data-lucide="mail" style="stroke: var(--accent);"></i> Update Contact Email</h3>
+        <button class="btn-close-modal" onclick="adminApp.closeUpdateEmailModal()"><i data-lucide="x"></i></button>
+      </div>
+      <form id="update-email-form" onsubmit="adminApp.handleUpdateEmailSubmit(event)">
+        <div class="input-group" style="margin-bottom: 1.5rem;">
+          <label for="profile-email-input">Official Email Address</label>
+          <input type="email" id="profile-email-input" placeholder="e.g. name@umat.edu.gh" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="adminApp.closeUpdateEmailModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Email</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Global Toast Notifications Wrapper -->
   <div id="toast-container"></div>
 
   <!-- Load Seed Data Module (login dropdown reference data) -->
-  <script src="seedData.js?v=1.5"></script>
+  <script src="seedData.js?v=2.0"></script>
   <!-- Backend API client -->
   <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="admin.js?v=2.0"></script>
+  <script src="admin.js?v=3.4"></script>
 </body>
 </html>
