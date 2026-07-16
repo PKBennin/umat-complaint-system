@@ -1,4 +1,4 @@
-# UMaT Complaint System — Backend (Express + MySQL)
+# UMaT Complaint System: Backend (Express + MySQL)
 
 REST API that replaces the frontend's old localStorage storage with a real
 MySQL-backed, JWT-secured service, per `backend_design.pdf`.
@@ -17,18 +17,25 @@ MySQL-backed, JWT-secured service, per `backend_design.pdf`.
 cd server
 cp .env.example .env      # adjust DB_* + JWT_SECRET to your instance
 npm install
-npm run setup             # applies schema.sql, then seeds reference + demo data
+npm run setup             # applies schema.sql, then seeds reference data + one admin account
 npm start                 # API on http://localhost:4000
 ```
 
 `npm run setup` = `apply-schema.js` (creates tables) + `seed.js` (loads
-faculties, departments, programmes, categories, students, staff from the repo's
-`seedData.js`). Re-run `npm run seed` anytime to reset demo data.
+faculties, departments, programmes, and categories reference data, plus one
+staff account, from the repo's `seedData.js`). Re-run `npm run seed` anytime
+to reset reference data. It clears and reinserts in dependency order, so any
+students, extra staff, or complaints created since are wiped too.
 
 ## Demo credentials
-Every seeded account uses the password **`password123`**.
-- Students: 10-digit index numbers, e.g. `9012870422` (Bennin Paa Kofi) — see `seedData.js`
-- Staff: `PS102` (Dean, FCMS), `CS107` (IT Directorate), `CS102` (Finance), etc. — `PS###` = permanent staff, `CS###` = contract staff.
+`seed.js` only creates `ADMIN001` (System Administrator, faculty_key `null`).
+Its password is its own staff ID, `ADMIN001`. Every staff/admin account's
+password defaults to its own staff ID, not a shared demo password, whether
+seeded or registered later via `POST /api/auth/staff`. Log in as `ADMIN001` to
+register additional Deans/Finance/IT/HOD staff through the admin panel.
+
+Students are not seeded. Register one via `POST /api/auth/student/signup`
+(email must end `@st.umat.edu.gh`) or through the student portal's sign-up form.
 
 ## Schema notes (superset of the PDF)
 The frontend uses more fields than the PDF's tables model, so the schema adds:
@@ -41,30 +48,50 @@ the frontend's existing complaint object shape (embedded
 ## Security
 - Passwords hashed with bcrypt (10 rounds).
 - JWT bearer auth on all endpoints except login.
-- RBAC: students access only their own tickets; staff are scoped to their
-  jurisdiction (Dean/Finance → faculty, IT → university, HOD → department).
-- **Internal notes are redacted server-side for student viewers** (never sent
+- RBAC: students access only their own tickets. Staff are scoped to their
+  jurisdiction: Dean → their faculty's own office (`faculty_key` +
+  `department_label`), Finance → their faculty, IT → university-wide,
+  HOD → their faculty (read-only/analytics in the UI). SuperAdmin sees
+  everything, including for reassignment eligibility checks.
+- Internal notes are redacted server-side for student viewers (never sent
   over the wire).
 - Status/appointment writes run inside SQL transactions; all queries are
   parameterized.
 
 ## Endpoints
-- `POST /api/auth/student/login`, `POST /api/auth/staff/login`
-- `PUT  /api/auth/student/password`, `PUT /api/auth/staff/password`
-- `POST /api/complaints`, `GET /api/complaints/:id`
-- `GET  /api/complaints/student/:index`, `GET /api/complaints/staff/:staffId`
-- `POST /api/complaints/:id/claim`, `PUT /api/complaints/:id/status`
-- `POST/PUT/DELETE /api/complaints/:id/directives[/:did]`
-- `POST /api/complaints/:id/notes`
-- `GET/POST /api/complaints/:id/comments`
-- `POST /api/complaints/:id/appointment` (schedule), `PUT …/appointment` (complete)
-- `POST /api/complaints/:id/remind`
-- `GET  /api/meta`, `GET /api/health`
+
+**Auth** (`/api/auth`)
+- `POST /student/signup`, `POST /student/login`, `POST /student/complete-profile`
+- `POST /staff/login`
+- `PUT  /student/password`, `PUT /staff/password`
+- `PUT  /student/profile`, `PUT /staff/profile`
+- `GET  /staff` (SuperAdmin-only roster), `POST /staff` (register), `DELETE /staff` (wipe all but self), `DELETE /staff/:id`
+
+**Complaints** (`/api/complaints`)
+- `POST /`: file a complaint (public, optional JWT, optional `attachment` file)
+- `GET  /student/:index`, `GET /staff/:staffId`: scoped lists
+- `GET  /public/track/:id`: anonymous ticket lookup
+- `GET  /:id`, `GET /:id/attachment`
+- `POST /:id/claim`
+- `GET  /:id/eligible-officers`: staff in scope for reassignment
+- `PUT  /:id/status`: status change and/or `assignedStaffId` reassignment (server-validates the target is in scope)
+- `POST/PUT/DELETE /:id/directives[/:did]`
+- `POST /:id/notes` (internal, staff-only, never sent to students)
+- `GET/POST /:id/comments`
+- `POST /:id/appointment` (schedule), `PUT …/appointment` (complete)
+- `POST /:id/remind`
+
+**Meta** (`/api/meta`)
+- `GET  /`: faculties/departments/programmes/categories for form dropdowns
+- `GET  /admin-dashboard`: KPI + recent-complaints summary
+- `POST /faculties`, `POST /departments`
+
+`GET /api/health` reports API + DB liveness.
 
 ## Tests
 ```bash
 npm start          # in one terminal
-npm run smoke      # in another — 28 end-to-end assertions
+npm run smoke      # in another, running end-to-end checks against the live API
 ```
 
 ## Frontend
