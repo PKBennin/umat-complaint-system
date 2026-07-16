@@ -594,36 +594,7 @@ const adminApp = {
       chkResolved.checked = complaint.status === 'Resolved';
     }
 
-    const ownerSelect = document.getElementById('workflow-owner');
-    ownerSelect.innerHTML = '';
-    
-    const optSelf = document.createElement('option');
-    optSelf.value = staff.name;
-    optSelf.textContent = `${staff.name} (${staff.portfolio})`;
-    ownerSelect.appendChild(optSelf);
-
-    const mockStaff = [
-      { name: "Mr. Ebenezer Mensah", role: "Assistant Officer" },
-      { name: "Mrs. Evelyn Boateng", role: "Principal Clerk" },
-      { name: "Academic Registry Representative", role: "Registry Office" }
-    ];
-
-    mockStaff.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.name;
-      opt.textContent = `${s.name} (${s.role})`;
-      ownerSelect.appendChild(opt);
-    });
-
-    if (complaint.assignedTo && complaint.assignedTo !== staff.name) {
-      const optExist = document.createElement('option');
-      optExist.value = complaint.assignedTo;
-      optExist.textContent = `${complaint.assignedTo} (Current Officer)`;
-      optExist.selected = true;
-      ownerSelect.appendChild(optExist);
-    } else {
-      ownerSelect.value = staff.name;
-    }
+    this.populateOwnerSelect(complaint, staff);
 
     // Render Active Scheduled Appointment Notice Card
     const apptDisplay = document.getElementById('ws-active-appointment-display');
@@ -780,6 +751,37 @@ const adminApp = {
     if (window.lucide) lucide.createIcons();
   },
 
+  // Populates the "Reassign Case Officer" dropdown with real staff who are in
+  // scope for this complaint (same faculty/routing department), fetched from
+  // the server rather than a hardcoded mock list.
+  async populateOwnerSelect(complaint, staff) {
+    const ownerSelect = document.getElementById('workflow-owner');
+    if (!ownerSelect) return;
+
+    ownerSelect.innerHTML = '';
+    const optSelf = document.createElement('option');
+    optSelf.value = staff.staffId;
+    optSelf.textContent = `${staff.name} (${staff.portfolio})`;
+    ownerSelect.appendChild(optSelf);
+
+    try {
+      const officers = await window.API.get(`/complaints/${encodeURIComponent(complaint.id)}/eligible-officers`);
+      // The user may have switched to a different ticket while this was in flight.
+      if (this.state.activeAdminComplaintId !== complaint.id) return;
+
+      ownerSelect.innerHTML = '';
+      officers.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.staffId;
+        opt.textContent = o.staffId === staff.staffId ? `${o.name} (Me — ${o.portfolio})` : `${o.name} (${o.portfolio})`;
+        ownerSelect.appendChild(opt);
+      });
+      ownerSelect.value = complaint.assignedStaffId || staff.staffId;
+    } catch (err) {
+      // Keep the self-only fallback option already in place.
+    }
+  },
+
   // Claim ticket
   async claimActiveComplaint() {
     const id = this.state.activeAdminComplaintId;
@@ -804,15 +806,13 @@ const adminApp = {
     if (!complaint) return;
 
     const newStatus = document.getElementById('workflow-status').value;
-    const newOwner = document.getElementById('workflow-owner').value;
+    const newOwnerId = document.getElementById('workflow-owner').value;
 
     const body = {};
     if (newStatus && newStatus !== complaint.status) body.status = newStatus;
-    // Owner is edited by display name in the UI; map back to the routed staff id
-    // when it is the current assignee (reassignment by name is not supported by
-    // the scoped API, so only forward a status change here).
-    if (!body.status) {
-      this.showToast("No status change detected.", "info");
+    if (newOwnerId && newOwnerId !== complaint.assignedStaffId) body.assignedStaffId = newOwnerId;
+    if (!body.status && !body.assignedStaffId) {
+      this.showToast("No changes detected.", "info");
       return;
     }
     try {

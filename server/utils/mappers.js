@@ -82,8 +82,10 @@ async function assembleFromRow(conn, row) {
     studentRef: isAnon ? 'N/A' : (row.student_ref || 'N/A'),
     studentProgramme: isAnon ? 'N/A' : (row.programme_name || 'N/A'),
     studentDept: isAnon ? 'N/A' : (row.dept_name || 'N/A'),
-    studentFaculty: isAnon ? 'N/A' : (row.faculty_name || 'N/A'),
-    studentFacultyKey: isAnon ? '' : (row.faculty_key || ''),
+    // faculty_key/faculty_name describe the complaint's routing destination, not the
+    // filer's identity, so they stay populated even when the submission is anonymous.
+    studentFaculty: row.faculty_name || 'N/A',
+    studentFacultyKey: row.faculty_key || '',
     studentLevel: isAnon ? 'N/A' : (row.student_level || 'N/A'),
     studentEmail: isAnon ? 'N/A' : (row.student_email || 'N/A'),
     studentPhone: isAnon ? 'N/A' : (row.student_phone || 'N/A'),
@@ -93,6 +95,7 @@ async function assembleFromRow(conn, row) {
     urgency: row.urgency,
     routingDept: row.routing_dept || '',
     assignedTo: row.assigned_name || 'Unassigned',
+    assignedStaffId: row.assigned_staff_id || null,
     status: row.status,
     attachment: row.attachment_stored_name ? {
       originalName: row.attachment_original_name,

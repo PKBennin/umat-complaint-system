@@ -304,6 +304,23 @@ router.post('/:id/claim', verifyJWT, requireStaff, attachComplaintForStaff, asyn
 });
 
 // =============================================================================
+// ELIGIBLE OFFICERS — staff members whose scope covers this complaint, for the
+// "Reassign Case Officer" dropdown.  GET /api/complaints/:id/eligible-officers
+// =============================================================================
+router.get('/:id/eligible-officers', verifyJWT, requireStaff, attachComplaintForStaff, async (req, res, next) => {
+  try {
+    const c = req.complaintRow;
+    const [rows] = await pool.query(
+      'SELECT staff_id, name, type, faculty_key, department_label, portfolio FROM staff',
+    );
+    const eligible = rows.filter((s) => staffCanAccessComplaint(
+      { type: s.type, facultyKey: s.faculty_key, departmentLabel: s.department_label }, c,
+    ));
+    res.json(eligible.map((s) => ({ staffId: s.staff_id, name: s.name, portfolio: s.portfolio })));
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
 // STATUS / assignment (staff, transactional)  PUT /api/complaints/:id/status
 // =============================================================================
 router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
@@ -321,8 +338,19 @@ router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
         await addLog(conn, c.id, operator, 'Status Updated', `Status changed from ${c.status} to ${req.body.status}${reason}.`);
       }
       if (req.body.assignedStaffId && req.body.assignedStaffId !== c.assigned_staff_id) {
+        const [[targetStaff]] = await conn.query(
+          'SELECT staff_id, name, type, faculty_key, department_label FROM staff WHERE staff_id = ?',
+          [req.body.assignedStaffId],
+        );
+        const eligible = targetStaff && staffCanAccessComplaint(
+          { type: targetStaff.type, facultyKey: targetStaff.faculty_key, departmentLabel: targetStaff.department_label }, c,
+        );
+        if (!eligible) {
+          await conn.rollback();
+          return res.status(400).json({ error: 'Selected officer is not eligible for this complaint.' });
+        }
         await conn.query('UPDATE complaints SET assigned_staff_id = ? WHERE id = ?', [req.body.assignedStaffId, c.id]);
-        await addLog(conn, c.id, operator, 'Officer Assigned', 'Ticket ownership reassigned.');
+        await addLog(conn, c.id, operator, 'Officer Assigned', `Ticket reassigned to ${targetStaff.name}.`);
       }
       await conn.commit();
 
@@ -500,8 +528,11 @@ router.post('/:id/appointment', verifyJWT, requireStaff, attachComplaintForStaff
       // Trigger real-time SMS & Email for counselor appointment
       const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [c.student_index]);
       if (stRow) {
+        // No form currently collects a separate counselor name, so the contact
+        // defaults to the staff member who scheduled the session.
+        const contactName = counselorName || req.user.name;
         const smsMsg = `UMaT Appointment: A session has been scheduled for you regarding ticket ${c.id}.\nVenue: ${venue}\nDate/Time: ${dateTime}`;
-        const emailMsg = `UMaT Appointment: A session has been scheduled for you regarding ticket ${c.id}.\nVenue: ${venue}\nDate/Time: ${dateTime}\nAdvisor: ${counselorName || 'Counselor'}`;
+        const emailMsg = `UMaT Appointment: A session has been scheduled for you regarding ticket ${c.id}.\nVenue: ${venue}\nDate/Time: ${dateTime}\nContact: ${contactName}`;
         
         if (stRow.phone && stRow.phone !== 'N/A') {
           const { sendSMS } = require('../utils/sms');

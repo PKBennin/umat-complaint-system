@@ -1,6 +1,7 @@
 // Seeds reference + demo data into MySQL from the repo's seedData.js
 // (single source of truth). Idempotent: clears rows in dependency order, then
-// inserts. All demo accounts get bcrypt-hashed password "password123".
+// inserts. Students aren't seeded (they sign up themselves); staff/admin
+// accounts get a bcrypt-hashed password equal to their own staff ID.
 require('dotenv').config();
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -16,10 +17,9 @@ global.localStorage = {
 };
 
 const {
-  FACULTIES, DEPARTMENTS, PROGRAMMES, CATEGORIES, STUDENT_DATABASE, STAFF_DATABASE,
+  FACULTIES, DEPARTMENTS, PROGRAMMES, CATEGORIES, STAFF_DATABASE,
 } = require(path.join('..', 'seedData.js'));
 
-const DEFAULT_PASSWORD = 'password123';
 
 (async () => {
   const conn = await pool.getConnection();
@@ -62,8 +62,6 @@ const DEFAULT_PASSWORD = 'password123';
       );
     }
 
-    const hash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
-
     // Staff (default password is their staff_id)
     for (const s of STAFF_DATABASE) {
       const staffHash = await bcrypt.hash(s.staffId, 10);
@@ -91,8 +89,8 @@ const DEFAULT_PASSWORD = 'password123';
     console.log('✓ Seed complete');
     console.log(`  faculties=${Object.keys(FACULTIES).length} departments=${DEPARTMENTS.length} ` +
       `programmes=${PROGRAMMES.length} categories=${CATEGORIES.length} ` +
-      `staff=${STAFF_DATABASE.length} students=${STUDENT_DATABASE.length}`);
-    console.log(`  demo password for every account: "${DEFAULT_PASSWORD}"`);
+      `staff=${STAFF_DATABASE.length} students=0 (sign up required)`);
+    console.log(`  staff/admin login password defaults to their own staff ID (e.g. ADMIN001 / ADMIN001)`);
   } catch (err) {
     await conn.rollback();
     throw err;

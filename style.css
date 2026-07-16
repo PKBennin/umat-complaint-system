@@ -1595,6 +1595,10 @@ textarea {
   .kpi-row {
     grid-template-columns: repeat(2, 1fr);
   }
+  #sys-sub-roster,
+  #sys-sub-faculties {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 768px) {
