@@ -7,6 +7,41 @@
   <link rel="stylesheet" href="style.css?v=4.15">
   <!-- Load Lucide Icons CDN for sleek UI icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Visually hide the student dashboard and grievance sections while on the Track Ticket page (JS/backend logic untouched) -->
+  <style>
+    #btn-floating-quick {
+      display: none !important;
+    }
+    body #student-dashboard-header,
+    body #student-track-workspace .admin-sidebar,
+    body #student-track-workspace.has-active-ticket .admin-sidebar,
+    body #student-track-workspace:not(.has-active-ticket) .admin-sidebar,
+    body #dash-counter-grid,
+    body #track-grievance-meta-grid,
+    body #track-meta-student-info-row,
+    body #track-details-summary-card,
+    body .comments-section,
+    body #track-login-banner,
+    body #track-delay-reminder,
+    body #track-appointment-card,
+    body #track-directives-box {
+      display: none !important;
+    }
+    
+    /* Dynamically hide the workspace completely when the login overlay panel is visible */
+    body #student-login-panel-container:not([style*="display: none"]) ~ #student-track-workspace {
+      display: none !important;
+    }
+
+    body #student-track-workspace .admin-layout {
+      grid-template-columns: 1fr !important;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    body #student-track-workspace .admin-workspace {
+      padding: 1.5rem 0;
+    }
+  </style>
 </head>
 <body>
 
@@ -448,7 +483,7 @@
             <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0;">Here's where things stand with your complaints.</p>
           </div>
           
-          <div class="dash-counter-grid" style="display: flex; gap: 1rem; align-items: center; margin-right: 2rem;">
+          <div class="dash-counter-grid" id="dash-counter-grid" style="display: none; gap: 1rem; align-items: center; margin-right: 2rem;">
             <!-- Card 1: Awaiting Review -->
             <div class="dash-counter-card" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 12px; display: flex; align-items: center; gap: 0.75rem; min-width: 140px; box-shadow: var(--shadow-sm); box-sizing: border-box;">
               <span class="dash-counter-num" id="dash-count-awaiting" style="font-size: 1.8rem; font-weight: 700; color: #f472b6; line-height: 1;">0</span>
@@ -644,9 +679,9 @@
                 </div>
 
                 <!-- Ticket Info Meta -->
-                <div class="glass-card" style="margin-top: 2.5rem; padding: 1.5rem;">
+                <div id="track-details-summary-card" class="glass-card" style="margin-top: 2.5rem; padding: 1.5rem;">
                   <h4 style="margin-bottom: 1rem; color: var(--primary);">Grievance Details Summary</h4>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
+                  <div id="track-grievance-meta-grid" style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
                     <div>
                       <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Category</label>
                       <div id="track-meta-category" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
@@ -665,7 +700,7 @@
                     </div>
                   </div>
 
-                  <div id="track-meta-student-info-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
+                  <div id="track-meta-student-info-row" style="display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; border-top: 1px dashed var(--border-color); padding-top: 1.25rem;">
                     <div>
                       <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Student Filer</label>
                       <div id="track-meta-student-name" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">-</div>
@@ -1668,7 +1703,7 @@
     })();
   </script>
   <!-- Floating Quick Complaint Action Button -->
-  <button class="btn-floating-quick" onclick="app.handleQuickComplaintClick()">
+  <button class="btn-floating-quick" id="btn-floating-quick" onclick="app.handleQuickComplaintClick()">
     <i data-lucide="plus"></i>
     <span>File Complaint</span>
   </button>

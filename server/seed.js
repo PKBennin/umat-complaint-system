@@ -17,7 +17,7 @@ global.localStorage = {
 };
 
 const {
-  FACULTIES, DEPARTMENTS, PROGRAMMES, CATEGORIES, STAFF_DATABASE,
+  FACULTIES, DEPARTMENTS, PROGRAMMES, CATEGORIES, STUDENT_DATABASE, STAFF_DATABASE,
 } = require(path.join('..', 'seedData.js'));
 
 
@@ -82,14 +82,23 @@ const {
       progId[row.name] = row.id;
     }
 
-    // Students are not seeded; they sign up fresh via the student email registration flow.
-    console.log('  students skipped (signup required)');
+    // Seed students from STUDENT_DATABASE
+    for (const s of STUDENT_DATABASE) {
+      const studentHash = await bcrypt.hash(s.password, 10);
+      const studentProgId = progId[s.programmeName] || null;
+      await conn.query(
+        `INSERT INTO students
+           (index_number, name, email, phone, password_hash, level, programme_id, reference_number, is_profile_complete)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        [s.index, s.name, s.email, s.phone, studentHash, s.level, studentProgId, s.index]
+      );
+    }
 
     await conn.commit();
     console.log('✓ Seed complete');
     console.log(`  faculties=${Object.keys(FACULTIES).length} departments=${DEPARTMENTS.length} ` +
       `programmes=${PROGRAMMES.length} categories=${CATEGORIES.length} ` +
-      `staff=${STAFF_DATABASE.length} students=0 (sign up required)`);
+      `staff=${STAFF_DATABASE.length} students=${STUDENT_DATABASE.length}`);
     console.log(`  staff/admin login password defaults to their own staff ID (e.g. ADMIN001 / ADMIN001)`);
   } catch (err) {
     await conn.rollback();

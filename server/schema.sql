@@ -66,7 +66,7 @@ CREATE TABLE staff (
   name          VARCHAR(100) NOT NULL,
   email         VARCHAR(100) NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  type          ENUM('Dean','Finance','IT','HOD','SuperAdmin') NOT NULL,
+  type          ENUM('Dean','Vice Dean','Faculty Officer','Finance','IT','HOD','Department Officer','SuperAdmin') NOT NULL,
   faculty_key   VARCHAR(10) NULL,
   department_id INT NULL,
   -- 'department' in the frontend staff record is a free-text office label
@@ -87,7 +87,7 @@ CREATE TABLE students (
   password_hash VARCHAR(255) NOT NULL,
   level         VARCHAR(10)  NULL,
   programme_id  INT NULL,
-  reference_number VARCHAR(50) NULL,
+  reference_number CHAR(10) NULL,
   is_profile_complete TINYINT(1) DEFAULT 0,
   FOREIGN KEY (programme_id) REFERENCES programmes(id) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

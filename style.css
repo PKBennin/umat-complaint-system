@@ -289,9 +289,9 @@ nav {
 /* Main Container Styles */
 main {
   max-width: 1440px;
-  margin: 70px auto 0 auto;
+  margin: 90px auto 0 auto;
   padding: 2rem;
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - 90px);
   position: relative;
 }
 
@@ -2869,7 +2869,7 @@ body.admin-portal-body {
 }
 
 body.admin-portal-body main {
-  height: calc(100vh - 70px) !important;
+  height: calc(100vh - 90px) !important;
   padding: 1.5rem 2rem !important;
   overflow: hidden !important;
 }
@@ -3227,6 +3227,19 @@ body.theme-dark input,
 body.theme-dark select,
 body.theme-dark textarea {
   color: var(--text-input-color);
+}
+
+body.theme-dark .login-card input,
+body.theme-dark .login-card select {
+  background: rgba(30, 30, 30, 0.8) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.theme-dark .login-card input:focus,
+body.theme-dark .login-card select:focus {
+  background: rgba(30, 30, 30, 0.95) !important;
+  border-color: var(--accent) !important;
 }
 
 body.theme-dark label {
@@ -3795,4 +3808,3 @@ body.view-track-active #track-view {
 }
 
 /* End of stylesheets */
-

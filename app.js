@@ -117,8 +117,42 @@ const app = {
     this.state.complaints = [];
     const badge = document.getElementById('student-session-badge');
     if (badge) badge.style.display = 'none';
+    this.resetStudentUI();
     this.showToast('Your session has expired. Please sign in again.', 'warning');
     this.showView('landing');
+  },
+
+  resetStudentUI() {
+    const welcomeTitle = document.getElementById('dash-welcome-title');
+    if (welcomeTitle) welcomeTitle.textContent = "Welcome back, Student";
+    
+    const countAwaiting = document.getElementById('dash-count-awaiting');
+    if (countAwaiting) countAwaiting.textContent = '0';
+    
+    const countProgress = document.getElementById('dash-count-progress');
+    if (countProgress) countProgress.textContent = '0';
+    
+    const countResolved = document.getElementById('dash-count-resolved');
+    if (countResolved) countResolved.textContent = '0';
+
+    const loggedName = document.getElementById('logged-student-name');
+    if (loggedName) loggedName.textContent = 'Student';
+
+    const dbName = document.getElementById('db-profile-name');
+    if (dbName) dbName.textContent = 'Student';
+
+    const notifBadge = document.getElementById('student-notification-badge');
+    if (notifBadge) notifBadge.style.display = 'none';
+    const notifBtn = document.getElementById('student-notification-btn');
+    if (notifBtn) notifBtn.classList.remove('pulse');
+    const notifList = document.getElementById('student-notification-list');
+    if (notifList) {
+      notifList.innerHTML = `
+        <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+          No notifications yet.
+        </div>
+      `;
+    }
   },
 
   formatStudentName(name) {
@@ -174,6 +208,18 @@ const app = {
     if (!this.state.loggedStudent) {
       const widget = document.getElementById('student-notification-widget');
       if (widget) widget.style.display = 'none';
+      const badge = document.getElementById('student-notification-badge');
+      if (badge) badge.style.display = 'none';
+      const btn = document.getElementById('student-notification-btn');
+      if (btn) btn.classList.remove('pulse');
+      const list = document.getElementById('student-notification-list');
+      if (list) {
+        list.innerHTML = `
+          <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            No notifications yet.
+          </div>
+        `;
+      }
       return;
     }
     
@@ -1107,6 +1153,10 @@ const app = {
       this.showToast('Please enter your Reference Number.', 'warning');
       return;
     }
+    if (!/^\d{10}$/.test(ref_num)) {
+      this.showToast('Reference Number must be exactly 10 digits.', 'warning');
+      return;
+    }
     
     if (!prog) {
       this.showToast('Please search and select a valid course/programme from the list.', 'warning');
@@ -1170,6 +1220,7 @@ const app = {
     
     document.getElementById('student-session-badge').style.display = 'none';
     this.renderNotifications();
+    this.resetStudentUI();
     
     const navTabTrack = document.getElementById('nav-tab-track');
     if (navTabTrack) {
@@ -1808,7 +1859,7 @@ const app = {
     if (!id) {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
-      if (dashHeader) dashHeader.style.display = 'flex';
+      if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
       return;
     }
 
@@ -1817,13 +1868,13 @@ const app = {
     if (!complaint) {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
-      if (dashHeader) dashHeader.style.display = 'flex';
+      if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
       return;
     }
 
     if (placeholder) placeholder.style.display = 'none';
     if (content) content.style.display = 'flex';
-    if (dashHeader) dashHeader.style.display = 'flex';
+    if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
 
     // Toggle anonymous layout view (hides sidebar for single ticket guest tracking)
     const workspace = document.getElementById('student-track-workspace');
@@ -2022,7 +2073,9 @@ const app = {
       }
       
       msgText.textContent = customMsg;
-      msgCard.style.display = 'block';
+      // Guest ticket-tracking (not signed in) no longer shows this banner —
+      // signed-in students still see it exactly as before.
+      msgCard.style.display = isGuestMode ? 'none' : 'block';
     }
 
     // Show/hide 'Login to see all tickets' banner and 'Full Details Area' based on anonymous vs authenticated tickets
@@ -2030,7 +2083,12 @@ const app = {
 
     const fullDetailsArea = document.getElementById('track-full-details-area');
     if (fullDetailsArea) {
-      fullDetailsArea.style.display = isGuestTrackingRegularTicket ? 'none' : 'block';
+      // Guest ticket-tracking (checking a Ticket ID without signing in) no
+      // longer shows the delay reminder, appointment card, directives
+      // checklist, administrative instructions, activity log, or the
+      // grievance details summary — those stay intact for signed-in
+      // students (sign in / sign up flows), unchanged from before.
+      fullDetailsArea.style.display = isGuestMode ? 'none' : 'block';
     }
 
     const loginBanner = document.getElementById('track-login-banner');
