@@ -7,39 +7,10 @@
   <link rel="stylesheet" href="style.css?v=4.15">
   <!-- Load Lucide Icons CDN for sleek UI icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Visually hide the student dashboard and grievance sections while on the Track Ticket page (JS/backend logic untouched) -->
   <style>
-    #btn-floating-quick {
-      display: none !important;
-    }
-    body #student-dashboard-header,
-    body #student-track-workspace .admin-sidebar,
-    body #student-track-workspace.has-active-ticket .admin-sidebar,
-    body #student-track-workspace:not(.has-active-ticket) .admin-sidebar,
-    body #dash-counter-grid,
-    body #track-grievance-meta-grid,
-    body #track-meta-student-info-row,
-    body #track-details-summary-card,
-    body .comments-section,
-    body #track-login-banner,
-    body #track-delay-reminder,
-    body #track-appointment-card,
-    body #track-directives-box {
-      display: none !important;
-    }
-    
     /* Dynamically hide the workspace completely when the login overlay panel is visible */
     body #student-login-panel-container:not([style*="display: none"]) ~ #student-track-workspace {
       display: none !important;
-    }
-
-    body #student-track-workspace .admin-layout {
-      grid-template-columns: 1fr !important;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    body #student-track-workspace .admin-workspace {
-      padding: 1.5rem 0;
     }
   </style>
 </head>

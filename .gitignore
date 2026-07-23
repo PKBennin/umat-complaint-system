@@ -1,3 +1,6 @@
 # Editor/tooling config — not part of the project
 .vscode/
 .DS_Store
+
+# Local MySQL data directory — raw DB files and TLS keys, never belongs in git
+mysql_data/

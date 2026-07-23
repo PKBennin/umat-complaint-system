@@ -1209,9 +1209,6 @@ const app = {
 
   // Student Logout
   handleLogout() {
-    if (!confirm("Are you sure you want to log out of the student portal?")) {
-      return;
-    }
     window.API.clearToken();
     localStorage.removeItem('current_student_session');
     this.state.loggedStudent = null;
@@ -1946,6 +1943,10 @@ const app = {
 
     // Render Timeline Progress Bar
     const isGuestMode = !this.state.loggedStudent;
+    // A guest checking a genuinely anonymous complaint has no account to log
+    // into, so it should show full details. Only a guest checking a *regular*
+    // student's ticket (by ID, while logged out) gets the "log in for more" gate.
+    const isGuestTrackingRegularTicket = (isGuestMode && !isAnonymousTicket);
     const timelineProgress = document.getElementById('track-timeline-progress');
     const nodeSubmitted = document.getElementById('node-submitted');
     const nodeReview = document.getElementById('node-review');
@@ -2073,22 +2074,16 @@ const app = {
       }
       
       msgText.textContent = customMsg;
-      // Guest ticket-tracking (not signed in) no longer shows this banner —
-      // signed-in students still see it exactly as before.
-      msgCard.style.display = isGuestMode ? 'none' : 'block';
+      msgCard.style.display = isGuestTrackingRegularTicket ? 'none' : 'block';
     }
 
-    // Show/hide 'Login to see all tickets' banner and 'Full Details Area' based on anonymous vs authenticated tickets
-    const isGuestTrackingRegularTicket = (isGuestMode && !isAnonymousTicket);
-
+    // Show/hide 'Login to see all tickets' banner and 'Full Details Area':
+    // hidden only for a guest checking a regular student's ticket (they need
+    // to log in to see it); shown for signed-in students and for anonymous
+    // tickets, which have no account to gate behind.
     const fullDetailsArea = document.getElementById('track-full-details-area');
     if (fullDetailsArea) {
-      // Guest ticket-tracking (checking a Ticket ID without signing in) no
-      // longer shows the delay reminder, appointment card, directives
-      // checklist, administrative instructions, activity log, or the
-      // grievance details summary — those stay intact for signed-in
-      // students (sign in / sign up flows), unchanged from before.
-      fullDetailsArea.style.display = isGuestMode ? 'none' : 'block';
+      fullDetailsArea.style.display = isGuestTrackingRegularTicket ? 'none' : 'block';
     }
 
     const loginBanner = document.getElementById('track-login-banner');
