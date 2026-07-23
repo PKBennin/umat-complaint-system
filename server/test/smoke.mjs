@@ -1,5 +1,6 @@
 // End-to-end smoke test against a running API (default http://localhost:4000).
 // Run: node test/smoke.mjs
+import { execSync } from 'child_process';
 const BASE = process.env.API_BASE || 'http://localhost:4000';
 
 let pass = 0, fail = 0;
@@ -38,6 +39,14 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
 }
 
 (async () => {
+  try {
+    console.log('Resetting and seeding database in test mode...');
+    execSync('npm run setup', { env: { ...process.env, NODE_ENV: 'test' } });
+  } catch (err) {
+    console.error('Failed to seed database in test mode:', err.message);
+    process.exit(1);
+  }
+
   console.log(`\nUMaT API smoke test → ${BASE}\n`);
 
   // 1. Student login
@@ -180,5 +189,17 @@ async function apiForm(method, path, { token, fields = {}, file } = {}) {
   check('reminder sets lastRemindedAt', !!reminded.json?.lastRemindedAt);
 
   console.log(`\n${fail === 0 ? '✓ ALL PASSED' : '✗ FAILURES'} — ${pass} passed, ${fail} failed\n`);
+  try {
+    console.log('Cleaning up database back to production/dev empty state...');
+    execSync('npm run setup', { env: { ...process.env, NODE_ENV: 'dev' } });
+  } catch (err) {
+    console.error('Failed to clean up database after tests:', err.message);
+  }
   process.exit(fail === 0 ? 0 : 1);
-})().catch((e) => { console.error('smoke test crashed:', e); process.exit(1); });
+})().catch((e) => {
+  console.error('smoke test crashed:', e);
+  try {
+    execSync('npm run setup', { env: { ...process.env, NODE_ENV: 'dev' } });
+  } catch (err) {}
+  process.exit(1);
+});

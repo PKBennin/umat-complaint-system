@@ -54,13 +54,16 @@ function requireStaff(req, res, next) {
 function staffScopeClause(user) {
   switch (user.type) {
     case 'Dean':
+    case 'Vice Dean':
+    case 'Faculty Officer':
       return { clause: 'c.faculty_key = ? AND c.routing_dept = ?', params: [user.facultyKey, user.departmentLabel] };
     case 'Finance':
       return { clause: "c.faculty_key = ? AND c.routing_dept = 'finance_dept'", params: [user.facultyKey] };
     case 'IT':
       return { clause: "c.routing_dept = 'ict_dept'", params: [] };
     case 'HOD':
-      // HODs see their department's tickets (analytics only in the UI).
+    case 'Department Officer':
+      // HODs and Department Officers see their department's tickets (analytics scope in UI).
       return { clause: 'c.faculty_key = ?', params: [user.facultyKey] };
     case 'SuperAdmin':
       return { clause: '1 = 1', params: [] };
@@ -74,12 +77,15 @@ function staffCanAccessComplaint(user, complaintRow) {
   const c = complaintRow;
   switch (user.type) {
     case 'Dean':
+    case 'Vice Dean':
+    case 'Faculty Officer':
       return c.faculty_key === user.facultyKey && c.routing_dept === user.departmentLabel;
     case 'Finance':
       return c.faculty_key === user.facultyKey && c.routing_dept === 'finance_dept';
     case 'IT':
       return c.routing_dept === 'ict_dept';
     case 'HOD':
+    case 'Department Officer':
       return c.faculty_key === user.facultyKey;
     case 'SuperAdmin':
       return true;

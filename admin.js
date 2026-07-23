@@ -1727,7 +1727,7 @@ const adminApp = {
   handleNewStaffTypeChange(type) {
     const deptGroup = document.getElementById('new-staff-dept-group');
 
-    if (type === 'Dean' || type === 'HOD') {
+    if (type === 'Dean' || type === 'Vice Dean' || type === 'Faculty Officer' || type === 'HOD' || type === 'Department Officer') {
       if (deptGroup) deptGroup.style.display = 'block';
       const input = document.getElementById('new-staff-dept-label');
       if (input) input.required = true;
@@ -1915,11 +1915,125 @@ const adminApp = {
     document.getElementById('sys-sub-overview').style.display = tabName === 'overview' ? 'block' : 'none';
     document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'grid' : 'none';
     document.getElementById('sys-sub-faculties').style.display = tabName === 'faculties' ? 'grid' : 'none';
+    document.getElementById('sys-sub-students').style.display = tabName === 'students' ? 'flex' : 'none';
 
     if (tabName === 'overview' || tabName === 'faculties') {
       this.loadSystemDashboardData();
     }
+    if (tabName === 'students') {
+      this.loadSystemDashboardData();
+      this.loadStudentRoster();
+    }
     if (window.lucide) lucide.createIcons();
+  },
+
+  async loadStudentRoster() {
+    try {
+      const list = await window.API.get('/auth/students');
+      this.state.studentsList = list;
+      this.renderStudentRoster(list);
+    } catch (err) {
+      this.showToast(err.message || 'Failed to load student roster.', 'error');
+    }
+  },
+
+  renderStudentRoster(list) {
+    const container = document.getElementById('system-student-rows');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!list || list.length === 0) {
+      container.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching student accounts found.</td></tr>`;
+      return;
+    }
+    list.forEach(s => {
+      const tr = document.createElement('tr');
+      
+      const tdIndex = document.createElement('td');
+      tdIndex.style.fontWeight = 'bold';
+      tdIndex.textContent = s.index_number;
+
+      const tdName = document.createElement('td');
+      tdName.textContent = s.name || '-';
+
+      const tdEmail = document.createElement('td');
+      tdEmail.textContent = s.email;
+
+      const tdPhone = document.createElement('td');
+      tdPhone.textContent = s.phone || '-';
+
+      const tdLevel = document.createElement('td');
+      tdLevel.textContent = s.level || '-';
+
+      const tdProg = document.createElement('td');
+      tdProg.textContent = s.programme_name || '-';
+
+      const tdFaculty = document.createElement('td');
+      tdFaculty.textContent = s.faculty_key || '-';
+
+      const tdDept = document.createElement('td');
+      tdDept.textContent = s.department_name || '-';
+
+      const tdActions = document.createElement('td');
+      tdActions.style.textAlign = 'center';
+      
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary';
+      btn.style.padding = '0.35rem 0.6rem';
+      btn.style.color = '#e63946';
+      btn.style.border = '1px solid rgba(230, 57, 70, 0.3)';
+      btn.style.background = 'rgba(230, 57, 70, 0.05)';
+      btn.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: middle;"></i>`;
+      btn.onclick = () => this.handleDeleteStudent(s.index_number);
+      tdActions.appendChild(btn);
+
+      tr.appendChild(tdIndex);
+      tr.appendChild(tdName);
+      tr.appendChild(tdEmail);
+      tr.appendChild(tdPhone);
+      tr.appendChild(tdLevel);
+      tr.appendChild(tdProg);
+      tr.appendChild(tdFaculty);
+      tr.appendChild(tdDept);
+      tr.appendChild(tdActions);
+
+      container.appendChild(tr);
+    });
+    if (window.lucide) lucide.createIcons();
+  },
+
+  filterStudents() {
+    const query = (document.getElementById('student-search')?.value || '').toLowerCase().trim();
+    const faculty = document.getElementById('student-filter-faculty')?.value || '';
+    const dept = document.getElementById('student-filter-dept')?.value || '';
+    const prog = document.getElementById('student-filter-prog')?.value || '';
+
+    const list = this.state.studentsList || [];
+    const filtered = list.filter(s => {
+      const matchQuery = !query || 
+        (s.name || '').toLowerCase().includes(query) ||
+        (s.index_number || '').toLowerCase().includes(query) ||
+        (s.email || '').toLowerCase().includes(query);
+      
+      const matchFaculty = !faculty || s.faculty_key === faculty;
+      const matchDept = !dept || s.department_name === dept;
+      const matchProg = !prog || s.programme_name === prog;
+
+      return matchQuery && matchFaculty && matchDept && matchProg;
+    });
+    this.renderStudentRoster(filtered);
+  },
+
+  async handleDeleteStudent(indexNumber) {
+    if (!confirm(`Are you sure you want to delete student account ${indexNumber}? This will also delete all their filed complaints and cannot be undone.`)) {
+      return;
+    }
+    try {
+      await window.API.del(`/auth/students/${indexNumber}`);
+      this.showToast(`Student account ${indexNumber} removed successfully.`, 'success');
+      await this.loadStudentRoster();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to remove student.', 'error');
+    }
   },
 
   async loadSystemDashboardData() {
@@ -1971,6 +2085,40 @@ const adminApp = {
       }
       if (deptParentSelect) {
         deptParentSelect.innerHTML = '<option value="" disabled selected>Select parent faculty...</option>';
+      }
+
+      const filterFaculty = document.getElementById('student-filter-faculty');
+      const filterDept = document.getElementById('student-filter-dept');
+      const filterProg = document.getElementById('student-filter-prog');
+
+      if (filterFaculty) {
+        filterFaculty.innerHTML = '<option value="">All Faculties</option>';
+        data.faculties.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.faculty_key;
+          opt.textContent = `${f.name} (${f.faculty_key})`;
+          filterFaculty.appendChild(opt);
+        });
+      }
+
+      if (filterDept) {
+        filterDept.innerHTML = '<option value="">All Departments</option>';
+        data.departments.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.name;
+          opt.textContent = d.name;
+          filterDept.appendChild(opt);
+        });
+      }
+
+      if (filterProg && window.PROGRAMMES) {
+        filterProg.innerHTML = '<option value="">All Programmes</option>';
+        window.PROGRAMMES.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.name;
+          opt.textContent = p.name;
+          filterProg.appendChild(opt);
+        });
       }
 
       data.faculties.forEach(f => {

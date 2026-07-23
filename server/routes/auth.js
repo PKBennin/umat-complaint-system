@@ -108,7 +108,7 @@ router.post('/student/complete-profile', verifyJWT,
   body('phone').isString().trim().notEmpty(),
   body('level').isString().trim().notEmpty(),
   body('programme_id').isInt(),
-  body('reference_number').isString().trim().notEmpty(),
+  body('reference_number').isString().trim().isLength({ min: 10, max: 10 }).isNumeric(),
   async (req, res, next) => {
     if (badRequest(req, res)) return;
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student access required' });
@@ -326,7 +326,7 @@ router.post('/staff', verifyJWT,
   body('name').isString().trim().notEmpty(),
   body('email').optional({ nullable: true }).isEmail().normalizeEmail(),
   body('password').isString().isLength({ min: 4, max: 8 }),
-  body('type').isIn(['Dean', 'Finance', 'IT', 'HOD', 'SuperAdmin']),
+  body('type').isIn(['Dean', 'Vice Dean', 'Faculty Officer', 'Finance', 'IT', 'HOD', 'Department Officer', 'SuperAdmin']),
   body('portfolio').isString().trim().notEmpty(),
   async (req, res, next) => {
     if (badRequest(req, res)) return;
@@ -387,6 +387,48 @@ router.delete('/staff/:id', verifyJWT, async (req, res, next) => {
     const [result] = await pool.query('DELETE FROM staff WHERE staff_id = ?', [staffId]);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Staff member not found.' });
+    }
+    return res.json({ ok: true });
+  } catch (e) { return next(e); }
+});
+
+// GET /api/auth/students (Get all students - SuperAdmin only)
+router.get('/students', verifyJWT, async (req, res, next) => {
+  if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin access required' });
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT s.index_number, s.name, s.email, s.phone, s.level, s.reference_number, s.is_profile_complete,
+              p.name AS programme_name,
+              p.faculty_key,
+              d.name AS department_name
+         FROM students s
+         LEFT JOIN programmes p ON p.id = s.programme_id
+         LEFT JOIN departments d ON d.id = p.department_id
+        ORDER BY s.name`
+    );
+    return res.json(rows);
+  } catch (e) { return next(e); }
+});
+
+// DELETE /api/auth/students/:indexNumber (Delete a student - SuperAdmin only)
+router.delete('/students/:indexNumber', verifyJWT, async (req, res, next) => {
+  if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin access required' });
+  }
+  try {
+    const { indexNumber } = req.params;
+    await pool.query('DELETE FROM comments WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index = ?)', [indexNumber]);
+    await pool.query('DELETE FROM internal_notes WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index = ?)', [indexNumber]);
+    await pool.query('DELETE FROM directives WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index = ?)', [indexNumber]);
+    await pool.query('DELETE FROM appointments WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index = ?)', [indexNumber]);
+    await pool.query('DELETE FROM action_logs WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index = ?)', [indexNumber]);
+    await pool.query('DELETE FROM complaints WHERE student_index = ?', [indexNumber]);
+    
+    const [result] = await pool.query('DELETE FROM students WHERE index_number = ?', [indexNumber]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Student account not found.' });
     }
     return res.json({ ok: true });
   } catch (e) { return next(e); }
