@@ -71,13 +71,48 @@ const app = {
       this.showView('file');
       return;
     }
+    this.scrollToLandingSection('submit-methods-section');
+  },
+
+  // Footer/nav links that just need to land on a specific landing-page
+  // section (How it works, Why it works, FAQs) — always shows the landing
+  // page first, regardless of login state, since these are informational.
+  scrollToLandingSection(sectionId) {
     this.showView('landing');
     setTimeout(() => {
-      const section = document.getElementById('submit-methods-section');
+      const section = document.getElementById(sectionId);
       if (section) {
         section.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 80);
+  },
+
+  toggleFaq(questionButton) {
+    if (!questionButton) return;
+    const item = questionButton.closest('.faq-item');
+    if (!item) return;
+
+    const answer = item.querySelector('.faq-answer');
+    const chevron = item.querySelector('.faq-chevron');
+    if (!answer) return;
+
+    const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+
+    document.querySelectorAll('.faq-item').forEach((faqItem) => {
+      const faqAnswer = faqItem.querySelector('.faq-answer');
+      const faqChevron = faqItem.querySelector('.faq-chevron');
+      const faqQuestion = faqItem.querySelector('.faq-question');
+
+      if (faqAnswer) faqAnswer.style.maxHeight = '0';
+      if (faqChevron) faqChevron.style.transform = 'rotate(0deg)';
+      if (faqQuestion) faqQuestion.setAttribute('aria-expanded', 'false');
+    });
+
+    if (!isOpen) {
+      answer.style.maxHeight = `${answer.scrollHeight}px`;
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+      questionButton.setAttribute('aria-expanded', 'true');
+    }
   },
 
   // State Management (backend API).
@@ -656,46 +691,81 @@ const app = {
     return !!(subject || desc);
   },
 
-  // Student Authentication / Anonymous Ticket Checking Submit
-  async handleLoginSubmit(e) {
-    if (e) e.preventDefault();
-    const ticketIdInput = document.getElementById('login-index');
-    const ticketIdVal = ticketIdInput ? ticketIdInput.value.trim().toUpperCase() : '';
-
-    if (!ticketIdVal) return;
+  // Shared anonymous ticket lookup — used by both the popup modal (opened from
+  // the landing page's "Track ticket status" button) and the full-page
+  // fallback form (shown if someone lands on #track directly). Returns true
+  // on success so callers can decide whether to close their own UI.
+  async submitTicketLookup(ticketIdRaw) {
+    const ticketIdVal = (ticketIdRaw || '').trim().toUpperCase();
+    if (!ticketIdVal) return false;
 
     if (!ticketIdVal.startsWith('UMAT-')) {
       this.showToast("Please enter a valid Ticket ID (e.g., UMAT-2026-0001). To sign in with your student account, click 'Sign In' in the header.", "warning");
-      return;
+      return false;
     }
 
     try {
       const ticket = await window.API.get(`/complaints/public/track/${encodeURIComponent(ticketIdVal)}`);
       if (!ticket) {
         this.showToast("No ticket found with that Ticket ID.", "error");
-        return;
+        return false;
       }
-      
+
       // Load into state as the single complaint
       this.state.complaints = [ticket];
       this.state.activeStudentComplaintId = ticket.id;
       this.state.loggedStudent = null; // guest mode
-      
+
       // Hide session badges
       document.getElementById('student-session-badge').style.display = 'none';
-      
+
       // Reset nav tab wording if present
       const navTabTrack = document.getElementById('nav-tab-track');
       if (navTabTrack) {
         navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
       }
-      
+
       // Toggle view
       this.showView('track');
       this.showToast("Ticket status loaded successfully!", "success");
+      return true;
     } catch (err) {
       this.showToast(err.message || 'Ticket not found. Check the Ticket ID.', 'error');
+      return false;
     }
+  },
+
+  // Full-page fallback form (shown if someone lands on #track directly
+  // without going through the popup, e.g. a bookmark or the browser back button).
+  async handleLoginSubmit(e) {
+    if (e) e.preventDefault();
+    const ticketIdInput = document.getElementById('login-index');
+    await this.submitTicketLookup(ticketIdInput ? ticketIdInput.value : '');
+  },
+
+  // Popup modal opened from the landing page's "Track ticket status" button
+  // and the footer's "Track a ticket" link, so checking a ticket doesn't
+  // require navigating away from the page you're on.
+  showTrackTicketModal(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const modal = document.getElementById('track-ticket-modal');
+    if (!modal) return;
+    const input = document.getElementById('track-modal-ticket-id');
+    if (input) input.value = '';
+    modal.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+  },
+
+  closeTrackTicketModal() {
+    const modal = document.getElementById('track-ticket-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  async handleTrackModalSubmit(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('track-modal-ticket-id');
+    const ok = await this.submitTicketLookup(input ? input.value : '');
+    if (ok) this.closeTrackTicketModal();
   },
 
   // Student Account Login Modal Submission
@@ -1602,7 +1672,16 @@ const app = {
     }
 
     const uniqueId = ticket.id;
-    await this.refreshComplaints();
+    if (this.state.loggedStudent) {
+      // Logged-in submission: refresh the full ledger so it includes this new ticket.
+      await this.refreshComplaints();
+    } else {
+      // Anonymous/guest submission: refreshComplaints() would wipe state.complaints
+      // to [] since there's no logged-in student to fetch a list for. Use the
+      // ticket object already returned by the POST instead, same as the manual
+      // "Track ticket status" lookup does for a guest-checked ticket.
+      this.state.complaints = [ticket];
+    }
 
     // Populate receipt page
     document.getElementById('receipt-track-code').textContent = uniqueId;

@@ -130,7 +130,7 @@
             <button class="btn btn-primary btn-lg" onclick="app.handleQuickComplaintClick()">
               Submit a complaint
             </button>
-            <button class="btn btn-hero-track btn-lg" onclick="app.showView('track')">
+            <button class="btn btn-hero-track btn-lg" onclick="app.showTrackTicketModal(event)">
               Track ticket status
             </button>
           </div>
@@ -196,12 +196,12 @@
       </div>
 
       <!-- Section: Institutional grievance principles -->
-      <div class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
+      <div id="why-it-works-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
         <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Institutional grievance principles</h3>
         <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
           The standards this portal is built to uphold, for every complaint regardless of category.
         </p>
-        
+
         <div class="principles-grid">
           <div class="principle-card">
             <h4>Confidentiality</h4>
@@ -214,6 +214,53 @@
           <div class="principle-card">
             <h4>Non-retaliation</h4>
             <p>Filing a complaint in good faith carries no academic or administrative penalty, for you or anyone you name.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: FAQs -->
+      <div id="faq-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
+        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Frequently asked questions</h3>
+        <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
+          Quick answers about filing and tracking a complaint.
+        </p>
+
+        <div style="max-width: 720px; margin: 0 auto; text-align: left; display: flex; flex-direction: column; gap: 1rem;">
+          <div class="glass-card faq-item" style="padding: 0; overflow: hidden;">
+            <button type="button" class="faq-question" onclick="app.toggleFaq(this)" style="width: 100%; text-align: left; background: none; border: none; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; font-family: inherit; color: inherit;">
+              <h4 style="margin: 0; font-size: 1rem;">Do I need an account to file a complaint?</h4>
+              <i data-lucide="chevron-down" class="faq-chevron" style="width: 20px; height: 20px; flex-shrink: 0; transition: transform 0.2s ease;"></i>
+            </button>
+            <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.25s ease;">
+              <p style="margin: 0; padding: 0 1.5rem 1.5rem 1.5rem; color: var(--text-muted);">No. Anyone can file with just a name and index number, or fully anonymously. Signing in with your student account only adds the ability to track all your tickets in one place and get direct updates.</p>
+            </div>
+          </div>
+          <div class="glass-card faq-item" style="padding: 0; overflow: hidden;">
+            <button type="button" class="faq-question" onclick="app.toggleFaq(this)" style="width: 100%; text-align: left; background: none; border: none; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; font-family: inherit; color: inherit;">
+              <h4 style="margin: 0; font-size: 1rem;">How do I check an anonymous complaint later?</h4>
+              <i data-lucide="chevron-down" class="faq-chevron" style="width: 20px; height: 20px; flex-shrink: 0; transition: transform 0.2s ease;"></i>
+            </button>
+            <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.25s ease;">
+              <p style="margin: 0; padding: 0 1.5rem 1.5rem 1.5rem; color: var(--text-muted);">Save the reference code shown right after you submit. It's the only way to look up an anonymous complaint afterward. Use "Track ticket status" and enter that exact code.</p>
+            </div>
+          </div>
+          <div class="glass-card faq-item" style="padding: 0; overflow: hidden;">
+            <button type="button" class="faq-question" onclick="app.toggleFaq(this)" style="width: 100%; text-align: left; background: none; border: none; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; font-family: inherit; color: inherit;">
+              <h4 style="margin: 0; font-size: 1rem;">Who can see my complaint?</h4>
+              <i data-lucide="chevron-down" class="faq-chevron" style="width: 20px; height: 20px; flex-shrink: 0; transition: transform 0.2s ease;"></i>
+            </button>
+            <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.25s ease;">
+              <p style="margin: 0; padding: 0 1.5rem 1.5rem 1.5rem; color: var(--text-muted);">Only the office it's routed to (your Dean, Finance Officer, or IT Directorate depending on category). Harassment complaints also hide your name and index number from the reviewing officer.</p>
+            </div>
+          </div>
+          <div class="glass-card faq-item" style="padding: 0; overflow: hidden;">
+            <button type="button" class="faq-question" onclick="app.toggleFaq(this)" style="width: 100%; text-align: left; background: none; border: none; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; font-family: inherit; color: inherit;">
+              <h4 style="margin: 0; font-size: 1rem;">How long until someone responds?</h4>
+              <i data-lucide="chevron-down" class="faq-chevron" style="width: 20px; height: 20px; flex-shrink: 0; transition: transform 0.2s ease;"></i>
+            </button>
+            <div class="faq-answer" style="max-height: 0; overflow: hidden; transition: max-height 0.25s ease;">
+              <p style="margin: 0; padding: 0 1.5rem 1.5rem 1.5rem; color: var(--text-muted);">Every complaint gets an initial acknowledgment within 48 hours, with status updates at each stage of review. If a ticket sits unresolved past its urgency window, you'll see an option to resend a reminder to the office handling it.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -233,16 +280,16 @@
           <div>
             <h5 style="color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 1.25rem;">Quick Links</h5>
             <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; font-weight: 500;">
-              <li><a href="#" onclick="app.handleQuickComplaintClick(); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">How it works</a></li>
-              <li><a href="#" onclick="app.handleQuickComplaintClick(); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Why it works</a></li>
-              <li><a href="#" onclick="app.showView('track'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Track a ticket</a></li>
+              <li><a href="#" onclick="app.scrollToLandingSection('submit-methods-section'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">How it works</a></li>
+              <li><a href="#" onclick="app.scrollToLandingSection('why-it-works-section'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Why it works</a></li>
+              <li><a href="#" onclick="app.showTrackTicketModal(event); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Track a ticket</a></li>
             </ul>
           </div>
           <div>
             <h5 style="color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 1.25rem;">Support</h5>
             <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.95rem; font-weight: 500;">
               <li><a href="mailto:studentaffairs@umat.edu.gh" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Contact student affairs</a></li>
-              <li><a href="#" onclick="app.showView('landing'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">FAQs</a></li>
+              <li><a href="#" onclick="app.scrollToLandingSection('faq-section'); return false;" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">FAQs</a></li>
               <li><a href="mailto:support@umat.edu.gh" style="color: #ffffff; text-decoration: none; transition: color var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='#ffffff'">Report an issue</a></li>
             </ul>
           </div>
@@ -893,6 +940,30 @@
         </div>
       </form>
 
+    </div>
+  </div>
+
+  <!-- Track Ticket Modal (popup — lets a guest check a ticket without leaving the current page) -->
+  <div id="track-ticket-modal" class="modal-overlay" style="display: none;" onclick="app.closeTrackTicketModal()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()" style="max-width: 480px; padding: 2.5rem; border-top: 4px solid var(--accent); position: relative; box-sizing: border-box;">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <i data-lucide="search" style="width: 40px; height: 40px; stroke: var(--accent); margin-bottom: 0.75rem;"></i>
+        <h3 style="margin-bottom: 0.5rem; font-size: 1.6rem; border-bottom: none; padding-bottom: 0;">Track ticket status</h3>
+        <p class="section-desc" style="font-size: 0.9rem; margin: 0; line-height: 1.4; color: var(--text-muted);">Enter your Ticket ID to check the status of your complaint.</p>
+      </div>
+      <form onsubmit="app.handleTrackModalSubmit(event)">
+        <div class="input-group" style="margin-bottom: 1.25rem;">
+          <label for="track-modal-ticket-id" style="font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Ticket ID</label>
+          <input type="text" id="track-modal-ticket-id" placeholder="e.g. UMAT-2026-0742" required style="text-align: center; font-size: 1.1rem; letter-spacing: 0.5px;">
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="app.closeTrackTicketModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Check status</button>
+        </div>
+        <p style="margin-top: 1.25rem; font-size: 0.8rem; text-align: center; color: var(--text-muted); font-weight: 500;">
+          Anonymous tickets can only be checked with the exact Ticket ID you were given.
+        </p>
+      </form>
     </div>
   </div>
 
