@@ -971,41 +971,41 @@
   <div id="profile-completion-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; overflow: hidden; font-family: 'Outfit', sans-serif; background: #ffffff; flex-direction: column;">
     
     <!-- Same Navigation Bar as the Home Page -->
-    <header style="position: relative; top: 0; left: 0; width: 100%; z-index: 100; background-color: #0b311d; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); box-sizing: border-box; flex-shrink: 0; height: 70px;">
+    <header style="position: relative; top: 0; left: 0; width: 100%; z-index: 100; background-color: var(--bg-nav); border-bottom: 1px solid var(--border-color); padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm); box-sizing: border-box; flex-shrink: 0; height: 70px;">
       <!-- Brand -->
       <div class="brand" style="display: flex; align-items: center; gap: 0.75rem;">
-        <div class="brand-emblem" style="width: 42px; height: 42px; background: #ffffff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; box-sizing: border-box;">
+        <div class="brand-emblem" style="width: 42px; height: 42px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2px; box-sizing: border-box;">
           <img src="logo.jpg" alt="UMaT Logo" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
         <div class="brand-text" style="display: flex; flex-direction: column; text-align: left;">
-          <h1 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; margin: 0; line-height: 1.2; border: none; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif;">Campus Complaint System</h1>
-          <p style="font-size: 0.72rem; color: #fecb00; margin: 0; line-height: 1.2; font-weight: 600;">University of Mines and Technology, Tarkwa</p>
+          <h1 style="font-size: 1.25rem; font-weight: 800; letter-spacing: 0.5px; background: linear-gradient(to right, var(--primary) 0%, var(--primary-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.2; border: none; padding: 0;">Campus Complaint System</h1>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0; line-height: 1.2; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">University of Mines and Technology, Tarkwa</p>
         </div>
       </div>
 
       <!-- Navigation Tabs (Locked on Profile Setup) -->
-      <nav id="onboarding-nav" style="display: flex; gap: 1rem;">
-        <button class="nav-tab active" style="background: var(--accent); color: #ffffff; border: none; padding: 0.5rem 1.25rem; border-radius: 30px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-family: inherit; cursor: not-allowed;" disabled>
-          <i data-lucide="user-cog" style="width: 16px; height: 16px; stroke: #ffffff;"></i> Account Setup
+      <nav id="onboarding-nav" style="display: flex; margin-left: auto; margin-right: auto;">
+        <button class="nav-tab active" style="cursor: not-allowed;" disabled>
+          <i data-lucide="user-cog"></i> Account Setup
         </button>
       </nav>
 
       <!-- Right Side: Profile dropdown badge -->
-      <div class="dashboard-profile-widget active-onboarding" id="onboarding-profile-badge" onclick="app.toggleOnboardingDropdown(event)" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0.45rem 1rem; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15); transition: all 0.2s ease; position: relative;">
-        <div class="profile-avatar" style="width: 28px; height: 28px; background: #0b311d; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid #fecb00;">
-          <i data-lucide="user" style="width: 12px; height: 12px; stroke: #fecb00;"></i>
+      <div class="dashboard-profile-widget active-onboarding" id="onboarding-profile-badge" onclick="app.toggleOnboardingDropdown(event)" style="margin: 0;">
+        <div class="profile-avatar">
+          <i data-lucide="user"></i>
         </div>
-        <div class="profile-info" style="display: flex; flex-direction: column; text-align: left;">
-          <span class="profile-name" id="onboarding-logged-name" style="font-size: 0.82rem; font-weight: 700; color: #ffffff; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">Student</span>
-          <span class="profile-role" style="font-size: 0.68rem; color: #fecb00; font-weight: 600; line-height: 1.1;">Student Session</span>
+        <div class="profile-info">
+          <span class="profile-name" id="onboarding-logged-name">Student</span>
+          <span class="profile-role">Student Session</span>
         </div>
-        <i data-lucide="chevron-down" style="width: 12px; height: 12px; color: rgba(255, 255, 255, 0.5);"></i>
+        <i data-lucide="chevron-down" class="profile-chevron"></i>
         
         <!-- Dropdown Menu -->
-        <div id="onboarding-profile-dropdown" class="profile-dropdown-menu" style="display: none; position: absolute; top: 110%; right: 0; background: #1e1e1e; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); z-index: 100; min-width: 170px; overflow: hidden;" onclick="event.stopPropagation()">
-          <div class="dropdown-header" style="padding: 0.75rem 1rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.2);">Session Actions</div>
-          <button type="button" class="dropdown-item-btn" onclick="app.handleLogout(); event.preventDefault();" style="width: 100%; padding: 0.85rem 1.25rem; background: transparent; border: none; color: #fc8181; text-align: left; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.65rem; transition: background 0.2s ease; font-family: inherit; font-weight: 600;">
-            <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+        <div id="onboarding-profile-dropdown" class="profile-dropdown-menu" style="display: none;" onclick="event.stopPropagation()">
+          <div class="dropdown-header">Session Actions</div>
+          <button type="button" class="dropdown-item-btn text-danger" onclick="app.handleLogout(); event.preventDefault();">
+            <i data-lucide="log-out"></i>
             <span>Log Out</span>
           </button>
         </div>
