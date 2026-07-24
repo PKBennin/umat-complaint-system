@@ -87,6 +87,26 @@ const app = {
     }, 80);
   },
 
+  // Expand/collapse a single FAQ item. Each item is independent (no
+  // accordion exclusivity) so multiple answers can stay open at once.
+  toggleFaq(questionBtn) {
+    const item = questionBtn.closest('.faq-item');
+    if (!item) return;
+    const answer = item.querySelector('.faq-answer');
+    const chevron = item.querySelector('.faq-chevron');
+    const isOpen = item.classList.contains('faq-open');
+
+    if (isOpen) {
+      item.classList.remove('faq-open');
+      answer.style.maxHeight = '0';
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    } else {
+      item.classList.add('faq-open');
+      answer.style.maxHeight = answer.scrollHeight + 'px';
+      if (chevron) chevron.style.transform = 'rotate(180deg)';
+    }
+  },
+
   toggleFaq(questionButton) {
     if (!questionButton) return;
     const item = questionButton.closest('.faq-item');
