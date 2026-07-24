@@ -104,7 +104,7 @@ router.post('/student/login',
 // POST /api/auth/student/complete-profile
 router.post('/student/complete-profile', verifyJWT,
   body('name').isString().trim().notEmpty(),
-  body('index_number').isString().trim().notEmpty(),
+  body('index_number').isString().trim().matches(/^[0-9]{10}$/).withMessage('Index number must be exactly 10 digits'),
   body('phone').isString().trim().notEmpty(),
   body('level').isString().trim().notEmpty(),
   body('programme_id').isInt(),
