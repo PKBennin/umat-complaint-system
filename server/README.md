@@ -10,6 +10,10 @@ MySQL-backed, JWT-secured service, per `backend_design.pdf`.
   docker run --name umat-mysql -e MYSQL_ROOT_PASSWORD=umatroot \
     -e MYSQL_DATABASE=umat_complaints_db -p 3306:3306 -d mysql:8
   ```
+  That only works the first time (it creates the container). If it's already
+  been created but stopped (e.g. after a reboot), use `docker start umat-mysql`
+  instead — `docker run` again will fail with a name conflict.
+
   Or install natively: `brew install mysql && brew services start mysql`.
 
 ## Setup
@@ -48,11 +52,16 @@ the frontend's existing complaint object shape (embedded
 ## Security
 - Passwords hashed with bcrypt (10 rounds).
 - JWT bearer auth on all endpoints except login.
-- RBAC: students access only their own tickets. Staff are scoped to their
-  jurisdiction: Dean → their faculty's own office (`faculty_key` +
+- RBAC: students access only their own tickets. Staff `type` is one of
+  `Dean`, `Vice Dean`, `Faculty Officer`, `Finance`, `IT`, `HOD`,
+  `Department Officer`, `SuperAdmin` — scoped to jurisdiction: Dean/Vice
+  Dean/Faculty Officer → faculty + own office (`faculty_key` +
   `department_label`), Finance → their faculty, IT → university-wide,
-  HOD → their faculty (read-only/analytics in the UI). SuperAdmin sees
-  everything, including for reassignment eligibility checks.
+  HOD/Department Officer → their faculty (read-only/analytics in the UI).
+  SuperAdmin sees everything, including for reassignment eligibility checks.
+  Note: complaints are only ever auto-routed to a `Dean`-type account, so
+  Vice Dean/Faculty Officer accounts can log in but won't receive complaints
+  unless manually reassigned to an exactly-matching office label.
 - Internal notes are redacted server-side for student viewers (never sent
   over the wire).
 - Status/appointment writes run inside SQL transactions; all queries are
@@ -66,6 +75,7 @@ the frontend's existing complaint object shape (embedded
 - `PUT  /student/password`, `PUT /staff/password`
 - `PUT  /student/profile`, `PUT /staff/profile`
 - `GET  /staff` (SuperAdmin-only roster), `POST /staff` (register), `DELETE /staff` (wipe all but self), `DELETE /staff/:id`
+- `GET  /students` (SuperAdmin-only roster), `DELETE /students/:indexNumber` (also cascades their complaints/comments/notes/directives/appointments/logs)
 
 **Complaints** (`/api/complaints`)
 - `POST /`: file a complaint (public, optional JWT, optional `attachment` file)

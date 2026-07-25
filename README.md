@@ -3,7 +3,7 @@
 A complaint/grievance management system for the University of Mines and Technology (UMaT), Tarkwa. Students file complaints (academic, financial, ICT, harassment, general) that are automatically routed to the right Dean, Faculty Finance Officer, or the Central IT Directorate, tracked through resolution, and escalated with directives and appointments.
 
 - **Student portal** (`index.html`): public complaint filing (no account required), ticket tracking, appointment/directive follow-up.
-- **Admin workstation** (`admin.html`): Deans, Finance Officers, IT staff, and HODs claim, resolve, and analyze complaints scoped to their jurisdiction.
+- **Admin workstation** (`admin.html`): Deans, Finance Officers, IT staff, and HODs claim, resolve, and analyze complaints scoped to their jurisdiction. A SuperAdmin additionally manages the staff roster, faculties/departments, and a searchable student roster.
 - **Backend API** (`server/`): Node/Express + MySQL, JWT-authenticated, replacing the app's original browser-only storage.
 
 ## Stack
@@ -20,6 +20,14 @@ Requires a local MySQL 8 instance. The quickest way is Docker:
 ```bash
 docker run --name umat-mysql -e MYSQL_ROOT_PASSWORD=umatroot \
   -e MYSQL_DATABASE=umat_complaints_db -p 3306:3306 -d mysql:8
+```
+
+That `docker run` only works once, since it creates the container. On any
+later machine restart (or if `docker ps` shows it stopped), bring the same
+container back up instead:
+
+```bash
+docker start umat-mysql
 ```
 
 Then:
@@ -69,3 +77,14 @@ A complaint's category determines who resolves it:
 Harassment complaints are anonymized on the staff side: the student's name, index, email, and phone are hidden from the resolving officer.
 
 Once routed, the assigned officer can claim, resolve, and reassign a complaint to any other staff member within the same jurisdiction (e.g. another Dean in the same faculty office, or another IT officer) via the "Reassign Case Officer" control on the workstation. The eligible-officers list and the reassignment itself are both scoped server-side, so a complaint can't be handed to someone outside its routed faculty/department.
+
+The staff roster also supports **Vice Dean**, **Faculty Officer**, and
+**Department Officer** as registerable roles. Department Officer mirrors HOD
+(faculty-wide read access) and works out of the box. Vice Dean and Faculty
+Officer, however, are not currently a routing target — new complaints are
+only ever auto-assigned to a `Dean`-type account — and their access is scoped
+to an exact match on their own office label, which won't line up with a real
+Dean's complaints unless deliberately set to match. In practice, a Vice
+Dean/Faculty Officer account can be created and logged into, but won't see or
+receive any complaints unless that's fixed in `routing.js` / the eligibility
+check in `middleware/auth.js`.
