@@ -578,6 +578,9 @@
                     <span class="item-id" id="track-meta-id" style="font-size: 1.1rem; font-weight: 700; color: var(--accent);">-</span>
                     <span id="track-status-badge-container"></span>
                     <span id="track-meta-urgency" class="badge">-</span>
+                    <span id="track-anon-badge" class="badge" style="display: none; background: rgba(108, 117, 125, 0.15); color: #6c757d; border: 1px solid rgba(108, 117, 125, 0.3);">
+                      <i data-lucide="eye-off" style="width: 11px; height: 11px;"></i> Anonymous
+                    </span>
                   </div>
                   <h3 id="track-subject-lbl" style="font-size: 1.4rem; color: var(--primary); margin: 0.25rem 0 0 0;">Subject Title</h3>
                 </div>
@@ -1548,7 +1551,7 @@
   <!-- Backend API client -->
  <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=4.30"></script>
+  <script src="app.js?v=4.31"></script>
   <!-- Scroll Chaining Controller & Portal Footer Visibility Manager -->
   <script>
     (function() {

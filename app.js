@@ -2020,6 +2020,10 @@ const app = {
     if (filerRow) {
       filerRow.style.display = isAnonymousTicket ? 'none' : 'grid';
     }
+    const anonBadge = document.getElementById('track-anon-badge');
+    if (anonBadge) {
+      anonBadge.style.display = isAnonymousTicket ? 'inline-flex' : 'none';
+    }
 
     const nameEl = document.getElementById('track-meta-student-name');
     const indexEl = document.getElementById('track-meta-student-index');
