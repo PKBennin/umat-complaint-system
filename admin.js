@@ -1,5 +1,18 @@
 // UMaT Campus Complaint Management System - admin.js (Admin Portal Controller)
 
+// Keep --header-h in sync with the real <header> height. It wraps to extra
+// lines on narrower screens or with a long staff name/role badge, so a fixed
+// CSS offset for `main`'s top clearance drifts out of date and lets the
+// header cover the top of the page content.
+(function syncHeaderHeightVar() {
+  const header = document.querySelector('header');
+  if (!header) return;
+  const set = () => document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+  set();
+  new ResizeObserver(set).observe(header);
+  window.addEventListener('resize', set);
+})();
+
 const adminApp = {
   // Application State
   state: {

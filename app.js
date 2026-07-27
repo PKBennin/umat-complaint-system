@@ -1,5 +1,18 @@
 // UMaT Campus Complaint Management System - app.js (Student Portal Controller)
 
+// Keep --header-h in sync with the real <header> height. It wraps to extra
+// lines on narrower screens or with a long student name, so a fixed CSS
+// offset for `main`'s top clearance drifts out of date and lets the header
+// cover the top of the page content.
+(function syncHeaderHeightVar() {
+  const header = document.querySelector('header');
+  if (!header) return;
+  const set = () => document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+  set();
+  new ResizeObserver(set).observe(header);
+  window.addEventListener('resize', set);
+})();
+
 const app = {
   // Application State
   state: {
@@ -731,19 +744,31 @@ const app = {
         return false;
       }
 
-      // Load into state as the single complaint
-      this.state.complaints = [ticket];
-      this.state.activeStudentComplaintId = ticket.id;
-      this.state.loggedStudent = null; // guest mode
+      // A student who's already signed in can open this same lookup (e.g. the
+      // "Track a ticket" popup) without it downgrading them to a guest session
+      // — that used to wipe loggedStudent/their full complaint list just for
+      // checking a ticket ID. Only apply guest-mode resets for a real
+      // anonymous visitor with no session to preserve.
+      if (this.state.loggedStudent) {
+        const alreadyKnown = this.state.complaints.some(c => c.id === ticket.id);
+        this.state.complaints = alreadyKnown
+          ? this.state.complaints.map(c => c.id === ticket.id ? ticket : c)
+          : [...this.state.complaints, ticket];
+      } else {
+        // Load into state as the single complaint
+        this.state.complaints = [ticket];
+        this.state.loggedStudent = null; // guest mode
 
-      // Hide session badges
-      document.getElementById('student-session-badge').style.display = 'none';
+        // Hide session badges
+        document.getElementById('student-session-badge').style.display = 'none';
 
-      // Reset nav tab wording if present
-      const navTabTrack = document.getElementById('nav-tab-track');
-      if (navTabTrack) {
-        navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+        // Reset nav tab wording if present
+        const navTabTrack = document.getElementById('nav-tab-track');
+        if (navTabTrack) {
+          navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+        }
       }
+      this.state.activeStudentComplaintId = ticket.id;
 
       // Toggle view
       this.showView('track');

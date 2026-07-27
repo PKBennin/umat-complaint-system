@@ -68,6 +68,12 @@
   --text-color: #1b3024;
   --text-input-color: #1a2c22;
   --text-muted: #5a6e60;
+
+  /* Actual rendered <header> height, kept in sync by JS (falls back to 90px
+     before JS runs / if the observer isn't wired up). The header can wrap to
+     multiple lines on narrower screens or with a long staff name, so this
+     can't be a fixed constant. */
+  --header-h: 90px;
 }
 
 /* Base Styles */
@@ -289,9 +295,9 @@ nav {
 /* Main Container Styles */
 main {
   max-width: 1440px;
-  margin: 90px auto 0 auto;
+  margin: var(--header-h, 90px) auto 0 auto;
   padding: 2rem;
-  min-height: calc(100vh - 90px);
+  min-height: calc(100vh - var(--header-h, 90px));
   position: relative;
 }
 
@@ -2869,7 +2875,7 @@ body.admin-portal-body {
 }
 
 body.admin-portal-body main {
-  height: calc(100vh - 90px) !important;
+  height: calc(100vh - var(--header-h, 90px)) !important;
   padding: 1.5rem 2rem !important;
   overflow: hidden !important;
 }
@@ -2915,7 +2921,7 @@ body.admin-portal-body #panel-workstation {
 
 /* Keep login view and analytics dashboard scrollable */
 body.admin-portal-body #login-view {
-  min-height: calc(100vh - 78px) !important;
+  min-height: calc(100vh - var(--header-h, 78px)) !important;
   overflow-y: auto !important;
   display: flex;
   align-items: center;
@@ -3385,7 +3391,7 @@ body.admin-portal-body.logged-out main {
 }
 
 body.admin-portal-body.logged-out #login-view {
-  min-height: calc(100vh - 78px) !important;
+  min-height: calc(100vh - var(--header-h, 78px)) !important;
   height: auto !important;
   padding: 3rem 1rem !important;
 }
