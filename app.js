@@ -1801,7 +1801,8 @@ const app = {
     const studentComplaints = this.state.complaints.filter(c => c.studentIndex === studentIndex);
     
     const awaitingCount = studentComplaints.filter(c => c.status === 'Submitted').length;
-    const progressCount = studentComplaints.filter(c => c.status === 'In Review' || c.status === 'In Progress').length;
+    // Status values must match the DB enum exactly ('Under Review', not 'In Review').
+    const progressCount = studentComplaints.filter(c => c.status === 'Under Review' || c.status === 'In Progress').length;
     const resolvedCount = studentComplaints.filter(c => c.status === 'Resolved').length;
     
     const countAwaiting = document.getElementById('dash-count-awaiting');
