@@ -1586,6 +1586,26 @@ const adminApp = {
     }
   },
 
+  openRegisterStaffModal(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const modal = document.getElementById('register-staff-modal');
+    if (modal) {
+      document.getElementById('system-add-staff-form').reset();
+      this.handleNewStaffTypeChange('');
+      modal.style.display = 'flex';
+    }
+  },
+
+  closeRegisterStaffModal() {
+    const modal = document.getElementById('register-staff-modal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  },
+
   async handleUpdateEmailSubmit(e) {
     e.preventDefault();
     if (!this.state.loggedStaff) return;
@@ -1887,6 +1907,7 @@ const adminApp = {
       this.showToast(`New staff officer ${name} registered successfully!`, 'success');
       document.getElementById('system-add-staff-form').reset();
       this.handleNewStaffTypeChange('');
+      this.closeRegisterStaffModal();
       this.loadStaffRoster();
       this.loadSystemDashboardData();
     } catch (err) {
@@ -1910,7 +1931,7 @@ const adminApp = {
     }
 
     document.getElementById('sys-sub-overview').style.display = tabName === 'overview' ? 'block' : 'none';
-    document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'grid' : 'none';
+    document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'block' : 'none';
     document.getElementById('sys-sub-faculties').style.display = tabName === 'faculties' ? 'grid' : 'none';
     document.getElementById('sys-sub-students').style.display = tabName === 'students' ? 'flex' : 'none';
 

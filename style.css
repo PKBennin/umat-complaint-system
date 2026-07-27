@@ -3127,6 +3127,8 @@ body.admin-portal-body .report-actions {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-lg);
   padding: 2rem;
   position: relative;

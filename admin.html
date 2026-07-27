@@ -754,16 +754,21 @@
       </div>
 
       <!-- SUB-TAB 2: ROSTER & REGISTRATION FORM -->
-      <div id="sys-sub-roster" style="display: none; grid-template-columns: 1.8fr 1fr; gap: 2rem; align-items: flex-start;">
-        <!-- Left side: Staff List Card -->
+      <div id="sys-sub-roster" style="display: none;">
+        <!-- Staff List Card -->
         <div class="glass-card" style="padding: 2rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="users" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Administrative Staff Roster</h3>
-            <button class="btn" onclick="adminApp.handleRemoveAllStaff()" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.35); color: #e63946; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
-              <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Wipe Staff Directory
-            </button>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="adminApp.openRegisterStaffModal(event)" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
+                <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register New Staff
+              </button>
+              <button class="btn" onclick="adminApp.handleRemoveAllStaff()" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.35); color: #e63946; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
+                <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Wipe Staff Directory
+              </button>
+            </div>
           </div>
-          
+
           <div style="overflow-x: auto;">
             <table class="report-table">
               <thead>
@@ -783,11 +788,16 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- Right side: Add New Staff Card -->
-        <div class="glass-card" style="padding: 2rem;">
-          <h3 style="margin-top: 0; margin-bottom: 1.25rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="user-plus" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Register New Staff</h3>
-          
+      <!-- Register New Staff Modal -->
+      <div id="register-staff-modal" class="modal-overlay" style="display: none;" onclick="adminApp.closeRegisterStaffModal()">
+        <div class="modal-content animate-fade-in" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <h3><i data-lucide="user-plus" style="stroke: var(--accent);"></i> Register New Staff</h3>
+            <button class="btn-close-modal" onclick="adminApp.closeRegisterStaffModal()"><i data-lucide="x"></i></button>
+          </div>
+
           <form id="system-add-staff-form" onsubmit="adminApp.handleRegisterStaffSubmit(event)">
             <div class="input-group" style="margin-bottom: 1rem;">
               <label for="new-staff-id" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Staff ID</label>
@@ -847,9 +857,12 @@
               <input type="text" id="new-staff-dept-label" placeholder="e.g. Dean's Office (FCMS)" style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; border-radius: 8px;">
-              <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Add Staff
-            </button>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+              <button type="button" class="btn btn-secondary" onclick="adminApp.closeRegisterStaffModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary" style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Add Staff
+              </button>
+            </div>
           </form>
         </div>
       </div>
