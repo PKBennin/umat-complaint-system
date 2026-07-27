@@ -653,7 +653,7 @@
 
       </div>
     <!-- TAB C: SYSTEM MANAGEMENT (SUPERADMIN ONLY) -->
-    <section id="panel-system" class="dashboard-panel-view" style="padding: 2rem; box-sizing: border-box; max-height: calc(100vh - 100px); overflow-y: auto;">
+    <section id="panel-system" class="dashboard-panel-view" style="padding: 2rem; box-sizing: border-box; max-height: 100%; overflow-y: auto;">
       <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h2 style="margin: 0; font-size: 1.75rem;">System Management Portal</h2>
@@ -758,8 +758,20 @@
         <!-- Staff List Card -->
         <div class="glass-card" style="padding: 2rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-            <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="users" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Administrative Staff Roster</h3>
-            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="users" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Administrative Staff Roster <span id="staff-count-badge" class="badge" style="margin-left: 0.35rem; background: var(--accent); color: #fff; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 700;">0</span></h3>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+              <!-- Sort Selector -->
+              <div style="display: flex; align-items: center; gap: 0.35rem; margin-right: 0.5rem;">
+                <label for="staff-sort-selector" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Sort:</label>
+                <select id="staff-sort-selector" onchange="adminApp.sortStaffRoster(this.value)" style="padding: 0.4rem 0.6rem; font-size: 0.75rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; border-radius: 6px; cursor: pointer;">
+                  <option value="id-asc">Staff ID (A-Z)</option>
+                  <option value="id-desc">Staff ID (Z-A)</option>
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
+                  <option value="faculty">Faculty (A-Z)</option>
+                  <option value="role">Role Type</option>
+                </select>
+              </div>
               <button class="btn btn-primary" onclick="adminApp.openRegisterStaffModal(event)" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
                 <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register New Staff
               </button>
@@ -857,7 +869,7 @@
       <div id="sys-sub-students" style="display: none; flex-direction: column; gap: 1.5rem;">
         <div class="glass-card" style="padding: 2rem;">
           <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="graduation-cap" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Registered Students Roster
+            <i data-lucide="graduation-cap" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Registered Students Roster <span id="student-count-badge" class="badge" style="margin-left: 0.35rem; background: var(--accent); color: #fff; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 700;">0</span>
           </h3>
           
           <!-- Search and Filter Controls -->

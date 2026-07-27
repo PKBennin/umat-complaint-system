@@ -1771,10 +1771,30 @@ const adminApp = {
   async loadStaffRoster() {
     try {
       const staffList = await window.API.get('/auth/staff');
-      this.renderStaffRoster(staffList);
+      this.state.staffList = staffList;
+      const sortBy = document.getElementById('staff-sort-selector')?.value || 'id-asc';
+      this.sortStaffRoster(sortBy);
     } catch (err) {
       this.showToast(err.message || 'Failed to load staff roster.', 'error');
     }
+  },
+
+  sortStaffRoster(sortBy) {
+    const list = [...(this.state.staffList || [])];
+    if (sortBy === 'id-asc') {
+      list.sort((a, b) => (a.staff_id || '').localeCompare(b.staff_id || ''));
+    } else if (sortBy === 'id-desc') {
+      list.sort((a, b) => (b.staff_id || '').localeCompare(a.staff_id || ''));
+    } else if (sortBy === 'name-asc') {
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (sortBy === 'name-desc') {
+      list.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+    } else if (sortBy === 'faculty') {
+      list.sort((a, b) => (a.faculty_key || '').localeCompare(b.faculty_key || ''));
+    } else if (sortBy === 'role') {
+      list.sort((a, b) => (a.type || '').localeCompare(b.type || ''));
+    }
+    this.renderStaffRoster(list);
   },
 
   renderStaffRoster(staffList) {
@@ -1788,11 +1808,13 @@ const adminApp = {
     const elDeans = document.getElementById('sys-kpi-deans');
     const elFinance = document.getElementById('sys-kpi-finance');
     const elIt = document.getElementById('sys-kpi-it');
+    const elStaffBadge = document.getElementById('staff-count-badge');
 
     if (elTotal) elTotal.textContent = totalStaff;
     if (elDeans) elDeans.textContent = deansCount;
     if (elFinance) elFinance.textContent = financeCount;
     if (elIt) elIt.textContent = itCount;
+    if (elStaffBadge) elStaffBadge.textContent = totalStaff;
 
     const container = document.getElementById('system-staff-rows');
     if (!container) return;
@@ -1969,6 +1991,9 @@ const adminApp = {
   },
 
   renderStudentRoster(list) {
+    const elBadge = document.getElementById('student-count-badge');
+    if (elBadge) elBadge.textContent = list ? list.length : 0;
+
     const container = document.getElementById('system-student-rows');
     if (!container) return;
     container.innerHTML = '';
