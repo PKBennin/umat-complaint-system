@@ -96,6 +96,11 @@ CREATE TABLE students (
 CREATE TABLE complaints (
   id               VARCHAR(25) PRIMARY KEY,               -- e.g. UMAT-2026-X12Y
   student_index    VARCHAR(15) NOT NULL,
+  -- Filed anonymously by an authenticated student: the complaint still keeps
+  -- their real student_index (so it's findable on their own dashboard and
+  -- resend/appointment ownership checks still work), but responses mask
+  -- their name/index/contact details from staff — see assembleFromRow().
+  is_anonymous     TINYINT(1) NOT NULL DEFAULT 0,
   subject          VARCHAR(150) NOT NULL,
   category_id      VARCHAR(20)  NOT NULL,
   urgency          ENUM('Low','Medium','High','Urgent','Critical') NOT NULL,

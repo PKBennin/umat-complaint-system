@@ -74,7 +74,12 @@ async function assembleFromRow(conn, row) {
     [id],
   );
 
-  const isAnon = row.student_index === '9099999999';
+  // is_anonymous covers a real student who chose to file anonymously (their
+  // real student_index is kept so the ticket still shows on their own
+  // dashboard). The placeholder-index check is kept for backward
+  // compatibility with older anonymous tickets filed before that column
+  // existed, which used a shared dummy index instead.
+  const isAnon = !!row.is_anonymous || row.student_index === '9099999999';
   return {
     id: row.id,
     studentName: isAnon ? 'Anonymous Student' : row.student_name,

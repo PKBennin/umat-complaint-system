@@ -495,7 +495,7 @@ const adminApp = {
           </div>
           <div class="item-subject" style="font-weight: 600; margin-bottom: 0.25rem;">${c.subject}</div>
           <div class="item-details" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
-            <span>${c.category === 'Harassment' ? 'Anonymous Student' : `${c.studentName} (${c.studentLevel}L)`}</span>
+            <span>${(c.category === 'Harassment' || c.studentName === 'Anonymous Student') ? 'Anonymous Student' : `${c.studentName} (${c.studentLevel}L)`}</span>
             <span class="badge badge-urgency-${c.urgency.toLowerCase()}">${c.urgency}</span>
           </div>
           <div style="margin-top: 0.35rem; display: flex; justify-content: flex-end;">
@@ -546,16 +546,23 @@ const adminApp = {
 
     const staff = this.state.loggedStaff;
 
+    // A complaint is identity-hidden from staff either because it's Harassment
+    // (always anonymized regardless of filing choice) or because the student
+    // chose to file it anonymously (still tied to their real index/programme
+    // under the hood so it shows on their own dashboard, but the name/index/
+    // contact fields here stay masked).
+    const isAnonToStaff = complaint.category === 'Harassment' || complaint.studentName === 'Anonymous Student';
+
     // Populate Fields
     document.getElementById('admin-work-id').textContent = complaint.id;
     document.getElementById('admin-work-subject').textContent = complaint.subject;
-    document.getElementById('admin-work-student-name').textContent = complaint.category === 'Harassment' ? "Anonymous Student" : complaint.studentName;
-    document.getElementById('admin-work-student-index').textContent = complaint.category === 'Harassment' ? "Hidden (Confidential)" : complaint.studentIndex;
+    document.getElementById('admin-work-student-name').textContent = isAnonToStaff ? "Anonymous Student" : complaint.studentName;
+    document.getElementById('admin-work-student-index').textContent = isAnonToStaff ? "Hidden (Confidential)" : complaint.studentIndex;
     document.getElementById('admin-work-student-dept').textContent = complaint.studentProgramme;
-    document.getElementById('admin-work-student-level').textContent = (complaint.category === 'Harassment' ? "N/A" : (complaint.studentLevel || "N/A")) + " L";
+    document.getElementById('admin-work-student-level').textContent = (isAnonToStaff ? "N/A" : (complaint.studentLevel || "N/A")) + " L";
     document.getElementById('admin-work-date').textContent = this.formatDate(complaint.createdAt);
-    document.getElementById('admin-work-email').textContent = complaint.category === 'Harassment' ? "Hidden (Confidential)" : complaint.studentEmail;
-    document.getElementById('admin-work-phone').textContent = complaint.category === 'Harassment' ? "Hidden (Confidential)" : (complaint.studentPhone || "N/A");
+    document.getElementById('admin-work-email').textContent = isAnonToStaff ? "Hidden (Confidential)" : complaint.studentEmail;
+    document.getElementById('admin-work-phone').textContent = isAnonToStaff ? "Hidden (Confidential)" : (complaint.studentPhone || "N/A");
     document.getElementById('admin-work-owner').textContent = complaint.assignedTo || "Unassigned";
     document.getElementById('admin-work-desc').textContent = complaint.description;
 

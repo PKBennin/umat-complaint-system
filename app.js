@@ -865,11 +865,19 @@ const app = {
 
     if (this.state.loggedStudent && this.state.loggedStudent.is_profile_complete) {
       await this.refreshComplaints();
+      const wantsAnonymous = !!this.state.resumeAnonymousAfterLogin;
+      this.state.resumeAnonymousAfterLogin = false;
       if (this.state.preSelectedCategoryAfterLogin) {
         const cat = this.state.preSelectedCategoryAfterLogin;
         this.state.preSelectedCategoryAfterLogin = null;
-        this.setAnonymous(false);
+        // Navigate first — showView('file') resets the form to this
+        // student's real identity — then switch to anonymous after, so it
+        // doesn't get immediately overwritten back to real.
         this.selectCategoryAndFile(cat);
+        if (wantsAnonymous) this.toggleFilingIdentity('anon');
+      } else if (wantsAnonymous) {
+        this.showView('file');
+        this.toggleFilingIdentity('anon');
       } else {
         this.showView('track');
       }
@@ -1307,7 +1315,19 @@ const app = {
       this.closeProfileCompletionModal();
       this.checkStudentSession();
       this.loadAndRenderStudent();
-      this.showView('track');
+      const wantsAnonymous = !!this.state.resumeAnonymousAfterLogin;
+      this.state.resumeAnonymousAfterLogin = false;
+      if (this.state.preSelectedCategoryAfterLogin) {
+        const cat = this.state.preSelectedCategoryAfterLogin;
+        this.state.preSelectedCategoryAfterLogin = null;
+        this.selectCategoryAndFile(cat);
+        if (wantsAnonymous) this.toggleFilingIdentity('anon');
+      } else if (wantsAnonymous) {
+        this.showView('file');
+        this.toggleFilingIdentity('anon');
+      } else {
+        this.showView('track');
+      }
       this.showToast('Profile completed successfully! Welcome to your dashboard.', 'success');
     } catch (err) {
       console.error('[Onboarding] Profile completion failed:', err);
@@ -1399,8 +1419,23 @@ const app = {
 
   choiceContinueAnonymously() {
     this.closeChoiceModal();
-    this.setAnonymous(true);
-    this.selectCategoryAndFile(this.state.tempSelectedCategory);
+    if (this.state.loggedStudent) {
+      // selectCategoryAndFile() -> showView('file') resets the form to this
+      // student's real identity first (that's also what powers the in-form
+      // "Submitter Identity Selector"), so the anonymous switch has to happen
+      // AFTER navigating there, not before — otherwise resetFilingForm()
+      // immediately overwrites it back to the real name/index.
+      this.selectCategoryAndFile(this.state.tempSelectedCategory);
+      this.toggleFilingIdentity('anon');
+    } else {
+      // Anonymous filing now requires an account (so the ticket can be found
+      // on the student's own dashboard afterward, while still being hidden
+      // from staff) — prompt sign in/sign up first, same as "Continue with ID".
+      this.state.preSelectedCategoryAfterLogin = this.state.tempSelectedCategory;
+      this.state.resumeAnonymousAfterLogin = true;
+      this.showToast("Sign in or create an account first — this lets you track it afterward while keeping your identity hidden from staff.", "info");
+      this.showSignInModal();
+    }
   },
 
   setAnonymous(isAnon) {
@@ -1415,14 +1450,21 @@ const app = {
         chip.innerHTML = '<i data-lucide="user-minus"></i> <span id="idchip-text">Submitting anonymously</span>';
       }
       
-      // Load anonymous default values under-the-hood
+      // Load anonymous default values under-the-hood. Anonymous filing now
+      // requires an account, so use the real logged-in index/programme —
+      // that's what makes the ticket findable on the student's own dashboard
+      // afterward. Only the name shown to staff is replaced; the '9099999999'
+      // fallback stays purely as a defensive default in case this is ever
+      // reached without a session (shouldn't happen post-login-gate).
       const inputName = document.getElementById('stud-name');
       const inputIndex = document.getElementById('stud-index');
       const inputProg = document.getElementById('stud-programme-search');
       if (inputName) inputName.value = 'Anonymous Student';
-      if (inputIndex) inputIndex.value = '9099999999';
-      if (inputProg) inputProg.value = 'BSc Computer Science and Engineering';
-      this.state.selectedProgramme = { name: 'BSc Computer Science and Engineering' };
+      if (inputIndex) inputIndex.value = this.state.loggedStudent ? this.state.loggedStudent.index : '9099999999';
+      if (inputProg) inputProg.value = this.state.loggedStudent ? this.state.loggedStudent.programme : 'BSc Computer Science and Engineering';
+      const anonProgName = this.state.loggedStudent ? this.state.loggedStudent.programme : 'BSc Computer Science and Engineering';
+      const anonMatchedProg = window.PROGRAMMES.find(p => p.name === anonProgName);
+      this.state.selectedProgramme = anonMatchedProg || { name: anonProgName };
     } else {
       const name = this.formatStudentName(this.state.loggedStudent ? this.state.loggedStudent.name : 'Bennin Paa Kofi');
       if (chip) {
@@ -1449,8 +1491,17 @@ const app = {
   },
 
   goToAnonymousForm() {
-    this.setAnonymous(true);
-    this.showView('file');
+    if (this.state.loggedStudent) {
+      // Navigate first, then switch to anonymous — showView('file') resets
+      // the form to real identity for a logged-in student, so flipping to
+      // anonymous has to happen after that, not before.
+      this.showView('file');
+      this.toggleFilingIdentity('anon');
+    } else {
+      this.state.resumeAnonymousAfterLogin = true;
+      this.showToast("Sign in or create an account first — this lets you track it afterward while keeping your identity hidden from staff.", "info");
+      this.showSignInModal();
+    }
   },
 
   showLoginOverlayFromTracker(e) {
@@ -1564,20 +1615,14 @@ const app = {
       const matchedProg = window.PROGRAMMES.find(p => p.name === this.state.loggedStudent.programme);
       this.state.selectedProgramme = matchedProg || { name: this.state.loggedStudent.programme };
     } else {
-      // Under-the-hood fallback for anonymous submission
-      if (inputName) {
-        inputName.value = 'Anonymous Student';
-        inputName.removeAttribute('required');
-      }
-      if (inputIndex) {
-        inputIndex.value = '9099999999';
-        inputIndex.removeAttribute('required');
-      }
-      if (inputProg) {
-        inputProg.value = 'BSc Computer Science and Engineering';
-        inputProg.removeAttribute('required');
-      }
-      this.state.selectedProgramme = { name: 'BSc Computer Science and Engineering' };
+      // A visitor with no session landing directly on the filing form (e.g. a
+      // bookmarked #file link) used to be silently defaulted into anonymous
+      // mode with no account at all. Anonymous filing now requires an
+      // account — so instead, send them to sign in/sign up first.
+      this.state.resumeAnonymousAfterLogin = true;
+      this.showToast("Sign in or create an account first — this lets you track it afterward while keeping your identity hidden from staff.", "info");
+      this.showSignInModal();
+      return;
     }
 
     // Always hide personal details fields (either prefilled from session or submitted anonymously)
@@ -1585,20 +1630,16 @@ const app = {
     if (groupIndex) groupIndex.style.display = 'none';
     if (groupProg) groupProg.style.display = 'none';
 
-    // Submitter Identity Selector (Visible only when student is logged in)
+    // Submitter Identity Selector — reachable only when logged in; the
+    // not-logged-in case already returned above instead of reaching here.
     const identitySelector = document.getElementById('submitter-identity-selector');
     if (identitySelector) {
-      if (this.state.loggedStudent) {
-        identitySelector.style.display = 'block';
-        const radioReal = document.getElementById('filing-id-real');
-        const radioAnon = document.getElementById('filing-id-anon');
-        if (radioReal) radioReal.checked = true;
-        if (radioAnon) radioAnon.checked = false;
-        this.toggleFilingIdentity('real');
-      } else {
-        identitySelector.style.display = 'none';
-        this.setAnonymous(true);
-      }
+      identitySelector.style.display = 'block';
+      const radioReal = document.getElementById('filing-id-real');
+      const radioAnon = document.getElementById('filing-id-anon');
+      if (radioReal) radioReal.checked = true;
+      if (radioAnon) radioAnon.checked = false;
+      this.toggleFilingIdentity('real');
     }
     
     this.updateRoutingPreview();
@@ -1606,19 +1647,32 @@ const app = {
 
   toggleFilingIdentity(mode) {
     if (!this.state.loggedStudent) return;
-    
+
+    // Keep the radio inputs in sync even when this is invoked programmatically
+    // (e.g. resuming into anonymous mode right after login) rather than by the
+    // user physically clicking a radio — otherwise the visible selection would
+    // silently disagree with what's actually about to be submitted.
+    const radioReal = document.getElementById('filing-id-real');
+    const radioAnon = document.getElementById('filing-id-anon');
+    if (radioReal) radioReal.checked = (mode !== 'anon');
+    if (radioAnon) radioAnon.checked = (mode === 'anon');
+
     const idchip = document.getElementById('idchip');
     const idchipText = document.getElementById('idchip-text');
     const metaText = document.getElementById('identity-meta-text');
-    
+
     const studName = document.getElementById('stud-name');
     const studIndex = document.getElementById('stud-index');
     const studProg = document.getElementById('stud-programme-search');
-    
+
     if (mode === 'anon') {
       this.state.isAnonymousSubmission = true;
+      // Keep the real index/programme even in anonymous mode — that's what
+      // makes the complaint show up on this student's own dashboard. Only
+      // the displayed name is swapped for the staff-facing "Anonymous
+      // Student" placeholder.
       if (studName) studName.value = 'Anonymous Student';
-      if (studIndex) studIndex.value = '9099999999';
+      if (studIndex) studIndex.value = this.state.loggedStudent.index;
       if (studProg) studProg.value = this.state.loggedStudent.programme || 'BSc Computer Science and Engineering';
       
       const matchedProg = window.PROGRAMMES.find(p => p.name === studProg.value);
@@ -1701,6 +1755,7 @@ const app = {
     const formData = new FormData();
     formData.append('studentName', name);
     formData.append('studentIndex', index);
+    formData.append('isAnonymous', this.state.isAnonymousSubmission ? 'true' : 'false');
     formData.append('subject', subject);
     formData.append('category', category);
     formData.append('urgency', urgency);
