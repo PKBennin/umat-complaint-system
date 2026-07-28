@@ -147,7 +147,9 @@ router.post('/', handleAttachmentUpload,
     try {
       await conn.beginTransaction();
       const { studentName, studentIndex, subject, category, urgency, description, programmeName } = req.body;
-      console.log('[API POST /api/complaints] Parsed Body:', { studentName, studentIndex, subject, category, urgency, description, programmeName });
+      // Sent as a FormData string ('true'/'false'), not a real boolean.
+      const isAnonymous = req.body.isAnonymous === 'true';
+      console.log('[API POST /api/complaints] Parsed Body:', { studentName, studentIndex, subject, category, urgency, description, programmeName, isAnonymous });
       const routing = await computeRouting(conn, category, programmeName);
       if (!routing.categoryId || !routing.programmeId) {
         await conn.rollback();
@@ -159,11 +161,11 @@ router.post('/', handleAttachmentUpload,
       const file = req.file;
       await conn.query(
         `INSERT INTO complaints
-           (id, student_index, subject, category_id, urgency, description, status,
+           (id, student_index, is_anonymous, subject, category_id, urgency, description, status,
             assigned_staff_id, programme_id, routing_dept, faculty_key,
             attachment_stored_name, attachment_original_name, attachment_mimetype, attachment_size)
-         VALUES (?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, studentIndex, subject, routing.categoryId, urgency, description,
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, studentIndex, isAnonymous ? 1 : 0, subject, routing.categoryId, urgency, description,
           routing.assignedStaffId, routing.programmeId, routing.routingDept, routing.facultyKey,
           file ? file.filename : null, file ? file.originalname : null,
           file ? file.mimetype : null, file ? file.size : null],
