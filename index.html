@@ -1281,27 +1281,48 @@
 
         /* Responsive Layout */
         @media (max-width: 900px) {
+          #profile-completion-modal {
+            overflow-y: auto !important;
+            height: 100vh !important;
+          }
+          #profile-completion-modal header {
+            height: auto !important;
+            padding: 1rem !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+          }
+          #profile-completion-modal header nav {
+            width: 100% !important;
+            margin: 0 !important;
+            justify-content: center !important;
+          }
+          #onboarding-profile-badge {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            justify-content: center !important;
+          }
           .onboarding-split-container {
-            flex-direction: column;
-            overflow-y: auto;
-            height: calc(100vh - 70px);
+            flex-direction: column !important;
+            overflow: visible !important;
+            height: auto !important;
           }
           .onboarding-left-panel {
-            width: 100%;
-            height: auto;
-            padding: 3rem 2rem;
+            width: 100% !important;
+            height: auto !important;
+            padding: 2rem 1.5rem !important;
+            border-right: none !important;
+            border-bottom: 1px solid rgba(11, 49, 29, 0.1) !important;
           }
           .onboarding-right-panel {
-            width: 100%;
-            height: auto;
-            padding: 3rem 2rem;
-            overflow-y: visible;
+            width: 100% !important;
+            height: auto !important;
+            padding: 2.5rem 1.5rem !important;
+            overflow-y: visible !important;
           }
           .onboarding-step-tracker {
-            margin-top: 1.5rem;
-            flex-direction: row;
-            flex-wrap: wrap;
-            gap: 1rem;
+            margin-top: 1.5rem !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
           }
         }
       </style>
