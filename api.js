@@ -4,7 +4,17 @@
 // do not collide in shared localStorage.
 (function () {
   const API = {
-    base: (window.UMAT_API_BASE || 'http://localhost:4000') + '/api',
+    base: (function () {
+      if (window.UMAT_API_BASE) {
+        return window.UMAT_API_BASE.replace(/\/$/, '') + '/api';
+      }
+      // Automatically default to localhost when running the frontend locally
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:4000/api';
+      }
+      // Default to relative API endpoint for hosting platforms (allows using proxies/rewrites like vercel.json)
+      return window.location.origin + '/api';
+    })(),
     tokenKey: 'umat_token',
 
     configure(opts = {}) {
