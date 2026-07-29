@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Workstation | Campus Complaint System</title>
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=2.7">
   <!-- Load Chart.js CDN for beautiful interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load Lucide Icons CDN for sleek UI icons -->
@@ -1148,6 +1148,26 @@
     </div>
   </div>
 
+  <!-- Custom Professional Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay" style="display: none;" onclick="adminApp.handleConfirmModalCancel()">
+    <div class="modal-content animate-fade-in" onclick="event.stopPropagation()" style="max-width: 450px;">
+      <div class="modal-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0.5rem;">
+        <h3 id="confirm-modal-title" style="color: var(--text-dark); margin: 0; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="alert-triangle" style="color: #e63946; width: 24px; height: 24px;"></i>
+          Confirm Action
+        </h3>
+        <button class="btn-close-modal" onclick="adminApp.handleConfirmModalCancel()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 1rem 0; font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;">
+        <p id="confirm-modal-message">Are you sure you want to proceed?</p>
+      </div>
+      <div class="modal-footer" style="border-top: none; padding-top: 0; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" onclick="adminApp.handleConfirmModalCancel()" style="font-weight: 600;">Cancel</button>
+        <button type="button" id="confirm-modal-btn-action" class="btn btn-primary" style="background-color: #e63946; border-color: #e63946; font-weight: 600; color: white;">Yes, Proceed</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Global Toast Notifications Wrapper -->
   <div id="toast-container"></div>
 
@@ -1156,6 +1176,6 @@
   <!-- Backend API client -->
   <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-   <script src="admin.js?v=3.8"></script>
+   <script src="admin.js?v=3.9"></script>
 </body>
 </html>

@@ -25,6 +25,61 @@ const adminApp = {
     charts: {} // ChartJS references
   },
 
+  showConfirm(title, message, isDangerous = false) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-modal-title');
+      const messageEl = document.getElementById('confirm-modal-message');
+      const btnAction = document.getElementById('confirm-modal-btn-action');
+      
+      if (!modal || !titleEl || !messageEl || !btnAction) {
+        resolve(confirm(message));
+        return;
+      }
+      
+      titleEl.innerHTML = `
+        <i data-lucide="${isDangerous ? 'alert-triangle' : 'help-circle'}" style="color: ${isDangerous ? '#e63946' : 'var(--primary)'}; width: 24px; height: 24px; vertical-align: middle;"></i>
+        ${title}
+      `;
+      messageEl.textContent = message;
+      
+      if (isDangerous) {
+        btnAction.style.backgroundColor = '#e63946';
+        btnAction.style.borderColor = '#e63946';
+        btnAction.textContent = 'Yes, Proceed';
+      } else {
+        btnAction.style.backgroundColor = 'var(--primary)';
+        btnAction.style.borderColor = 'var(--primary)';
+        btnAction.textContent = 'Confirm';
+      }
+      
+      modal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons();
+      
+      const cleanup = () => {
+        modal.style.display = 'none';
+        btnAction.onclick = null;
+      };
+      
+      btnAction.onclick = () => {
+        cleanup();
+        resolve(true);
+      };
+      
+      this._confirmResolve = (val) => {
+        cleanup();
+        resolve(val);
+      };
+    });
+  },
+
+  handleConfirmModalCancel() {
+    if (this._confirmResolve) {
+      this._confirmResolve(false);
+      this._confirmResolve = null;
+    }
+  },
+
   // Initialize Application
   init() {
     window.API.configure({ tokenKey: 'umat_staff_token' });
@@ -366,9 +421,13 @@ const adminApp = {
   },
 
   // Switch between Workstation and Analytics Tab Panels
-  switchTab(tabName) {
+  async switchTab(tabName) {
     if (this.isFormDirty()) {
-      if (!confirm("You have unsaved changes in your workstation. Are you sure you want to switch tabs?")) {
+      const isConfirmed = await this.showConfirm(
+        "Unsaved Changes",
+        "You have unsaved changes in your workstation. Are you sure you want to switch tabs?"
+      );
+      if (!isConfirmed) {
         return;
       }
     }
@@ -1888,7 +1947,12 @@ const adminApp = {
   },
 
   async handleRemoveStaff(staffId) {
-    if (!confirm(`Are you sure you want to delete staff account ${staffId}? This action cannot be undone.`)) {
+    const isConfirmed = await this.showConfirm(
+      "Delete Staff Account",
+      `Are you sure you want to delete staff account ${staffId}? This action cannot be undone.`,
+      true
+    );
+    if (!isConfirmed) {
       return;
     }
     try {
@@ -1902,7 +1966,12 @@ const adminApp = {
   },
 
   async handleRemoveAllStaff() {
-    if (!confirm("Are you sure you want to delete ALL staff accounts in the directory? This action will wipe all staff profiles except your current administrator account and cannot be undone.")) {
+    const isConfirmed = await this.showConfirm(
+      "Wipe Staff Directory",
+      "Are you sure you want to delete ALL staff accounts in the directory? This action will wipe all staff profiles except your current administrator account and cannot be undone.",
+      true
+    );
+    if (!isConfirmed) {
       return;
     }
     try {
@@ -2087,7 +2156,12 @@ const adminApp = {
   },
 
   async handleDeleteStudent(indexNumber) {
-    if (!confirm(`Are you sure you want to delete student account ${indexNumber}? This will also delete all their filed complaints and cannot be undone.`)) {
+    const isConfirmed = await this.showConfirm(
+      "Delete Student Account",
+      `Are you sure you want to delete student account ${indexNumber}? This will also delete all their filed complaints and cannot be undone.`,
+      true
+    );
+    if (!isConfirmed) {
       return;
     }
     try {
