@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "YOUR_DEPLOYED_BACKEND_URL_HERE/api/:path*"
+      "destination": "https://umat-complaint-system.onrender.com/api/:path*"
     }
   ]
 }
