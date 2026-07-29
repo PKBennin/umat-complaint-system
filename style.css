@@ -3786,17 +3786,53 @@ body.view-track-active #track-view {
     width: 100% !important;
     max-width: 100% !important;
   }
+
+  /* Compact workspace content and body spacing */
+  #student-workspace-content {
+    padding: 1rem !important;
+  }
+  #active-ticket-scroll-body {
+    padding: 1rem !important;
+    margin: 0 -1rem -1rem -1rem !important;
+  }
+
+  /* Mobile Active Ticket sticky header adjustment */
+  .active-ticket-sticky-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-left: -1rem !important;
+    margin-right: -1rem !important;
+  }
+  .active-ticket-sticky-header > div {
+    max-width: 100% !important;
+  }
+}
+
+/* Button to return from ticket details to ticket ledger/list on mobile */
+.btn-back-to-ledger {
+  display: none !important;
+}
+
+@media (max-width: 820px) {
+  .btn-back-to-ledger {
+    display: flex !important;
+    align-items: center;
+    gap: 0.25rem;
+  }
 }
 
 @media (max-width: 768px) {
-  /* Offset mobile fixed header correctly */
+  /* Offset mobile fixed header correctly using CSS-calculated variable */
   main {
-    margin-top: 120px !important;
-    min-height: calc(100vh - 120px) !important;
+    margin-top: var(--header-h, 120px) !important;
+    min-height: calc(100vh - var(--header-h, 120px)) !important;
   }
 
   body.view-track-active main {
-    height: calc(100vh - 120px) !important;
+    height: calc(100vh - var(--header-h, 120px)) !important;
   }
 
   /* Responsive welcome greeting dashboard counter grid */
@@ -3812,6 +3848,56 @@ body.view-track-active #track-view {
     flex: 1 1 calc(50% - 0.5rem) !important;
     min-width: 0 !important;
     padding: 0.5rem !important;
+  }
+
+  /* Hero section adjustments */
+  .hero-section h2 {
+    font-size: 2.2rem !important;
+  }
+
+  .home-section-title {
+    font-size: 1.75rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stack counters fully on small screens */
+  .dash-counter-card {
+    flex: 1 1 100% !important;
+  }
+
+  /* Hero adjustments for very small screens */
+  .hero-section h2 {
+    font-size: 1.8rem !important;
+  }
+  .hero-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 300px !important;
+    margin: 1rem auto 0 auto !important;
+  }
+
+  /* Section Title spacing */
+  .home-section-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Submit option cards layout */
+  .submit-option-card {
+    padding: 1.5rem 1.25rem !important;
+    min-height: auto !important;
+  }
+
+  /* Filing Form Panel adjustments */
+  #student-file-panel {
+    padding: 1.25rem 1rem !important;
+  }
+
+  /* Student Login Card adjustments */
+  #student-login-panel {
+    padding: 1.5rem 1.25rem !important;
   }
 }
 

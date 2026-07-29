@@ -126,7 +126,7 @@
           <div class="hero-bg-slide active" style="background-image: linear-gradient(135deg, rgba(13, 82, 44, 0.25) 0%, rgba(27, 138, 79, 0.30) 60%, rgba(74, 222, 128, 0.20) 100%), url('umat_admin_1.jpg');"></div>
         </div>
         <div class="hero-content">
-          <h2 class="animate-slide-up" style="color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 3.2rem;">UMaT Campus Complaint Portal</h2>
+          <h2 class="animate-slide-up" style="color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">UMaT Campus Complaint Portal</h2>
           <p class="section-desc animate-slide-up" style="max-width: 750px; margin: 1rem auto 2rem auto; font-size: 1.3rem; color: #ffffff; text-shadow: 0 1px 5px rgba(0,0,0,0.4);">
             Ensuring student concerns are processed transparently, routed automatically to deans and department heads, and resolved with official administrative accountability.
           </p>
@@ -143,7 +143,7 @@
 
       <!-- Section: How would you like to submit? -->
       <div id="submit-methods-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
-        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">How would you like to submit?</h3>
+        <h3 class="home-section-title" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">How would you like to submit?</h3>
         <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
           Both options are reviewed the same way — the difference is whether the office can follow up with you directly.
         </p>
@@ -174,7 +174,7 @@
 
       <!-- Section: What's this about? -->
       <div class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
-        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">What's this about?</h3>
+        <h3 class="home-section-title" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">What's this about?</h3>
         <p class="section-desc" style="margin-bottom: 2rem; max-width: 650px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
           Choose a category to route your complaint to the right office. Harassment and safety concerns are flagged automatically.
         </p>
@@ -201,7 +201,7 @@
 
       <!-- Section: Institutional grievance principles -->
       <div id="why-it-works-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
-        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Institutional grievance principles</h3>
+        <h3 class="home-section-title" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Institutional grievance principles</h3>
         <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
           The standards this portal is built to uphold, for every complaint regardless of category.
         </p>
@@ -224,7 +224,7 @@
 
       <!-- Section: FAQs -->
       <div id="faq-section" class="home-section-container" style="text-align: center; margin-bottom: 5rem;">
-        <h3 class="home-section-title" style="font-size: 2.1rem; margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Frequently asked questions</h3>
+        <h3 class="home-section-title" style="margin-bottom: 0.5rem; border-bottom: none; padding-bottom: 0; display: block; text-align: center;">Frequently asked questions</h3>
         <p class="section-desc" style="margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
           Quick answers about filing and tracking a complaint.
         </p>
@@ -585,6 +585,9 @@
                   <h3 id="track-subject-lbl" style="font-size: 1.4rem; color: var(--primary); margin: 0.25rem 0 0 0;">Subject Title</h3>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
+                  <button class="btn btn-secondary btn-back-to-ledger" onclick="app.showDashboardOverview()">
+                    <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to List
+                  </button>
                   <button class="btn btn-secondary" onclick="app.printComplaintTicket()" style="padding: 0.5rem 1rem; font-size: 0.8rem; text-transform:none;">
                     <i data-lucide="printer" style="width: 14px; height: 14px;"></i> Print Ticket
                   </button>
