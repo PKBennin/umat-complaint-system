@@ -2876,6 +2876,7 @@ body.admin-portal-body {
 
 body.admin-portal-body main {
   height: calc(100vh - var(--header-h, 90px)) !important;
+  margin-top: var(--header-h, 90px) !important;
   padding: 1.5rem 2rem !important;
   overflow: hidden !important;
 }
@@ -3387,6 +3388,7 @@ body.admin-portal-body.logged-out {
 
 body.admin-portal-body.logged-out main {
   height: auto !important;
+  margin-top: var(--header-h, 90px) !important;
   overflow: visible !important;
 }
 
