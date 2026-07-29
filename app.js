@@ -705,7 +705,6 @@ const app = {
       }
     }
 
-    this.state.currentView = hash;
     if (!hash || hash === 'landing') {
       this.showView('landing');
     } else if (['file', 'track'].includes(hash)) {
