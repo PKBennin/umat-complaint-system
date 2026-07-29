@@ -1279,6 +1279,18 @@
           transform: translateY(0);
         }
 
+        .onboarding-form-row-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem;
+        }
+
+        .onboarding-form-row-2 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
+        }
+
         /* Responsive Layout */
         @media (max-width: 900px) {
           #profile-completion-modal {
@@ -1324,6 +1336,11 @@
             flex-direction: column !important;
             gap: 0.75rem !important;
           }
+          .onboarding-form-row-3,
+          .onboarding-form-row-2 {
+            grid-template-columns: 1fr !important;
+            gap: 1.25rem !important;
+          }
         }
       </style>
       
@@ -1364,7 +1381,7 @@
             <div class="onboarding-section-title">Personal Details</div>
             
             <!-- Name Fields (First, Middle, Last Name) -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+            <div class="onboarding-input-group onboarding-form-row-3">
               <div>
                 <label for="onboarding-profile-firstname">First name <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
                 <div class="onboarding-input-wrapper">
@@ -1389,7 +1406,7 @@
             </div>
             
             <!-- Phone Number and Reference Number -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+            <div class="onboarding-input-group onboarding-form-row-2">
               <div>
                 <label for="onboarding-profile-phone">Phone number <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
                 <div class="onboarding-input-wrapper">
@@ -1436,7 +1453,7 @@
             </div>
             
             <!-- Searchable Faculty and Department (Two-column grid) -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="onboarding-input-group">
+            <div class="onboarding-input-group onboarding-form-row-2">
               <div style="position: relative;">
                 <label for="onboarding-profile-faculty-search">Faculty <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
                 <div class="onboarding-input-wrapper">
