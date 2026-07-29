@@ -3837,6 +3837,26 @@ body.view-track-active #track-view {
     height: calc(100vh - var(--header-h, 120px)) !important;
   }
 
+  body.admin-portal-body {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+  
+  body.admin-portal-body main {
+    height: auto !important;
+    margin-top: var(--header-h, 120px) !important;
+    overflow: visible !important;
+  }
+  
+  body.admin-portal-body #panel-system,
+  body.admin-portal-body #panel-workstation,
+  body.admin-portal-body #panel-analytics,
+  body.admin-portal-body #dashboard-view {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+
   /* Responsive welcome greeting dashboard counter grid */
   .dash-counter-grid {
     flex-wrap: wrap !important;

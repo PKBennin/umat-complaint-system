@@ -1892,7 +1892,7 @@ const adminApp = {
       return;
     }
     try {
-      await window.API.del(`/auth/staff/${staffId}`);
+      await window.API.del(`/auth/staff/${encodeURIComponent(staffId)}`);
       this.showToast(`Staff member ${staffId} removed successfully.`, 'success');
       this.loadStaffRoster();
       this.loadSystemDashboardData();
@@ -2091,7 +2091,7 @@ const adminApp = {
       return;
     }
     try {
-      await window.API.del(`/auth/students/${indexNumber}`);
+      await window.API.del(`/auth/students/${encodeURIComponent(indexNumber)}`);
       this.showToast(`Student account ${indexNumber} removed successfully.`, 'success');
       await this.loadStudentRoster();
     } catch (err) {
