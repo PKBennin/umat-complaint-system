@@ -22,6 +22,9 @@
 
   <!-- App Header -->
   <header>
+    <button class="mobile-menu-btn" id="mobile-menu-toggle" onclick="app.toggleMobileMenu(event)">
+      <i data-lucide="menu"></i>
+    </button>
     <div class="brand" onclick="app.showView('landing')">
       <div class="brand-emblem">
         <img src="logo.jpg" alt="UMaT Logo" style="width: 100%; height: 100%; object-fit: contain;">
@@ -113,6 +116,38 @@
       </div>
     </div>
   </header>
+
+  <!-- Mobile Menu Dropdown Panel -->
+  <div id="student-mobile-menu" class="mobile-menu-dropdown" onclick="event.stopPropagation()">
+    <div class="mobile-menu-header">
+      <h3>Navigation</h3>
+      <button class="mobile-menu-close" onclick="app.toggleMobileMenu(event)">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="mobile-menu-links">
+      <button class="mobile-menu-item" onclick="app.showView('landing'); app.toggleMobileMenu(event);">
+        <i data-lucide="home"></i> Home
+      </button>
+      <button class="mobile-menu-item" id="mobile-nav-dashboard" onclick="app.showView('track'); app.toggleMobileMenu(event);">
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </button>
+      <div class="mobile-menu-divider"></div>
+      <div class="mobile-menu-theme-section">
+        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">
+          <i data-lucide="palette" style="width: 16px; height: 16px;"></i>
+          <span>Theme</span>
+        </div>
+        <select id="theme-selector-mobile" onchange="app.changeTheme(this.value); app.toggleMobileMenu(event);" style="width: 100%; margin-top: 0.5rem; padding: 0.5rem; font-size: 0.9rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; border-radius: 8px;">
+          <option value="light">Light Mode</option>
+          <option value="dark">Dark Mode</option>
+          <option value="forest">Forest Theme</option>
+          <option value="gold">Gold Theme</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="mobile-menu-backdrop" class="mobile-menu-backdrop" onclick="app.toggleMobileMenu(event)"></div>
 
   <!-- Main Content Space -->
   <main>

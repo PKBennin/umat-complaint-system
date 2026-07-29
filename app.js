@@ -186,6 +186,7 @@ const app = {
     const badge = document.getElementById('student-session-badge');
     if (badge) badge.style.display = 'none';
     this.resetStudentUI();
+    document.body.classList.remove('student-logged-in');
     this.showToast('Your session has expired. Please sign in again.', 'warning');
     this.showView('landing');
   },
@@ -406,9 +407,10 @@ const app = {
         }
 
         // Show session badge in header
-        document.getElementById('logged-student-name').textContent = this.formatStudentName(this.state.loggedStudent.name);
+        document.getElementById('logged-student-name').textContent = "Welcome, " + this.formatStudentName(this.state.loggedStudent.name);
         document.getElementById('student-session-badge').style.display = 'flex';
         this.renderNotifications();
+        document.body.classList.add('student-logged-in');
         
         if (navTabTrack) {
           navTabTrack.innerHTML = '<i data-lucide="layout-dashboard"></i> Dashboard';
@@ -420,12 +422,14 @@ const app = {
         }
       } catch (e) {
         localStorage.removeItem('current_student_session');
+        document.body.classList.remove('student-logged-in');
       }
     } else {
       if (navTabTrack) {
         navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
       }
       this.closeProfileCompletionModal();
+      document.body.classList.remove('student-logged-in');
     }
     if (window.lucide) lucide.createIcons();
   },
@@ -1353,6 +1357,7 @@ const app = {
     document.getElementById('student-session-badge').style.display = 'none';
     this.renderNotifications();
     this.resetStudentUI();
+    document.body.classList.remove('student-logged-in');
     
     const navTabTrack = document.getElementById('nav-tab-track');
     if (navTabTrack) {
@@ -2723,6 +2728,35 @@ const app = {
     }
   },
 
+  toggleMobileMenu(e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const menu = document.getElementById('student-mobile-menu');
+    const backdrop = document.getElementById('mobile-menu-backdrop');
+    if (menu && backdrop) {
+      const isActive = menu.classList.contains('active');
+      if (isActive) {
+        menu.classList.remove('active');
+        backdrop.classList.remove('active');
+        setTimeout(() => {
+          if (!menu.classList.contains('active')) {
+            menu.style.display = 'none';
+            backdrop.style.display = 'none';
+          }
+        }, 300);
+      } else {
+        menu.style.display = 'flex';
+        backdrop.style.display = 'block';
+        // force reflow
+        menu.offsetHeight;
+        menu.classList.add('active');
+        backdrop.classList.add('active');
+      }
+    }
+  },
+
   toggleOnboardingDropdown(e) {
     if (e) e.stopPropagation();
     const dropdown = document.getElementById('onboarding-profile-dropdown');
@@ -2757,7 +2791,7 @@ const app = {
     localStorage.setItem('umat_selected_theme', themeName);
     
     // Update all theme dropdown elements in DOM
-    const themeSelects = document.querySelectorAll('#theme-selector, #theme-selector-analytics, #theme-selector-onboarding');
+    const themeSelects = document.querySelectorAll('#theme-selector, #theme-selector-analytics, #theme-selector-onboarding, #theme-selector-mobile');
     themeSelects.forEach(select => {
       select.value = themeName;
     });
@@ -2910,6 +2944,19 @@ const app = {
 
       const notifDropdown = document.getElementById('student-notification-dropdown');
       if (notifDropdown) notifDropdown.style.display = 'none';
+
+      const menu = document.getElementById('student-mobile-menu');
+      const backdrop = document.getElementById('mobile-menu-backdrop');
+      if (menu && menu.classList.contains('active')) {
+        menu.classList.remove('active');
+        if (backdrop) backdrop.classList.remove('active');
+        setTimeout(() => {
+          if (!menu.classList.contains('active')) {
+            menu.style.display = 'none';
+            if (backdrop) backdrop.style.display = 'none';
+          }
+        }, 300);
+      }
     });
   },
 
