@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Campus Complaint System | UMaT Student Portal</title>
-  <link rel="stylesheet" href="style.css?v=4.17">
+  <link rel="stylesheet" href="style.css?v=4.18">
   <!-- Load Lucide Icons CDN for sleek UI icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -81,18 +81,7 @@
         <div class="profile-dropdown-menu" id="db-profile-dropdown" style="display: none;" onclick="event.stopPropagation()">
           <div class="dropdown-header">User Profile & Settings</div>
           
-          <!-- Theme Selection -->
-          <div class="dropdown-item dropdown-theme-select">
-            <i data-lucide="palette"></i>
-            <div style="flex-grow: 1; display: flex; flex-direction: column;">
-              <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Change Theme</span>
-              <select id="theme-selector" onchange="app.changeTheme(this.value)" style="width: 100%; margin-top: 0.25rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit;">
-                <option value="light">Light Mode</option>
-                <option value="dark">Dark Mode</option>
-              </select>
-            </div>
-          </div>
-          
+
           <!-- My Profile -->
           <button type="button" class="dropdown-item-btn" onclick="app.openProfileModal(event)">
             <i data-lucide="user-cog"></i>
@@ -1627,7 +1616,7 @@
   <!-- Backend API client -->
  <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=4.34"></script>
+  <script src="app.js?v=4.35"></script>
   <!-- Scroll Chaining Controller & Portal Footer Visibility Manager -->
   <script>
     (function() {
