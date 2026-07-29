@@ -1742,7 +1742,10 @@ const app = {
     const desc = document.getElementById('comp-desc').value.trim();
     const urgency = document.getElementById('comp-urgency').value;
 
-    const prog = this.state.selectedProgramme;
+    let prog = this.state.selectedProgramme;
+    if (!prog && this.state.loggedStudent && this.state.loggedStudent.programme) {
+      prog = { name: this.state.loggedStudent.programme };
+    }
     if (!prog) {
       this.showToast("Please search and select your Programme of study.", "warning");
       return;

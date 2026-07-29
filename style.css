@@ -3829,6 +3829,9 @@ body.view-track-active #track-view {
 }
 
 @media (max-width: 768px) {
+  .btn-floating-quick {
+    display: none !important;
+  }
   /* Offset mobile fixed header correctly using CSS-calculated variable */
   main {
     margin-top: var(--header-h, 120px) !important;

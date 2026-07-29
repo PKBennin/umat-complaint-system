@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Campus Complaint System | UMaT Student Portal</title>
-  <link rel="stylesheet" href="style.css?v=4.18">
+  <link rel="stylesheet" href="style.css?v=4.19">
   <!-- Load Lucide Icons CDN for sleek UI icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -120,6 +120,9 @@
       </button>
       <button class="mobile-menu-item" id="mobile-nav-dashboard" onclick="app.showView('track'); app.toggleMobileMenu(event);">
         <i data-lucide="layout-dashboard"></i> Dashboard
+      </button>
+      <button class="mobile-menu-item" onclick="app.showView('file'); app.toggleMobileMenu(event);">
+        <i data-lucide="file-text"></i> File a Complaint
       </button>
       <div class="mobile-menu-divider"></div>
       <div class="mobile-menu-theme-section">
@@ -527,6 +530,9 @@
           <div>
             <h2 style="font-size: 2.2rem; font-weight: 700; margin-bottom: 0.25rem;" id="dash-welcome-title">Welcome back, Student</h2>
             <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0;">Here's where things stand with your complaints.</p>
+            <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #000; font-weight: 700; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px; stroke-width: 2.5;"></i> File a New Complaint
+            </button>
           </div>
           
           <div class="dash-counter-grid" id="dash-counter-grid" style="display: flex; gap: 1rem; align-items: center; margin-right: 2rem;">
@@ -1616,7 +1622,7 @@
   <!-- Backend API client -->
  <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=4.35"></script>
+  <script src="app.js?v=4.36"></script>
   <!-- Scroll Chaining Controller & Portal Footer Visibility Manager -->
   <script>
     (function() {
