@@ -2875,10 +2875,11 @@ body.admin-portal-body {
 }
 
 body.admin-portal-body main {
-  height: calc(100vh - var(--header-h, 90px)) !important;
-  margin-top: var(--header-h, 90px) !important;
-  padding: 1.5rem 2rem !important;
+  height: 100vh !important;
+  margin-top: 0 !important;
+  padding: calc(var(--header-h, 90px) + 1.5rem) 2rem 1.5rem 2rem !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 body.admin-portal-body #dashboard-view,
@@ -3388,7 +3389,8 @@ body.admin-portal-body.logged-out {
 
 body.admin-portal-body.logged-out main {
   height: auto !important;
-  margin-top: var(--header-h, 90px) !important;
+  margin-top: 0 !important;
+  padding-top: calc(var(--header-h, 90px) + 1.5rem) !important;
   overflow: visible !important;
 }
 
@@ -3844,7 +3846,8 @@ body.view-track-active #track-view {
   
   body.admin-portal-body main {
     height: auto !important;
-    margin-top: var(--header-h, 120px) !important;
+    margin-top: 0 !important;
+    padding-top: calc(var(--header-h, 120px) + 1.5rem) !important;
     overflow: visible !important;
   }
   
