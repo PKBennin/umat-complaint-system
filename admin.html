@@ -179,7 +179,7 @@
               <label for="login-password">Password</label>
               <div style="position: relative; width: 100%;">
                 <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box;" maxlength="8">
-                <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%;">
+                <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; z-index: 2;">
                   <i data-lucide="eye" id="password-toggle-icon" style="width: 18px; height: 18px;"></i>
                 </button>
               </div>
@@ -1059,7 +1059,12 @@
 
         <div class="input-group" style="margin-bottom: 1rem;">
           <label for="new-staff-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Password (4-8 chars)</label>
-          <input type="password" id="new-staff-password" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;" maxlength="8" minlength="4">
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="new-staff-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;" maxlength="8" minlength="4">
+            <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibilityForId('new-staff-password', this)" style="position: absolute; right: 0.75rem; background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; z-index: 2; outline: none;">
+              <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
         </div>
 
         <div class="input-group" style="margin-bottom: 1rem;">
@@ -1176,6 +1181,6 @@
   <!-- Backend API client -->
   <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-   <script src="admin.js?v=3.9"></script>
+   <script src="admin.js?v=3.10"></script>
 </body>
 </html>

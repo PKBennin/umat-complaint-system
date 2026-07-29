@@ -1759,6 +1759,15 @@ const adminApp = {
     if (window.lucide) lucide.createIcons();
   },
 
+  togglePasswordVisibilityForId(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btnEl.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" style="width: 18px; height: 18px;"></i>`;
+    if (window.lucide) lucide.createIcons();
+  },
+
   setLoginMode(mode) {
     this.state.loginMode = mode;
     const tabStaff = document.getElementById('tab-staff-login');
