@@ -838,7 +838,7 @@
         </div>
         <div class="input-group" style="margin-bottom: 1.25rem;">
           <label for="profile-phone">Telephone Number (Editable)</label>
-          <input type="text" id="profile-phone" placeholder="e.g., 0535620797" required>
+          <input type="tel" inputmode="tel" id="profile-phone" placeholder="e.g., 0535620797" required>
         </div>
         <div class="input-group" style="margin-bottom: 1.75rem;">
           <label for="profile-email">Email Address</label>
@@ -1410,14 +1410,14 @@
               <div>
                 <label for="onboarding-profile-phone">Phone number <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
                 <div class="onboarding-input-wrapper">
-                  <input type="text" id="onboarding-profile-phone" placeholder="e.g. 0540000000" required>
+                  <input type="tel" inputmode="tel" id="onboarding-profile-phone" placeholder="e.g. 0540000000" required>
                   <i data-lucide="phone"></i>
                 </div>
               </div>
               <div>
                 <label for="onboarding-profile-ref-num">Reference number <span style="color: #e53e3e; margin-left: 2px;">*</span></label>
                 <div class="onboarding-input-wrapper">
-                  <input type="text" id="onboarding-profile-ref-num" placeholder="e.g. 9012870422" required>
+                  <input type="text" inputmode="numeric" pattern="[0-9]*" id="onboarding-profile-ref-num" placeholder="e.g. 9012870422" required>
                   <i data-lucide="hash"></i>
                 </div>
               </div>
