@@ -1,5 +1,10 @@
 // Server-side port of app.js:calculateRouting — resolves the destination staff
 // member and routing metadata for a complaint from category + programme.
+//
+// Routing rules (confirmed):
+//   ICT & Portal Services  → direct to IT Directorate
+//   Harassment             → direct to Dean (full action owner)
+//   Academic, Fees, Others → HOD first (HOD assigns to staff)
 
 // Accepts a category by id ('academic') OR display name ('Academic & Exams'),
 // and a programme by name. Returns routing fields to persist on the complaint.
@@ -19,6 +24,7 @@ async function computeRouting(conn, categoryKey, programmeName) {
       categoryId: category ? category.id : null,
       programmeId: programme ? programme.id : null,
       assignedStaffId: null,
+      hodStaffId: null,
       assignedName: 'General Administration Registry',
       routingDept: 'general_registry',
       facultyKey: null,
@@ -39,38 +45,7 @@ async function computeRouting(conn, categoryKey, programmeName) {
     programmeId: programme.id,
   };
 
-  if (category.route_type === 'dean') {
-    const [[dean]] = await conn.query(
-      "SELECT staff_id, name, portfolio, department_label FROM staff WHERE faculty_key = ? AND type = 'Dean' LIMIT 1",
-      [facultyKey],
-    );
-    return {
-      ...base,
-      assignedStaffId: dean ? dean.staff_id : null,
-      assignedName: dean ? dean.name : 'Faculty Dean',
-      role: dean ? dean.portfolio : 'Faculty Dean',
-      routingDept: dean ? dean.department_label : `Dean's Office (${facultyKey})`,
-      facultyKey,
-      facultyName,
-    };
-  }
-
-  if (category.route_type === 'finance') {
-    const [[fin]] = await conn.query(
-      "SELECT staff_id, name, portfolio FROM staff WHERE faculty_key = ? AND type = 'Finance' LIMIT 1",
-      [facultyKey],
-    );
-    return {
-      ...base,
-      assignedStaffId: fin ? fin.staff_id : null,
-      assignedName: fin ? fin.name : 'Faculty Finance Officer',
-      role: fin ? fin.portfolio : 'Faculty Finance Officer',
-      routingDept: 'finance_dept',
-      facultyKey,
-      facultyName,
-    };
-  }
-
+  // ── ICT complaints → direct to IT Directorate (unchanged) ──────────────
   if (category.route_type === 'ict_dept') {
     const [[it]] = await conn.query(
       "SELECT staff_id, name, portfolio FROM staff WHERE type = 'IT' LIMIT 1",
@@ -78,6 +53,7 @@ async function computeRouting(conn, categoryKey, programmeName) {
     return {
       ...base,
       assignedStaffId: it ? it.staff_id : null,
+      hodStaffId: null, // no HOD involvement
       assignedName: it ? it.name : 'IT Directorate Director',
       role: it ? it.portfolio : 'Central IT Directorate Director',
       routingDept: 'ict_dept',
@@ -86,12 +62,37 @@ async function computeRouting(conn, categoryKey, programmeName) {
     };
   }
 
+  // ── Harassment complaints → direct to Dean (full action owner) ─────────
+  if (category.name === 'Harassment') {
+    const [[dean]] = await conn.query(
+      "SELECT staff_id, name, portfolio, department_label FROM staff WHERE faculty_key = ? AND type = 'Dean' LIMIT 1",
+      [facultyKey],
+    );
+    return {
+      ...base,
+      assignedStaffId: dean ? dean.staff_id : null,
+      hodStaffId: null, // no HOD involvement for harassment
+      assignedName: dean ? dean.name : 'Faculty Dean',
+      role: dean ? dean.portfolio : 'Faculty Dean',
+      routingDept: dean ? dean.department_label : `Dean's Office (${facultyKey})`,
+      facultyKey,
+      facultyName,
+    };
+  }
+
+  // ── All other categories (Academic, Fees, Others) → HOD first ──────────
+  // HOD receives the complaint. HOD then assigns to the appropriate officer.
+  const [[hod]] = await conn.query(
+    "SELECT staff_id, name, portfolio, department_label FROM staff WHERE faculty_key = ? AND type = 'HOD' LIMIT 1",
+    [facultyKey],
+  );
   return {
     ...base,
-    assignedStaffId: null,
-    assignedName: 'General Administration',
-    role: 'University Registry',
-    routingDept: 'general_registry',
+    assignedStaffId: hod ? hod.staff_id : null,
+    hodStaffId: hod ? hod.staff_id : null,
+    assignedName: hod ? hod.name : 'Head of Department',
+    role: hod ? hod.portfolio : 'Head of Department',
+    routingDept: hod ? hod.department_label : `HOD Office (${facultyKey})`,
     facultyKey,
     facultyName,
   };

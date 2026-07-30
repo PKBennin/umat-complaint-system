@@ -11,7 +11,8 @@ async function assembleComplaint(conn, id) {
             fac.name AS faculty_name,
             prog.name AS programme_name,
             dept.name AS dept_name,
-            ast.name AS assigned_name
+            ast.name AS assigned_name, ast.email AS assigned_email, ast.type AS assigned_type,
+            hst.name AS hod_name, hst.email AS hod_email
        FROM complaints c
        JOIN students s      ON s.index_number = c.student_index
        JOIN categories cat  ON cat.id = c.category_id
@@ -19,6 +20,7 @@ async function assembleComplaint(conn, id) {
        LEFT JOIN programmes prog ON prog.id = c.programme_id
        LEFT JOIN departments dept ON dept.id = prog.department_id
        LEFT JOIN staff ast  ON ast.staff_id = c.assigned_staff_id
+       LEFT JOIN staff hst  ON hst.staff_id = c.hod_staff_id
       WHERE c.id = ?`,
     [id],
   );
@@ -41,14 +43,16 @@ const LIST_SELECT = `
          fac.name AS faculty_name,
          prog.name AS programme_name,
          dept.name AS dept_name,
-         ast.name AS assigned_name
+         ast.name AS assigned_name, ast.email AS assigned_email, ast.type AS assigned_type,
+         hst.name AS hod_name, hst.email AS hod_email
     FROM complaints c
     JOIN students s      ON s.index_number = c.student_index
     JOIN categories cat  ON cat.id = c.category_id
     LEFT JOIN faculties fac  ON fac.faculty_key = c.faculty_key
     LEFT JOIN programmes prog ON prog.id = c.programme_id
     LEFT JOIN departments dept ON dept.id = prog.department_id
-    LEFT JOIN staff ast  ON ast.staff_id = c.assigned_staff_id`;
+    LEFT JOIN staff ast  ON ast.staff_id = c.assigned_staff_id
+    LEFT JOIN staff hst  ON hst.staff_id = c.hod_staff_id`;
 
 async function assembleFromRow(conn, row) {
   const id = row.id;
@@ -101,6 +105,11 @@ async function assembleFromRow(conn, row) {
     routingDept: row.routing_dept || '',
     assignedTo: row.assigned_name || 'Unassigned',
     assignedStaffId: row.assigned_staff_id || null,
+    assignedEmail: row.assigned_email || null,
+    assignedType: row.assigned_type || null,
+    hodStaffId: row.hod_staff_id || null,
+    hodName: row.hod_name || null,
+    hodEmail: row.hod_email || null,
     status: row.status,
     attachment: row.attachment_stored_name ? {
       originalName: row.attachment_original_name,

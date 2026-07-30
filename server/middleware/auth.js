@@ -46,25 +46,44 @@ function requireStaff(req, res, next) {
 }
 
 // Builds a SQL WHERE fragment (+ params) limiting complaints to a staff
-// member's jurisdiction, mirroring admin.js:renderWorkstationSidebar.
-//   Dean    -> own faculty AND routing_dept = own office label
-//   Finance -> own faculty AND routing_dept = 'finance_dept'
-//   IT      -> routing_dept = 'ict_dept' (university-wide)
-//   HOD     -> own department (analytics scope)
+// member's jurisdiction.
+//
+// New routing model:
+//   HOD           -> sees all complaints routed to them (hod_staff_id = ?)
+//   Dean          -> sees ALL complaints in their faculty (monitoring)
+//                    + harassment complaints assigned to them (full action)
+//   Finance       -> sees only complaints explicitly assigned to them
+//   IT            -> routing_dept = 'ict_dept' (university-wide, direct route)
+//   Faculty/Dept Officer -> sees only complaints explicitly assigned to them
+//   SuperAdmin    -> sees everything
 function staffScopeClause(user) {
   switch (user.type) {
-    case 'Dean':
-    case 'Vice Dean':
-    case 'Faculty Officer':
-      return { clause: 'c.faculty_key = ? AND c.routing_dept = ?', params: [user.facultyKey, user.departmentLabel] };
-    case 'Finance':
-      return { clause: "c.faculty_key = ? AND c.routing_dept = 'finance_dept'", params: [user.facultyKey] };
-    case 'IT':
-      return { clause: "c.routing_dept = 'ict_dept'", params: [] };
     case 'HOD':
     case 'Department Officer':
-      // HODs and Department Officers see their department's tickets (analytics scope in UI).
-      return { clause: 'c.faculty_key = ?', params: [user.facultyKey] };
+      // HOD sees all complaints routed to them as hod_staff_id.
+      // Also sees any complaint directly assigned to them.
+      return {
+        clause: '(c.hod_staff_id = ? OR c.assigned_staff_id = ?)',
+        params: [user.staffId, user.staffId],
+      };
+    case 'Dean':
+    case 'Vice Dean':
+      // Dean sees ALL complaints in their faculty (for monitoring)
+      // This includes harassment (where they are assigned) + all HOD-routed ones.
+      return {
+        clause: 'c.faculty_key = ?',
+        params: [user.facultyKey],
+      };
+    case 'Finance':
+    case 'Faculty Officer':
+      // These officers only see complaints the HOD explicitly assigned to them.
+      return {
+        clause: 'c.assigned_staff_id = ?',
+        params: [user.staffId],
+      };
+    case 'IT':
+      // IT sees all ICT complaints (direct route, unchanged).
+      return { clause: "c.routing_dept = 'ict_dept'", params: [] };
     case 'SuperAdmin':
       return { clause: '1 = 1', params: [] };
     default:
@@ -76,17 +95,17 @@ function staffScopeClause(user) {
 function staffCanAccessComplaint(user, complaintRow) {
   const c = complaintRow;
   switch (user.type) {
-    case 'Dean':
-    case 'Vice Dean':
-    case 'Faculty Officer':
-      return c.faculty_key === user.facultyKey && c.routing_dept === user.departmentLabel;
-    case 'Finance':
-      return c.faculty_key === user.facultyKey && c.routing_dept === 'finance_dept';
-    case 'IT':
-      return c.routing_dept === 'ict_dept';
     case 'HOD':
     case 'Department Officer':
+      return c.hod_staff_id === user.staffId || c.assigned_staff_id === user.staffId;
+    case 'Dean':
+    case 'Vice Dean':
       return c.faculty_key === user.facultyKey;
+    case 'Finance':
+    case 'Faculty Officer':
+      return c.assigned_staff_id === user.staffId;
+    case 'IT':
+      return c.routing_dept === 'ict_dept';
     case 'SuperAdmin':
       return true;
     default:

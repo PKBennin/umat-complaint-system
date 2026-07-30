@@ -162,11 +162,11 @@ router.post('/', handleAttachmentUpload,
       await conn.query(
         `INSERT INTO complaints
            (id, student_index, is_anonymous, subject, category_id, urgency, description, status,
-            assigned_staff_id, programme_id, routing_dept, faculty_key,
+            hod_staff_id, assigned_staff_id, programme_id, routing_dept, faculty_key,
             attachment_stored_name, attachment_original_name, attachment_mimetype, attachment_size)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'Submitted', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [id, studentIndex, isAnonymous ? 1 : 0, subject, routing.categoryId, urgency, description,
-          routing.assignedStaffId, routing.programmeId, routing.routingDept, routing.facultyKey,
+          routing.hodStaffId, routing.assignedStaffId, routing.programmeId, routing.routingDept, routing.facultyKey,
           file ? file.filename : null, file ? file.originalname : null,
           file ? file.mimetype : null, file ? file.size : null],
       );
@@ -659,6 +659,141 @@ router.post('/bulk-delete', verifyJWT, async (req, res, next) => {
     await pool.query('DELETE FROM complaints WHERE id IN (?)', [ids]);
     
     return res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
+// HOD / STAFF ASSIGNMENT     POST /api/complaints/:id/assign
+// =============================================================================
+router.post('/:id/assign', verifyJWT, requireStaff, attachComplaintForStaff, async (req, res, next) => {
+  const { assignedStaffId } = req.body;
+  if (!assignedStaffId) return res.status(400).json({ error: 'assignedStaffId is required' });
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const c = req.complaintRow;
+    const [[targetStaff]] = await conn.query(
+      'SELECT staff_id, name, type, portfolio FROM staff WHERE staff_id = ?',
+      [assignedStaffId]
+    );
+    if (!targetStaff) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Target staff officer not found' });
+    }
+
+    await conn.query('UPDATE complaints SET assigned_staff_id = ? WHERE id = ?', [assignedStaffId, c.id]);
+    await addLog(conn, c.id, req.user.name, 'Officer Assigned', `Complaint assigned to ${targetStaff.name} (${targetStaff.portfolio || targetStaff.type}).`);
+
+    if (c.status === 'Submitted') {
+      await conn.query("UPDATE complaints SET status = 'Under Review' WHERE id = ?", [c.id]);
+      await addLog(conn, c.id, req.user.name, 'Status Updated', 'Status advanced to Under Review upon assignment.');
+    }
+    await conn.commit();
+    await checkAndAlertStaffUnattended(conn, assignedStaffId);
+    return res.json(await assembleComplaint(pool, c.id));
+  } catch (e) {
+    await conn.rollback();
+    return next(e);
+  } finally {
+    conn.release();
+  }
+});
+
+// =============================================================================
+// HOD BULK ASSIGNMENT     POST /api/complaints/bulk-assign
+// =============================================================================
+router.post('/bulk-assign', verifyJWT, requireStaff, async (req, res, next) => {
+  const { ids, assignedStaffId } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0 || !assignedStaffId) {
+    return res.status(400).json({ error: 'ids array and assignedStaffId are required' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[targetStaff]] = await conn.query(
+      'SELECT staff_id, name, type, portfolio FROM staff WHERE staff_id = ?',
+      [assignedStaffId]
+    );
+    if (!targetStaff) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Target staff officer not found' });
+    }
+
+    for (const id of ids) {
+      await conn.query('UPDATE complaints SET assigned_staff_id = ? WHERE id = ?', [assignedStaffId, id]);
+      await conn.query(
+        "UPDATE complaints SET status = 'Under Review' WHERE id = ? AND status = 'Submitted'",
+        [id]
+      );
+      await addLog(conn, id, req.user.name, 'Officer Assigned (Bulk)', `Complaint bulk-assigned to ${targetStaff.name} (${targetStaff.portfolio || targetStaff.type}).`);
+    }
+
+    await conn.commit();
+    await checkAndAlertStaffUnattended(conn, assignedStaffId);
+    return res.json({ ok: true, count: ids.length, assignedTo: targetStaff.name });
+  } catch (e) {
+    await conn.rollback();
+    return next(e);
+  } finally {
+    conn.release();
+  }
+});
+
+// =============================================================================
+// FACULTY OFFICERS LIST     GET /api/complaints/faculty/:facultyKey/officers
+// =============================================================================
+router.get('/faculty/:facultyKey/officers', verifyJWT, requireStaff, async (req, res, next) => {
+  try {
+    const { facultyKey } = req.params;
+    const [rows] = await pool.query(
+      `SELECT staff_id AS staffId, name, type, portfolio, department_label AS departmentLabel, email
+         FROM staff
+        WHERE faculty_key = ? OR type = 'SuperAdmin' OR type = 'IT'
+        ORDER BY name ASC`,
+      [facultyKey]
+    );
+    return res.json(rows);
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
+// DEAN SUMMARY STATS     GET /api/complaints/dean-summary
+// =============================================================================
+router.get('/dean-summary', verifyJWT, requireStaff, async (req, res, next) => {
+  try {
+    if (req.user.type !== 'Dean' && req.user.type !== 'Vice Dean' && req.user.type !== 'SuperAdmin') {
+      return res.status(403).json({ error: 'Dean access required' });
+    }
+    const facultyKey = req.user.facultyKey;
+
+    const [[totalRow]] = await pool.query(
+      'SELECT COUNT(*) AS total FROM complaints WHERE faculty_key = ?',
+      [facultyKey]
+    );
+    const [statusRows] = await pool.query(
+      'SELECT status, COUNT(*) AS count FROM complaints WHERE faculty_key = ? GROUP BY status',
+      [facultyKey]
+    );
+    const [categoryRows] = await pool.query(
+      `SELECT cat.name AS category, COUNT(*) AS count
+         FROM complaints c
+         JOIN categories cat ON cat.id = c.category_id
+        WHERE c.faculty_key = ?
+        GROUP BY cat.name`,
+      [facultyKey]
+    );
+
+    const statusCounts = { Submitted: 0, 'Under Review': 0, 'In Progress': 0, Resolved: 0, Rejected: 0 };
+    statusRows.forEach(r => { statusCounts[r.status] = r.count; });
+
+    return res.json({
+      facultyKey,
+      total: totalRow ? totalRow.total : 0,
+      statusCounts,
+      categoryCounts: categoryRows,
+    });
   } catch (e) { next(e); }
 });
 

@@ -107,6 +107,12 @@ CREATE TABLE complaints (
   description      TEXT NOT NULL,
   status           ENUM('Submitted','Under Review','In Progress','Resolved','Rejected')
                      NOT NULL DEFAULT 'Submitted',
+  -- hod_staff_id: the HOD the complaint was initially routed to (non-ICT, non-Harassment).
+  -- NULL for ICT complaints (direct to IT) and Harassment (direct to Dean).
+  hod_staff_id      VARCHAR(20) NULL,
+  -- assigned_staff_id: the current officer handling the complaint.
+  -- On filing: set to HOD (for HOD-routed), Dean (for Harassment), IT (for ICT).
+  -- After HOD assignment: updated to the officer the HOD delegates to.
   assigned_staff_id VARCHAR(20) NULL,
   -- Programme the student selected when filing (drives studentProgramme /
   -- studentDept in the frontend; may differ from the student's record).
@@ -124,6 +130,7 @@ CREATE TABLE complaints (
   created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (student_index)     REFERENCES students(index_number) ON UPDATE CASCADE,
+  FOREIGN KEY (hod_staff_id)      REFERENCES staff(staff_id) ON UPDATE CASCADE,
   FOREIGN KEY (assigned_staff_id) REFERENCES staff(staff_id) ON UPDATE CASCADE,
   FOREIGN KEY (category_id)       REFERENCES categories(id) ON UPDATE CASCADE,
   FOREIGN KEY (programme_id)      REFERENCES programmes(id) ON UPDATE CASCADE
@@ -192,6 +199,7 @@ CREATE TABLE directives (
 -- Index optimisations for lookup performance
 CREATE INDEX idx_complaints_student  ON complaints(student_index);
 CREATE INDEX idx_complaints_assigned ON complaints(assigned_staff_id);
+CREATE INDEX idx_complaints_hod      ON complaints(hod_staff_id);
 CREATE INDEX idx_complaints_status   ON complaints(status);
 CREATE INDEX idx_complaints_faculty  ON complaints(faculty_key);
 CREATE INDEX idx_actionlogs_complaint ON action_logs(complaint_id);

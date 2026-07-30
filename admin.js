@@ -214,21 +214,29 @@ const adminApp = {
 
     // Toggle tabs visibility based on roles
     const tabWorkstation = document.getElementById('nav-tab-workstation');
+    const tabHod = document.getElementById('nav-tab-hod');
+    const tabDean = document.getElementById('nav-tab-dean');
     const tabAnalytics = document.getElementById('nav-tab-analytics');
     const tabSystem = document.getElementById('nav-tab-system');
 
+    if (tabWorkstation) tabWorkstation.style.display = 'none';
+    if (tabHod) tabHod.style.display = 'none';
+    if (tabDean) tabDean.style.display = 'none';
+    if (tabAnalytics) tabAnalytics.style.display = 'none';
+    if (tabSystem) tabSystem.style.display = 'none';
+
     if (staff.type === 'SuperAdmin') {
-      if (tabWorkstation) tabWorkstation.style.display = 'none';
-      if (tabAnalytics) tabAnalytics.style.display = 'none';
       if (tabSystem) tabSystem.style.display = 'inline-flex';
     } else if (staff.type === 'HOD') {
-      if (tabWorkstation) tabWorkstation.style.display = 'none';
+      if (tabHod) tabHod.style.display = 'inline-flex';
+      if (tabWorkstation) tabWorkstation.style.display = 'inline-flex'; // HOD also sees workstation for self-assigned tickets
       if (tabAnalytics) tabAnalytics.style.display = 'inline-flex';
-      if (tabSystem) tabSystem.style.display = 'none';
+    } else if (staff.type === 'Dean' || staff.type === 'Vice Dean') {
+      if (tabDean) tabDean.style.display = 'inline-flex';
+      if (tabAnalytics) tabAnalytics.style.display = 'inline-flex';
     } else {
       if (tabWorkstation) tabWorkstation.style.display = 'inline-flex';
       if (tabAnalytics) tabAnalytics.style.display = 'inline-flex';
-      if (tabSystem) tabSystem.style.display = 'none';
     }
   },
 
@@ -363,7 +371,9 @@ const adminApp = {
     if (staff.type === 'SuperAdmin') {
       this.switchTab('system');
     } else if (staff.type === 'HOD') {
-      this.switchTab('analytics');
+      this.switchTab('hod');
+    } else if (staff.type === 'Dean' || staff.type === 'Vice Dean') {
+      this.switchTab('dean');
     } else {
       this.switchTab('workstation');
     }
@@ -415,7 +425,9 @@ const adminApp = {
       if (this.state.loggedStaff.type === 'SuperAdmin') {
         this.switchTab('system');
       } else if (this.state.loggedStaff.type === 'HOD') {
-        this.switchTab('analytics');
+        this.switchTab('hod');
+      } else if (this.state.loggedStaff.type === 'Dean' || this.state.loggedStaff.type === 'Vice Dean') {
+        this.switchTab('dean');
       } else {
         this.switchTab('workstation');
       }
@@ -423,7 +435,7 @@ const adminApp = {
     if (window.lucide) lucide.createIcons();
   },
 
-  // Switch between Workstation and Analytics Tab Panels
+  // Switch between Workstation, HOD, Dean, Analytics, and System Tab Panels
   async switchTab(tabName) {
     if (this.isFormDirty()) {
       const isConfirmed = await this.showConfirm(
@@ -439,8 +451,10 @@ const adminApp = {
     document.querySelectorAll('.dashboard-panel-view').forEach(p => p.classList.remove('active'));
     
     // Set active highlights
-    document.getElementById(`nav-tab-${tabName}`).classList.add('active');
-    document.getElementById(`panel-${tabName}`).classList.add('active');
+    const navBtn = document.getElementById(`nav-tab-${tabName}`);
+    if (navBtn) navBtn.classList.add('active');
+    const panel = document.getElementById(`panel-${tabName}`);
+    if (panel) panel.classList.add('active');
 
     // Load reports close overlay
     this.closeSemesterReportView();
@@ -448,6 +462,10 @@ const adminApp = {
     // Trigger tab-specific renders
     if (tabName === 'workstation') {
       this.renderWorkstation();
+    } else if (tabName === 'hod') {
+      this.renderHODDashboard();
+    } else if (tabName === 'dean') {
+      this.renderDeanDashboard();
     } else if (tabName === 'analytics') {
       this.renderAnalytics();
     } else if (tabName === 'system') {
@@ -2499,6 +2517,539 @@ const adminApp = {
       await this.loadSystemDashboardData();
     } catch (err) {
       this.showToast(err.message || 'Failed to add faculty.', 'error');
+    }
+  },
+
+  // ─── HOD DESK & DELEGATION CONTROLLER ────────────────────────────────────
+  stateHOD: {
+    categoryFilter: 'all',
+    selectedIds: [],
+    activeId: null,
+    officers: []
+  },
+
+  setHODCategoryFilter(cat) {
+    this.stateHOD.categoryFilter = cat;
+    document.querySelectorAll('#hod-category-tabs .admin-sidebar-tab').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`hod-tab-${cat}`);
+    if (btn) btn.classList.add('active');
+    this.renderHODComplaintList();
+  },
+
+  async renderHODDashboard() {
+    if (!this.state.loggedStaff) return;
+    const deptEl = document.getElementById('hod-department-name');
+    if (deptEl) deptEl.textContent = this.state.loggedStaff.portfolio || this.state.loggedStaff.department || 'Department Office';
+
+    await this.refreshComplaints();
+    await this.loadHODOfficers();
+    this.renderHODComplaintList();
+    this.renderHODWorkspace();
+  },
+
+  async loadHODOfficers() {
+    if (!this.state.loggedStaff) return;
+    try {
+      const fKey = this.state.loggedStaff.facultyKey || 'FST';
+      this.stateHOD.officers = await window.API.get(`/complaints/faculty/${encodeURIComponent(fKey)}/officers`);
+      this.populateHODOfficerSelects();
+    } catch (err) {
+      console.error('Failed to load officers:', err);
+    }
+  },
+
+  populateHODOfficerSelects() {
+    const bulkSelect = document.getElementById('hod-bulk-officer-select');
+    const singleSelect = document.getElementById('hod-single-officer-select');
+    const staff = this.state.loggedStaff;
+
+    const optionsHtml = [
+      '<option value="" disabled selected>Select Assignee Officer...</option>',
+      ...(staff ? [`<option value="${staff.staffId}">Me (${staff.name} — ${staff.portfolio || 'HOD'})</option>`] : []),
+      ...this.stateHOD.officers
+        .filter(o => o.staffId !== (staff ? staff.staffId : ''))
+        .map(o => `<option value="${o.staffId}">${o.name} (${o.portfolio || o.type})</option>`)
+    ].join('');
+
+    if (bulkSelect) bulkSelect.innerHTML = optionsHtml;
+    if (singleSelect) singleSelect.innerHTML = optionsHtml;
+  },
+
+  renderHODComplaintList() {
+    const inbox = document.getElementById('hod-inbox-list');
+    if (!inbox) return;
+
+    let list = [...this.state.complaints];
+
+    // Category filter
+    const cat = this.stateHOD.categoryFilter;
+    if (cat === 'academic') {
+      list = list.filter(c => c.category === 'Academic & Exams');
+    } else if (cat === 'finance') {
+      list = list.filter(c => c.category === 'Fees & Finance');
+    } else if (cat === 'other') {
+      list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance');
+    }
+
+    // Search filter
+    const searchVal = (document.getElementById('hod-search-input')?.value || '').trim().toLowerCase();
+    if (searchVal) {
+      list = list.filter(c => c.id.toLowerCase().includes(searchVal) || c.subject.toLowerCase().includes(searchVal) || c.studentName.toLowerCase().includes(searchVal));
+    }
+
+    // Exclude Harassment from HOD list (routed to Dean only) and ICT (routed to IT)
+    list = list.filter(c => c.category !== 'Harassment' && c.category !== 'ICT & Portal Services');
+
+    list.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+    inbox.innerHTML = '';
+
+    if (list.length === 0) {
+      inbox.innerHTML = `
+        <div class="no-complaints-fallback animate-fade-in">
+          <i data-lucide="inbox"></i>
+          <p>No complaints pending delegation.</p>
+        </div>
+      `;
+    } else {
+      list.forEach(c => {
+        const item = document.createElement('div');
+        item.className = `complaint-list-item animate-fade-in ${this.stateHOD.activeId === c.id ? 'active' : ''}`;
+        
+        const isChecked = this.stateHOD.selectedIds.includes(c.id);
+
+        item.innerHTML = `
+          <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation(); adminApp.toggleHODSelectComplaint('${c.id}', this.checked)" style="margin-top: 0.2rem; cursor: pointer;">
+            <div style="flex-grow: 1;" onclick="adminApp.selectHODComplaint('${c.id}')">
+              <div class="item-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <span class="item-id" style="font-weight: 700; color: var(--accent);">${c.id}</span>
+                <span class="item-date" style="font-size: 0.75rem; color: var(--text-muted);">${this.formatDate(c.createdAt)}</span>
+              </div>
+              <div class="item-subject" style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.85rem;">${c.subject}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+                Category: <strong>${c.category}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                <span>Filer: ${c.studentName}</span>
+                <span class="badge badge-status-${c.status.replace(' ', '-').toLowerCase()}">${c.status}</span>
+              </div>
+              <div style="font-size: 0.75rem; margin-top: 0.25rem; color: var(--accent);">
+                Assigned: ${c.assignedTo || 'Unassigned (Pending HOD)'}
+              </div>
+            </div>
+          </div>
+        `;
+        inbox.appendChild(item);
+      });
+    }
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  toggleHODSelectComplaint(id, checked) {
+    if (checked) {
+      if (!this.stateHOD.selectedIds.includes(id)) this.stateHOD.selectedIds.push(id);
+    } else {
+      this.stateHOD.selectedIds = this.stateHOD.selectedIds.filter(x => x !== id);
+    }
+    const bulkBar = document.getElementById('hod-bulk-bar');
+    const countLabel = document.getElementById('hod-bulk-count-label');
+    if (bulkBar && countLabel) {
+      if (this.stateHOD.selectedIds.length > 0) {
+        bulkBar.style.display = 'block';
+        countLabel.textContent = `${this.stateHOD.selectedIds.length} complaint(s) selected`;
+      } else {
+        bulkBar.style.display = 'none';
+      }
+    }
+  },
+
+  selectHODComplaint(id) {
+    this.stateHOD.activeId = id;
+    this.renderHODComplaintList();
+    this.renderHODWorkspace();
+  },
+
+  renderHODWorkspace() {
+    const placeholder = document.getElementById('hod-workspace-placeholder');
+    const content = document.getElementById('hod-workspace-content');
+
+    if (!this.stateHOD.activeId) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    const complaint = this.state.complaints.find(c => c.id === this.stateHOD.activeId);
+    if (!complaint) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (content) content.style.display = 'flex';
+
+    document.getElementById('hod-work-id').textContent = complaint.id;
+    document.getElementById('hod-work-subject').textContent = complaint.subject;
+    document.getElementById('hod-work-category').textContent = complaint.category;
+    document.getElementById('hod-work-student-name').textContent = complaint.studentName;
+    document.getElementById('hod-work-student-index').textContent = complaint.studentIndex;
+    document.getElementById('hod-work-student-dept').textContent = complaint.studentProgramme;
+    document.getElementById('hod-work-student-level').textContent = (complaint.studentLevel || 'N/A') + ' L';
+    document.getElementById('hod-work-desc').textContent = complaint.description;
+    document.getElementById('hod-work-assigned-current').textContent = complaint.assignedTo ? `${complaint.assignedTo} (${complaint.assignedType || 'Officer'})` : 'Unassigned (Pending HOD Delegation)';
+
+    const statusB = document.getElementById('hod-work-status-badge');
+    if (statusB) statusB.innerHTML = `<span class="badge badge-status-${complaint.status.replace(' ', '-').toLowerCase()}">${complaint.status}</span>`;
+
+    const urgB = document.getElementById('hod-work-urgency-badge');
+    if (urgB) urgB.innerHTML = `<span class="badge badge-urgency-${complaint.urgency.toLowerCase()}">${complaint.urgency}</span>`;
+
+    const singleSelect = document.getElementById('hod-single-officer-select');
+    if (singleSelect && complaint.assignedStaffId) {
+      singleSelect.value = complaint.assignedStaffId;
+    }
+  },
+
+  async handleHODSingleAssign() {
+    const id = this.stateHOD.activeId;
+    if (!id) return;
+    const select = document.getElementById('hod-single-officer-select');
+    const officerId = select ? select.value : '';
+    if (!officerId) {
+      this.showToast('Please select an officer to assign this complaint.', 'warning');
+      return;
+    }
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/assign`, { assignedStaffId: officerId });
+      this.showToast('Complaint successfully assigned.', 'success');
+      await this.refreshComplaints();
+      this.renderHODComplaintList();
+      this.renderHODWorkspace();
+    } catch (err) {
+      this.showToast(err.message || 'Assignment failed.', 'error');
+    }
+  },
+
+  async handleHODBulkAssign() {
+    const ids = this.stateHOD.selectedIds;
+    if (!ids || ids.length === 0) return;
+    const select = document.getElementById('hod-bulk-officer-select');
+    const officerId = select ? select.value : '';
+    if (!officerId) {
+      this.showToast('Please select an officer for bulk assignment.', 'warning');
+      return;
+    }
+    try {
+      const res = await window.API.post('/complaints/bulk-assign', { ids, assignedStaffId: officerId });
+      this.showToast(`Successfully assigned ${res.count} complaint(s) to ${res.assignedTo}.`, 'success');
+      this.stateHOD.selectedIds = [];
+      const bulkBar = document.getElementById('hod-bulk-bar');
+      if (bulkBar) bulkBar.style.display = 'none';
+      await this.refreshComplaints();
+      this.renderHODComplaintList();
+      this.renderHODWorkspace();
+    } catch (err) {
+      this.showToast(err.message || 'Bulk assignment failed.', 'error');
+    }
+  },
+
+  // ─── DEAN OVERSIGHT & HARASSMENT CONTROLLER ─────────────────────────────
+  stateDean: {
+    subTab: 'monitoring', // 'monitoring' | 'harassment'
+    categoryFilter: 'all',
+    activeMonitorId: null,
+    activeHarassId: null,
+  },
+
+  switchDeanSubTab(subTab) {
+    this.stateDean.subTab = subTab;
+    const btnMon = document.getElementById('dean-subtab-monitoring');
+    const btnHar = document.getElementById('dean-subtab-harassment');
+    const viewMon = document.getElementById('dean-view-monitoring');
+    const viewHar = document.getElementById('dean-view-harassment');
+
+    if (subTab === 'monitoring') {
+      if (btnMon) btnMon.classList.add('active');
+      if (btnHar) btnHar.classList.remove('active');
+      if (viewMon) viewMon.style.display = 'block';
+      if (viewHar) viewHar.style.display = 'none';
+      this.renderDeanMonitoringList();
+    } else {
+      if (btnHar) btnHar.classList.add('active');
+      if (btnMon) btnMon.classList.remove('active');
+      if (viewHar) viewHar.style.display = 'block';
+      if (viewMon) viewMon.style.display = 'none';
+      this.renderDeanHarassmentList();
+    }
+  },
+
+  setDeanCategoryFilter(cat) {
+    this.stateDean.categoryFilter = cat;
+    document.querySelectorAll('#dean-view-monitoring .admin-sidebar-tab').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`dean-cat-${cat}`);
+    if (btn) btn.classList.add('active');
+    this.renderDeanMonitoringList();
+  },
+
+  async renderDeanDashboard() {
+    await this.refreshComplaints();
+    this.updateDeanSummaryStats();
+    this.renderDeanMonitoringList();
+    this.renderDeanHarassmentList();
+  },
+
+  updateDeanSummaryStats() {
+    const list = this.state.complaints;
+    const total = list.length;
+    const pending = list.filter(c => c.status === 'Submitted').length;
+    const active = list.filter(c => c.status === 'Under Review' || c.status === 'In Progress').length;
+    const resolved = list.filter(c => c.status === 'Resolved').length;
+
+    const elTotal = document.getElementById('dean-stat-total');
+    const elPending = document.getElementById('dean-stat-pending');
+    const elActive = document.getElementById('dean-stat-active');
+    const elResolved = document.getElementById('dean-stat-resolved');
+
+    if (elTotal) elTotal.textContent = total;
+    if (elPending) elPending.textContent = pending;
+    if (elActive) elActive.textContent = active;
+    if (elResolved) elResolved.textContent = resolved;
+  },
+
+  renderDeanMonitoringList() {
+    const inbox = document.getElementById('dean-monitoring-list');
+    if (!inbox) return;
+
+    let list = [...this.state.complaints];
+
+    // Filter by category
+    const cat = this.stateDean.categoryFilter;
+    if (cat === 'academic') list = list.filter(c => c.category === 'Academic & Exams');
+    else if (cat === 'finance') list = list.filter(c => c.category === 'Fees & Finance');
+    else if (cat === 'ict') list = list.filter(c => c.category === 'ICT & Portal Services');
+    else if (cat === 'other') list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance' && c.category !== 'ICT & Portal Services');
+
+    // Search filter
+    const searchVal = (document.getElementById('dean-search-input')?.value || '').trim().toLowerCase();
+    if (searchVal) {
+      list = list.filter(c => c.id.toLowerCase().includes(searchVal) || c.subject.toLowerCase().includes(searchVal) || c.studentName.toLowerCase().includes(searchVal));
+    }
+
+    list.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+    inbox.innerHTML = '';
+
+    if (list.length === 0) {
+      inbox.innerHTML = `<div class="no-complaints-fallback animate-fade-in"><i data-lucide="inbox"></i><p>No complaints found.</p></div>`;
+    } else {
+      list.forEach(c => {
+        const item = document.createElement('div');
+        item.className = `complaint-list-item animate-fade-in ${this.stateDean.activeMonitorId === c.id ? 'active' : ''}`;
+        item.onclick = () => this.selectDeanMonitorComplaint(c.id);
+
+        item.innerHTML = `
+          <div class="item-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <span class="item-id" style="font-weight: 700; color: var(--accent);">${c.id}</span>
+            <span class="item-date" style="font-size: 0.75rem; color: var(--text-muted);">${this.formatDate(c.createdAt)}</span>
+          </div>
+          <div class="item-subject" style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.85rem;">${c.subject}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+            Category: <strong>${c.category}</strong> | Filer: ${c.studentName}
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; margin-top: 0.25rem;">
+            <span style="color: var(--accent);">Assigned: ${c.assignedTo || 'Unassigned'}</span>
+            <span class="badge badge-status-${c.status.replace(' ', '-').toLowerCase()}">${c.status}</span>
+          </div>
+        `;
+        inbox.appendChild(item);
+      });
+    }
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  selectDeanMonitorComplaint(id) {
+    this.stateDean.activeMonitorId = id;
+    this.renderDeanMonitoringList();
+    this.renderDeanMonitorWorkspace();
+  },
+
+  renderDeanMonitorWorkspace() {
+    const placeholder = document.getElementById('dean-monitor-placeholder');
+    const content = document.getElementById('dean-monitor-content');
+
+    if (!this.stateDean.activeMonitorId) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    const complaint = this.state.complaints.find(c => c.id === this.stateDean.activeMonitorId);
+    if (!complaint) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (content) content.style.display = 'flex';
+
+    document.getElementById('dean-work-id').textContent = complaint.id;
+    document.getElementById('dean-work-subject').textContent = complaint.subject;
+    document.getElementById('dean-work-category').textContent = complaint.category;
+    document.getElementById('dean-work-student-name').textContent = complaint.studentName;
+    document.getElementById('dean-work-student-index').textContent = complaint.studentIndex;
+    document.getElementById('dean-work-student-dept').textContent = complaint.studentProgramme;
+    document.getElementById('dean-work-student-level').textContent = (complaint.studentLevel || 'N/A') + ' L';
+    document.getElementById('dean-work-student-email').textContent = complaint.studentEmail || 'N/A';
+    document.getElementById('dean-work-student-phone').textContent = complaint.studentPhone || 'N/A';
+    document.getElementById('dean-work-desc').textContent = complaint.description;
+
+    document.getElementById('dean-chain-hod-name').textContent = complaint.hodName ? `${complaint.hodName} (HOD)` : 'N/A (Direct Route)';
+    document.getElementById('dean-chain-officer-name').textContent = complaint.assignedTo ? `${complaint.assignedTo} (${complaint.assignedType || 'Officer'})` : 'Unassigned';
+    document.getElementById('dean-chain-officer-email').textContent = complaint.assignedEmail || 'N/A';
+
+    const statusB = document.getElementById('dean-work-status-badge');
+    if (statusB) statusB.innerHTML = `<span class="badge badge-status-${complaint.status.replace(' ', '-').toLowerCase()}">${complaint.status}</span>`;
+
+    const urgB = document.getElementById('dean-work-urgency-badge');
+    if (urgB) urgB.innerHTML = `<span class="badge badge-urgency-${complaint.urgency.toLowerCase()}">${complaint.urgency}</span>`;
+  },
+
+  renderDeanHarassmentList() {
+    const inbox = document.getElementById('dean-harassment-list');
+    if (!inbox) return;
+
+    const list = this.state.complaints.filter(c => c.category === 'Harassment');
+    list.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+
+    inbox.innerHTML = '';
+
+    if (list.length === 0) {
+      inbox.innerHTML = `<div class="no-complaints-fallback animate-fade-in"><i data-lucide="shield-check"></i><p>No active harassment complaints.</p></div>`;
+    } else {
+      list.forEach(c => {
+        const item = document.createElement('div');
+        item.className = `complaint-list-item animate-fade-in ${this.stateDean.activeHarassId === c.id ? 'active' : ''}`;
+        item.onclick = () => this.selectDeanHarassComplaint(c.id);
+
+        item.innerHTML = `
+          <div class="item-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <span class="item-id" style="font-weight: 700; color: #e63946;">${c.id}</span>
+            <span class="item-date" style="font-size: 0.75rem; color: var(--text-muted);">${this.formatDate(c.createdAt)}</span>
+          </div>
+          <div class="item-subject" style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.85rem;">${c.subject}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+            <span>Confidential Student</span>
+            <span class="badge badge-status-${c.status.replace(' ', '-').toLowerCase()}">${c.status}</span>
+          </div>
+        `;
+        inbox.appendChild(item);
+      });
+    }
+
+    if (window.lucide) lucide.createIcons();
+  },
+
+  selectDeanHarassComplaint(id) {
+    this.stateDean.activeHarassId = id;
+    this.renderDeanHarassmentList();
+    this.renderDeanHarassWorkspace();
+  },
+
+  renderDeanHarassWorkspace() {
+    const placeholder = document.getElementById('dean-harass-placeholder');
+    const content = document.getElementById('dean-harass-content');
+
+    if (!this.stateDean.activeHarassId) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    const complaint = this.state.complaints.find(c => c.id === this.stateDean.activeHarassId);
+    if (!complaint) {
+      if (placeholder) placeholder.style.display = 'flex';
+      if (content) content.style.display = 'none';
+      return;
+    }
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (content) content.style.display = 'flex';
+
+    document.getElementById('dean-h-id').textContent = complaint.id;
+    document.getElementById('dean-h-subject').textContent = complaint.subject;
+    document.getElementById('dean-h-desc').textContent = complaint.description;
+
+    const statusB = document.getElementById('dean-h-status');
+    if (statusB) statusB.innerHTML = `<span class="badge badge-status-${complaint.status.replace(' ', '-').toLowerCase()}">${complaint.status}</span>`;
+
+    const urgB = document.getElementById('dean-h-urgency');
+    if (urgB) urgB.innerHTML = `<span class="badge badge-urgency-${complaint.urgency.toLowerCase()}">${complaint.urgency}</span>`;
+
+    const select = document.getElementById('dean-h-status-select');
+    if (select) select.value = complaint.status;
+  },
+
+  toggleDeanApptForm(type) {
+    const f1 = document.getElementById('dean-appt-inperson-form');
+    const f2 = document.getElementById('dean-appt-counselor-form');
+    if (type === 'in-person') {
+      if (f1) f1.style.display = f1.style.display === 'block' ? 'none' : 'block';
+      if (f2) f2.style.display = 'none';
+    } else {
+      if (f2) f2.style.display = f2.style.display === 'block' ? 'none' : 'block';
+      if (f1) f1.style.display = 'none';
+    }
+  },
+
+  async submitDeanAppt(type, e) {
+    if (e) e.preventDefault();
+    const id = this.stateDean.activeHarassId;
+    if (!id) return;
+
+    let dateTime, venue, instructions, counselorName;
+    if (type === 'in-person') {
+      dateTime = document.getElementById('dean-appt-inperson-time').value;
+      venue = document.getElementById('dean-appt-inperson-venue').value.trim();
+      instructions = document.getElementById('dean-appt-inperson-inst').value.trim();
+    } else {
+      dateTime = document.getElementById('dean-appt-counselor-time').value;
+      venue = document.getElementById('dean-appt-counselor-venue').value.trim();
+      counselorName = document.getElementById('dean-appt-counselor-name').value.trim();
+    }
+
+    try {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/appointments`, {
+        type, dateTime, venue, instructions, counselorName
+      });
+      this.showToast('Appointment successfully scheduled.', 'success');
+      this.toggleDeanApptForm(type);
+      await this.refreshComplaints();
+      this.renderDeanHarassWorkspace();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to schedule appointment.', 'error');
+    }
+  },
+
+  async updateDeanHarassStatus() {
+    const id = this.stateDean.activeHarassId;
+    if (!id) return;
+    const select = document.getElementById('dean-h-status-select');
+    const status = select ? select.value : '';
+    if (!status) return;
+
+    try {
+      await window.API.put(`/complaints/${encodeURIComponent(id)}/status`, { status });
+      this.showToast('Harassment grievance status updated.', 'success');
+      await this.refreshComplaints();
+      this.renderDeanHarassmentList();
+      this.renderDeanHarassWorkspace();
+    } catch (err) {
+      this.showToast(err.message || 'Status update failed.', 'error');
     }
   }
 };
