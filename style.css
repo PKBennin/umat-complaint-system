@@ -2891,7 +2891,9 @@ body.admin-portal-body main {
 }
 
 body.admin-portal-body #dashboard-view,
-body.admin-portal-body #panel-workstation {
+body.admin-portal-body #panel-workstation,
+body.admin-portal-body #panel-hod,
+body.admin-portal-body #panel-dean {
   height: 100% !important;
 }
 
@@ -3880,6 +3882,8 @@ body.view-track-active #track-view {
   
   body.admin-portal-body #panel-system,
   body.admin-portal-body #panel-workstation,
+  body.admin-portal-body #panel-hod,
+  body.admin-portal-body #panel-dean,
   body.admin-portal-body #panel-analytics,
   body.admin-portal-body #dashboard-view {
     height: auto !important;
