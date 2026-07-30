@@ -820,7 +820,7 @@ const app = {
   async handleStudentLoginSubmit(e) {
     if (e) e.preventDefault();
     const indexVal = document.getElementById('signin-student-id').value.trim();
-    const passwordVal = document.getElementById('signin-password').value.trim();
+    const passwordVal = document.getElementById('signin-password').value;
 
     if (!indexVal || !passwordVal) {
       this.showToast("Please enter both student ID and password.", "warning");

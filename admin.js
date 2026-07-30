@@ -307,7 +307,7 @@ const adminApp = {
     if (e) e.preventDefault();
 
     const staffIdVal = document.getElementById('login-staff-id').value.trim();
-    const passwordVal = document.getElementById('login-password').value.trim();
+    const passwordVal = document.getElementById('login-password').value;
 
     if (!staffIdVal || !passwordVal) {
       this.showToast("Please fill out all fields.", "warning");
