@@ -664,6 +664,14 @@ textarea {
   border: 1px solid var(--border-color);
 }
 
+.receipt-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 0.15rem !important;
+}
+
 .receipt-item span:first-child {
   font-size: 0.75rem;
   color: var(--text-muted);
