@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Workstation | Campus Complaint System</title>
-  <link rel="stylesheet" href="style.css?v=5.0">
+  <link rel="stylesheet" href="style.css?v=6.0">
   <!-- Load Chart.js CDN for beautiful interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load Lucide Icons CDN for sleek UI icons -->
@@ -649,11 +649,11 @@
           </div>
           <!-- Mode Toggle: Faculty Monitoring vs Harassment Workstation -->
           <div style="display: flex; gap: 0.5rem; background: var(--bg-sidebar); padding: 0.35rem; border-radius: 8px; border: 1px solid var(--border-color);">
-            <button class="btn btn-sm active" id="dean-subtab-monitoring" onclick="adminApp.switchDeanSubTab('monitoring')">
+            <button class="dean-subtab-btn active" id="dean-subtab-monitoring" onclick="adminApp.switchDeanSubTab('monitoring')">
               <i data-lucide="bar-chart-2"></i> Faculty Monitoring
             </button>
-            <button class="btn btn-sm" id="dean-subtab-harassment" onclick="adminApp.switchDeanSubTab('harassment')">
-              <i data-lucide="shield-alert" style="color: #e63946;"></i> Harassment Workstation
+            <button class="dean-subtab-btn" id="dean-subtab-harassment" onclick="adminApp.switchDeanSubTab('harassment')">
+              <i data-lucide="shield-alert"></i> Harassment Workstation
             </button>
           </div>
         </div>
