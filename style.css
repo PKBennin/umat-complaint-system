@@ -2992,6 +2992,11 @@ body.admin-portal-body #panel-analytics {
   padding-right: 0.5rem;
 }
 
+body.admin-portal-body #panel-dean {
+  overflow-y: auto !important;
+  padding-right: 0.5rem;
+}
+
 /* Constrain report overlay view to fit window height with its own scrollbar */
 body.admin-portal-body .semester-report-view {
   max-height: calc(100vh - 200px) !important;
