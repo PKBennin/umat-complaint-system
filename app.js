@@ -1883,9 +1883,7 @@ const app = {
       welcomeTitle.textContent = `Welcome, ${displayLastName}`;
     }
     
-    // Count student complaints by status
-    const studentIndex = this.state.loggedStudent.index;
-    const studentComplaints = this.state.complaints.filter(c => c.studentIndex === studentIndex);
+    const studentComplaints = this.state.complaints;
     
     const awaitingCount = studentComplaints.filter(c => c.status === 'Submitted').length;
     // Status values must match the DB enum exactly ('Under Review', not 'In Review').
@@ -1916,9 +1914,7 @@ const app = {
     const list = document.getElementById('student-history-list');
     if (!list || !this.state.loggedStudent) return;
 
-    this.loadState();
-    const studentIndex = this.state.loggedStudent.index;
-    let studentComplaints = this.state.complaints.filter(c => c.studentIndex === studentIndex);
+    let studentComplaints = [...this.state.complaints];
 
     // Apply search filter if query is present
     const searchInput = document.getElementById('student-search-input');
@@ -1950,8 +1946,9 @@ const app = {
       // Nothing exists to show — make sure no stale complaint id lingers.
       this.state.activeStudentComplaintId = null;
     } else {
-      // Auto-load active student complaint if not set
-      if (!this.state.activeStudentComplaintId && studentComplaints.length > 0) {
+      // Auto-load active student complaint if not set (only on desktop viewports)
+      const isMobile = window.innerWidth <= 820;
+      if (!this.state.activeStudentComplaintId && studentComplaints.length > 0 && !isMobile) {
         this.state.activeStudentComplaintId = studentComplaints[0].id;
       }
 
@@ -2040,10 +2037,13 @@ const app = {
     const content = document.getElementById('student-workspace-content');
     const dashHeader = document.getElementById('student-dashboard-header');
 
+    const workspace = document.getElementById('student-track-workspace');
+
     if (!id) {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
       if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
+      if (workspace) workspace.classList.remove('has-active-ticket');
       return;
     }
 
@@ -2053,15 +2053,16 @@ const app = {
       if (placeholder) placeholder.style.display = 'flex';
       if (content) content.style.display = 'none';
       if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
+      if (workspace) workspace.classList.remove('has-active-ticket');
       return;
     }
 
     if (placeholder) placeholder.style.display = 'none';
     if (content) content.style.display = 'flex';
     if (dashHeader) dashHeader.style.display = this.state.loggedStudent ? 'flex' : 'none';
+    if (workspace) workspace.classList.add('has-active-ticket');
 
     // Toggle anonymous layout view (hides sidebar for single ticket guest tracking)
-    const workspace = document.getElementById('student-track-workspace');
     if (workspace) {
       if (!this.state.loggedStudent) {
         workspace.classList.add('anonymous-tracking-mode');
@@ -2555,9 +2556,7 @@ const app = {
   },
 
   printHistory() {
-    this.loadState();
-    const studentIndex = this.state.loggedStudent.index;
-    const studentComplaints = this.state.complaints.filter(c => c.studentIndex === studentIndex);
+    const studentComplaints = this.state.complaints;
 
     if (studentComplaints.length === 0) {
       this.showToast("No complaints in your history to print.", "warning");
