@@ -179,7 +179,10 @@ router.post('/staff/login',
   async (req, res, next) => {
     if (badRequest(req, res)) return;
     try {
-      const { staff_id } = req.body;
+      let { staff_id } = req.body;
+      if (staff_id && (staff_id.toUpperCase().startsWith('PS') || staff_id.toUpperCase().startsWith('CS'))) {
+        staff_id = staff_id.toUpperCase().replace(/O/g, '0');
+      }
       const [[staff]] = await pool.query(
         `SELECT staff_id, name, email, password_hash, type, faculty_key, department_label, portfolio
            FROM staff WHERE staff_id = ? OR email = ?`,
@@ -334,7 +337,10 @@ router.post('/staff', verifyJWT,
       return res.status(403).json({ error: 'SuperAdmin access required' });
     }
     try {
-      const { staff_id, name, email, password, type, faculty_key, department_label, portfolio } = req.body;
+      let { staff_id, name, email, password, type, faculty_key, department_label, portfolio } = req.body;
+      if (staff_id && (staff_id.toUpperCase().startsWith('PS') || staff_id.toUpperCase().startsWith('CS'))) {
+        staff_id = staff_id.toUpperCase().replace(/O/g, '0');
+      }
 
       // Check duplicates
       const [[existingId]] = await pool.query('SELECT staff_id FROM staff WHERE staff_id = ?', [staff_id]);
@@ -379,7 +385,10 @@ router.delete('/staff/:id', verifyJWT, async (req, res, next) => {
     return res.status(403).json({ error: 'SuperAdmin access required' });
   }
   try {
-    const staffId = req.params.id;
+    let staffId = req.params.id;
+    if (staffId && (staffId.toUpperCase().startsWith('PS') || staffId.toUpperCase().startsWith('CS'))) {
+      staffId = staffId.toUpperCase().replace(/O/g, '0');
+    }
     if (staffId === req.user.staffId) {
       return res.status(400).json({ error: 'You cannot remove your own administrator account.' });
     }
@@ -403,7 +412,13 @@ router.post('/staff/bulk-delete', verifyJWT, async (req, res, next) => {
       return res.status(400).json({ error: 'No staff IDs provided.' });
     }
     const callerId = req.user.staffId;
-    const targetIds = ids.filter(id => id !== callerId);
+    const normalizedIds = ids.map(id => {
+      if (id && (id.toUpperCase().startsWith('PS') || id.toUpperCase().startsWith('CS'))) {
+        return id.toUpperCase().replace(/O/g, '0');
+      }
+      return id;
+    });
+    const targetIds = normalizedIds.filter(id => id !== callerId);
     if (targetIds.length > 0) {
       await pool.query('UPDATE complaints SET assigned_staff_id = NULL WHERE assigned_staff_id IN (?)', [targetIds]);
       await pool.query('DELETE FROM staff WHERE staff_id IN (?)', [targetIds]);

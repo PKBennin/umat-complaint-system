@@ -306,7 +306,10 @@ const adminApp = {
   async handleLoginSubmit(e) {
     if (e) e.preventDefault();
 
-    const staffIdVal = document.getElementById('login-staff-id').value.trim();
+    let staffIdVal = document.getElementById('login-staff-id').value.trim();
+    if (staffIdVal && (staffIdVal.toUpperCase().startsWith('PS') || staffIdVal.toUpperCase().startsWith('CS'))) {
+      staffIdVal = staffIdVal.toUpperCase().replace(/O/g, '0');
+    }
     const passwordVal = document.getElementById('login-password').value;
 
     if (!staffIdVal || !passwordVal) {
@@ -2053,7 +2056,10 @@ const adminApp = {
 
   async handleRegisterStaffSubmit(event) {
     event.preventDefault();
-    const staff_id = document.getElementById('new-staff-id').value.trim();
+    let staff_id = document.getElementById('new-staff-id').value.trim();
+    if (staff_id && (staff_id.toUpperCase().startsWith('PS') || staff_id.toUpperCase().startsWith('CS'))) {
+      staff_id = staff_id.toUpperCase().replace(/O/g, '0');
+    }
     const title = document.getElementById('new-staff-title').value;
     const typedName = document.getElementById('new-staff-name').value.trim();
     const name = title + " " + typedName;
