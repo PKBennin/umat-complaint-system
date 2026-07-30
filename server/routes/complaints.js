@@ -596,4 +596,70 @@ router.post('/:id/remind', verifyJWT, requireStudent, attachComplaintForStudent,
   } catch (e) { await conn.rollback(); next(e); } finally { conn.release(); }
 });
 
+// =============================================================================
+// DELETE SINGLE   DELETE /api/complaints/:id
+// =============================================================================
+router.delete('/:id', verifyJWT, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const isStudent = (req.user.role === 'student');
+    const isSuperAdmin = (req.user.role === 'staff' && req.user.type === 'SuperAdmin');
+    
+    if (!isStudent && !isSuperAdmin) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+    
+    const [rows] = await pool.query('SELECT student_index, status FROM complaints WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Complaint not found.' });
+    }
+    
+    const complaint = rows[0];
+    
+    // If student, check ownership and status
+    if (isStudent) {
+      if (complaint.student_index !== req.user.index) {
+        return res.status(403).json({ error: 'You are not authorized to unsend this complaint.' });
+      }
+      if (complaint.status !== 'Submitted') {
+        return res.status(400).json({ error: 'Only pending complaints can be unsent.' });
+      }
+    }
+    
+    // Delete complaint dependencies
+    await pool.query('DELETE FROM comments WHERE complaint_id = ?', [id]);
+    await pool.query('DELETE FROM internal_notes WHERE complaint_id = ?', [id]);
+    await pool.query('DELETE FROM directives WHERE complaint_id = ?', [id]);
+    await pool.query('DELETE FROM appointments WHERE complaint_id = ?', [id]);
+    await pool.query('DELETE FROM action_logs WHERE complaint_id = ?', [id]);
+    await pool.query('DELETE FROM complaints WHERE id = ?', [id]);
+    
+    return res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
+// BULK DELETE     POST /api/complaints/bulk-delete (SuperAdmin only)
+// =============================================================================
+router.post('/bulk-delete', verifyJWT, async (req, res, next) => {
+  if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin access required.' });
+  }
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'No IDs provided.' });
+    }
+    
+    await pool.query('DELETE FROM comments WHERE complaint_id IN (?)', [ids]);
+    await pool.query('DELETE FROM internal_notes WHERE complaint_id IN (?)', [ids]);
+    await pool.query('DELETE FROM directives WHERE complaint_id IN (?)', [ids]);
+    await pool.query('DELETE FROM appointments WHERE complaint_id IN (?)', [ids]);
+    await pool.query('DELETE FROM action_logs WHERE complaint_id IN (?)', [ids]);
+    await pool.query('DELETE FROM complaints WHERE id IN (?)', [ids]);
+    
+    return res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 module.exports = router;

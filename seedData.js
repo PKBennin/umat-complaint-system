@@ -63,7 +63,6 @@ const PROGRAMMES = [
   { name: "BSc Cyber Security", department: "Department of Cybersecurity and Information Systems", facultyKey: "FCMS" },
   { name: "BSc Computer Science and Engineering", department: "Department of Computer Science and Engineering", facultyKey: "FCMS" },
   { name: "BSc Information Systems and Technology", department: "Department of Cybersecurity and Information Systems", facultyKey: "FCMS" },
-  { name: "BSc Information Systems", department: "Department of Cybersecurity and Information Systems", facultyKey: "FCMS" },
   { name: "BSc Mathematics", department: "Department of Mathematics", facultyKey: "FCMS" },
   { name: "BSc Statistical Data Science", department: "Department of Mathematics", facultyKey: "FCMS" },
   { name: "BSc Robotics Engineering and Artificial Intelligence", department: "Department of Computer Science and Engineering", facultyKey: "FCMS" },
@@ -104,7 +103,7 @@ const STUDENT_DATABASE = (typeof process !== 'undefined' && process.env.NODE_ENV
   { index: "9012870432", name: "Michael Boateng", password: "9012870432", email: "mboateng432@umat.edu.gh", phone: "0599410986", level: "300", programmeName: "BSc Petroleum Engineering" },
   { index: "8012470422", name: "Leticia oppong", password: "8012470422", email: "loppong422@umat.edu.gh", phone: "0594910043", level: "100", programmeName: "BSc Renewable Energy Engineering" },
   { index: "9012472222", name: "Eugene Amoah", password: "9012472222", email: "eamoah222@umat.edu.gh", phone: "0557161260", level: "400", programmeName: "BSc Mining Engineering" },
-  { index: "9012870433", name: "Joel Baidoo", password: "9012870433", email: "jbaidoo433@umat.edu.gh", phone: "0202748601", level: "300", programmeName: "BSc Information Systems" }
+  { index: "9012870433", name: "Joel Baidoo", password: "9012870433", email: "jbaidoo433@umat.edu.gh", phone: "0202748601", level: "300", programmeName: "BSc Information Systems and Technology" }
 ] : [];
 
 // Mock staff credentials

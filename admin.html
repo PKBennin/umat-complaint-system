@@ -178,7 +178,7 @@
             <div class="input-group" style="margin-bottom: 1.75rem;">
               <label for="login-password">Password</label>
               <div style="position: relative; width: 100%;">
-                <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box;" maxlength="8">
+                <input type="password" id="login-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box;">
                 <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibility()" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; z-index: 2;">
                   <i data-lucide="eye" id="password-toggle-icon" style="width: 18px; height: 18px;"></i>
                 </button>
@@ -775,6 +775,9 @@
               <button class="btn btn-primary" onclick="adminApp.openRegisterStaffModal(event)" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
                 <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i> Register New Staff
               </button>
+              <button class="btn btn-danger" id="btn-bulk-delete-staff" onclick="adminApp.handleBulkDeleteStaff()" style="display: none; padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: var(--status-rejected); color: #fff; border: none; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Selected
+              </button>
               <button class="btn" onclick="adminApp.handleRemoveAllStaff()" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.35); color: #e63946; display: flex; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
                 <i data-lucide="user-minus" style="width: 14px; height: 14px;"></i> Wipe Staff Directory
               </button>
@@ -785,6 +788,7 @@
             <table class="report-table">
               <thead>
                 <tr>
+                  <th style="width: 40px; text-align: center;"><input type="checkbox" id="staff-select-all" onchange="adminApp.toggleSelectAllStaff(this.checked)"></th>
                   <th>Staff ID</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -868,9 +872,14 @@
       <!-- SUB-TAB 4: STUDENT ROSTER & MANAGEMENT -->
       <div id="sys-sub-students" style="display: none; flex-direction: column; gap: 1.5rem;">
         <div class="glass-card" style="padding: 2rem;">
-          <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="graduation-cap" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Registered Students Roster <span id="student-count-badge" class="badge" style="margin-left: 0.35rem; background: var(--accent); color: #fff; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 700;">0</span>
-          </h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h3 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="graduation-cap" style="stroke: var(--accent); width: 20px; height: 20px;"></i> Registered Students Roster <span id="student-count-badge" class="badge" style="margin-left: 0.35rem; background: var(--accent); color: #fff; font-size: 0.75rem; padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 700;">0</span>
+            </h3>
+            <button class="btn btn-danger" id="btn-bulk-delete-students" onclick="adminApp.handleBulkDeleteStudents()" style="display: none; padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 700; background: var(--status-rejected); color: #fff; border: none; align-items: center; gap: 0.25rem; border-radius: 6px; cursor: pointer;">
+              <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Delete Selected
+            </button>
+          </div>
           
           <!-- Search and Filter Controls -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.1); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -902,6 +911,7 @@
             <table class="report-table">
               <thead>
                 <tr>
+                  <th style="width: 40px; text-align: center;"><input type="checkbox" id="student-select-all" onchange="adminApp.toggleSelectAllStudents(this.checked)"></th>
                   <th>Index Number</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -1058,9 +1068,9 @@
 
 
         <div class="input-group" style="margin-bottom: 1rem;">
-          <label for="new-staff-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Password (4-8 chars)</label>
+          <label for="new-staff-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Password (min 4 chars)</label>
           <div style="position: relative; display: flex; align-items: center; width: 100%;">
-            <input type="password" id="new-staff-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;" maxlength="8" minlength="4">
+            <input type="password" id="new-staff-password" placeholder="••••••••" required style="padding-right: 2.75rem; width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;" minlength="4">
             <button type="button" class="password-toggle-btn" onclick="adminApp.togglePasswordVisibilityForId('new-staff-password', this)" style="position: absolute; right: 0.75rem; background: transparent; border: none; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center; height: 100%; z-index: 2; outline: none;">
               <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
             </button>
@@ -1181,6 +1191,6 @@
   <!-- Backend API client -->
   <script src="api.js?v=1.0"></script>
   <!-- Load Main Application Logic Module -->
-   <script src="admin.js?v=3.11"></script>
+  <script src="admin.js?v=3.12"></script>
 </body>
 </html>

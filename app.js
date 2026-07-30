@@ -2130,6 +2130,18 @@ const app = {
     // Render Unresolved delay reminder
     this.renderDelayReminder(complaint);
 
+    // Show/hide Unsend button
+    const unsendBtn = document.getElementById('btn-unsend-complaint');
+    if (unsendBtn) {
+      if (this.state.loggedStudent && 
+          complaint.status === 'Submitted' && 
+          complaint.studentIndex === this.state.loggedStudent.index) {
+        unsendBtn.style.display = 'inline-flex';
+      } else {
+        unsendBtn.style.display = 'none';
+      }
+    }
+
     // Render Appointment notice card
     this.renderAppointmentCard(complaint);
 
@@ -2981,6 +2993,27 @@ const app = {
       currentSlide = (currentSlide + 1) % slides.length;
       slides[currentSlide].classList.add('active');
     }, 6000);
+  },
+
+  async handleUnsendComplaint() {
+    const ticketId = this.state.activeTrackingComplaintId;
+    if (!ticketId) return;
+
+    const isConfirmed = confirm(
+      "Are you sure you want to unsend and delete this complaint? This action is permanent and cannot be undone."
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await window.API.del(`/complaints/${encodeURIComponent(ticketId)}`);
+      this.showToast("Complaint has been successfully unsent and deleted.", "success");
+      
+      // Go back to the dashboard/ledger
+      this.showDashboardOverview();
+      this.loadStudentHistory();
+    } catch (err) {
+      this.showToast(err.message || "Failed to unsend the complaint.", "error");
+    }
   }
 };
 

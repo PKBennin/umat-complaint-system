@@ -19,7 +19,7 @@ function badRequest(req, res) {
 // POST /api/auth/student/signup (Only email and password required!)
 router.post('/student/signup',
   body('email').isEmail().normalizeEmail(),
-  body('password').isString().isLength({ min: 4, max: 8 }),
+  body('password').isString().isLength({ min: 4 }),
   async (req, res, next) => {
     if (badRequest(req, res)) return;
     try {
@@ -214,7 +214,7 @@ router.post('/staff/login',
 
 // PUT /api/auth/student/password  { currentPassword, newPassword }
 router.put('/student/password', verifyJWT,
-  body('newPassword').isString().isLength({ min: 4, max: 8 }),
+  body('newPassword').isString().isLength({ min: 4 }),
   async (req, res, next) => {
     if (badRequest(req, res)) return;
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student access required' });
@@ -325,7 +325,7 @@ router.post('/staff', verifyJWT,
   body('staff_id').isString().trim().notEmpty(),
   body('name').isString().trim().notEmpty(),
   body('email').optional({ nullable: true }).isEmail().normalizeEmail(),
-  body('password').isString().isLength({ min: 4, max: 8 }),
+  body('password').isString().isLength({ min: 4 }),
   body('type').isIn(['Dean', 'Vice Dean', 'Faculty Officer', 'Finance', 'IT', 'HOD', 'Department Officer', 'SuperAdmin']),
   body('portfolio').isString().trim().notEmpty(),
   async (req, res, next) => {
@@ -392,6 +392,26 @@ router.delete('/staff/:id', verifyJWT, async (req, res, next) => {
   } catch (e) { return next(e); }
 });
 
+// POST /api/auth/staff/bulk-delete (Bulk delete staff members - SuperAdmin only)
+router.post('/staff/bulk-delete', verifyJWT, async (req, res, next) => {
+  if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin access required' });
+  }
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'No staff IDs provided.' });
+    }
+    const callerId = req.user.staffId;
+    const targetIds = ids.filter(id => id !== callerId);
+    if (targetIds.length > 0) {
+      await pool.query('UPDATE complaints SET assigned_staff_id = NULL WHERE assigned_staff_id IN (?)', [targetIds]);
+      await pool.query('DELETE FROM staff WHERE staff_id IN (?)', [targetIds]);
+    }
+    return res.json({ ok: true });
+  } catch (e) { return next(e); }
+});
+
 // GET /api/auth/students (Get all students - SuperAdmin only)
 router.get('/students', verifyJWT, async (req, res, next) => {
   if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
@@ -409,6 +429,30 @@ router.get('/students', verifyJWT, async (req, res, next) => {
         ORDER BY s.name`
     );
     return res.json(rows);
+  } catch (e) { return next(e); }
+});
+
+// POST /api/auth/students/bulk-delete (Bulk delete students - SuperAdmin only)
+router.post('/students/bulk-delete', verifyJWT, async (req, res, next) => {
+  if (req.user.role !== 'staff' || req.user.type !== 'SuperAdmin') {
+    return res.status(403).json({ error: 'SuperAdmin access required' });
+  }
+  try {
+    const { indexNumbers } = req.body;
+    if (!indexNumbers || !Array.isArray(indexNumbers) || indexNumbers.length === 0) {
+      return res.status(400).json({ error: 'No student index numbers provided.' });
+    }
+    
+    // Delete student records in dependency order
+    await pool.query('DELETE FROM comments WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index IN (?))', [indexNumbers]);
+    await pool.query('DELETE FROM internal_notes WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index IN (?))', [indexNumbers]);
+    await pool.query('DELETE FROM directives WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index IN (?))', [indexNumbers]);
+    await pool.query('DELETE FROM appointments WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index IN (?))', [indexNumbers]);
+    await pool.query('DELETE FROM action_logs WHERE complaint_id IN (SELECT id FROM complaints WHERE student_index IN (?))', [indexNumbers]);
+    await pool.query('DELETE FROM complaints WHERE student_index IN (?)', [indexNumbers]);
+    await pool.query('DELETE FROM students WHERE index_number IN (?)', [indexNumbers]);
+    
+    return res.json({ ok: true });
   } catch (e) { return next(e); }
 });
 

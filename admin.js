@@ -1896,13 +1896,26 @@ const adminApp = {
 
     container.innerHTML = '';
     if (!staffList || staffList.length === 0) {
-      container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No administrative staff registered.</td></tr>`;
+      container.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No administrative staff registered.</td></tr>`;
       return;
     }
 
     staffList.forEach(s => {
       const tr = document.createElement('tr');
       
+      const tdSelect = document.createElement('td');
+      tdSelect.style.textAlign = 'center';
+      if (s.staff_id !== this.state.loggedStaff.staffId) {
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.className = 'staff-bulk-checkbox';
+        chk.value = s.staff_id;
+        chk.onchange = () => this.updateBulkDeleteStaffButtonState();
+        tdSelect.appendChild(chk);
+      } else {
+        tdSelect.innerHTML = '-';
+      }
+
       const tdId = document.createElement('td');
       tdId.style.fontWeight = 'bold';
       tdId.textContent = s.staff_id;
@@ -1911,7 +1924,7 @@ const adminApp = {
       tdName.textContent = s.name;
 
       const tdEmail = document.createElement('td');
-      tdEmail.textContent = s.email;
+      tdEmail.textContent = s.email || '-';
 
       const tdType = document.createElement('td');
       tdType.innerHTML = `<span class="status-pill status-active" style="background: rgba(254, 203, 0, 0.1); color: var(--accent); font-weight: 700; border: 1px solid rgba(254, 203, 0, 0.25); font-size: 0.8rem; padding: 0.25rem 0.5rem;">${s.type}</span>`;
@@ -1941,6 +1954,7 @@ const adminApp = {
         tdActions.innerHTML = `<span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Current User</span>`;
       }
 
+      tr.appendChild(tdSelect);
       tr.appendChild(tdId);
       tr.appendChild(tdName);
       tr.appendChild(tdEmail);
@@ -1990,6 +2004,50 @@ const adminApp = {
       this.loadSystemDashboardData();
     } catch (err) {
       this.showToast(err.message || 'Failed to wipe staff directory.', 'error');
+    }
+  },
+
+  updateBulkDeleteStaffButtonState() {
+    const checkboxes = document.querySelectorAll('.staff-bulk-checkbox');
+    const checked = Array.from(checkboxes).filter(chk => chk.checked);
+    const btn = document.getElementById('btn-bulk-delete-staff');
+    if (btn) {
+      btn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
+    }
+  },
+
+  toggleSelectAllStaff(isChecked) {
+    const checkboxes = document.querySelectorAll('.staff-bulk-checkbox');
+    checkboxes.forEach(chk => {
+      chk.checked = isChecked;
+    });
+    this.updateBulkDeleteStaffButtonState();
+  },
+
+  async handleBulkDeleteStaff() {
+    const checkboxes = document.querySelectorAll('.staff-bulk-checkbox');
+    const checkedIds = Array.from(checkboxes).filter(chk => chk.checked).map(chk => chk.value);
+    if (checkedIds.length === 0) return;
+
+    const isConfirmed = await this.showConfirm(
+      "Delete Selected Staff",
+      `Are you sure you want to delete the ${checkedIds.length} selected staff account(s)? This action cannot be undone.`,
+      true
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await window.API.post('/auth/staff/bulk-delete', { ids: checkedIds });
+      this.showToast(`Selected staff account(s) deleted successfully.`, 'success');
+      
+      // Reset Select All checkbox
+      const selectAll = document.getElementById('staff-select-all');
+      if (selectAll) selectAll.checked = false;
+
+      this.loadStaffRoster();
+      this.loadSystemDashboardData();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to delete selected staff.', 'error');
     }
   },
 
@@ -2083,12 +2141,21 @@ const adminApp = {
     if (!container) return;
     container.innerHTML = '';
     if (!list || list.length === 0) {
-      container.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching student accounts found.</td></tr>`;
+      container.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching student accounts found.</td></tr>`;
       return;
     }
     list.forEach(s => {
       const tr = document.createElement('tr');
       
+      const tdSelect = document.createElement('td');
+      tdSelect.style.textAlign = 'center';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.className = 'student-bulk-checkbox';
+      chk.value = s.index_number;
+      chk.onchange = () => this.updateBulkDeleteStudentsButtonState();
+      tdSelect.appendChild(chk);
+
       const tdIndex = document.createElement('td');
       tdIndex.style.fontWeight = 'bold';
       tdIndex.textContent = s.index_number;
@@ -2127,6 +2194,7 @@ const adminApp = {
       btn.onclick = () => this.handleDeleteStudent(s.index_number);
       tdActions.appendChild(btn);
 
+      tr.appendChild(tdSelect);
       tr.appendChild(tdIndex);
       tr.appendChild(tdName);
       tr.appendChild(tdEmail);
@@ -2143,6 +2211,10 @@ const adminApp = {
   },
 
   filterStudents() {
+    const selectAll = document.getElementById('student-select-all');
+    if (selectAll) selectAll.checked = false;
+    this.updateBulkDeleteStudentsButtonState();
+
     const query = (document.getElementById('student-search')?.value || '').toLowerCase().trim();
     const faculty = document.getElementById('student-filter-faculty')?.value || '';
     const dept = document.getElementById('student-filter-dept')?.value || '';
@@ -2179,6 +2251,49 @@ const adminApp = {
       await this.loadStudentRoster();
     } catch (err) {
       this.showToast(err.message || 'Failed to remove student.', 'error');
+    }
+  },
+
+  updateBulkDeleteStudentsButtonState() {
+    const checkboxes = document.querySelectorAll('.student-bulk-checkbox');
+    const checked = Array.from(checkboxes).filter(chk => chk.checked);
+    const btn = document.getElementById('btn-bulk-delete-students');
+    if (btn) {
+      btn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
+    }
+  },
+
+  toggleSelectAllStudents(isChecked) {
+    const checkboxes = document.querySelectorAll('.student-bulk-checkbox');
+    checkboxes.forEach(chk => {
+      chk.checked = isChecked;
+    });
+    this.updateBulkDeleteStudentsButtonState();
+  },
+
+  async handleBulkDeleteStudents() {
+    const checkboxes = document.querySelectorAll('.student-bulk-checkbox');
+    const checkedIndexNumbers = Array.from(checkboxes).filter(chk => chk.checked).map(chk => chk.value);
+    if (checkedIndexNumbers.length === 0) return;
+
+    const isConfirmed = await this.showConfirm(
+      "Delete Selected Students",
+      `Are you sure you want to delete the ${checkedIndexNumbers.length} selected student account(s)? This will also wipe all their filed grievances and cannot be undone.`,
+      true
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await window.API.post('/auth/students/bulk-delete', { indexNumbers: checkedIndexNumbers });
+      this.showToast(`Selected student account(s) deleted successfully.`, 'success');
+      
+      // Reset Select All checkbox
+      const selectAll = document.getElementById('student-select-all');
+      if (selectAll) selectAll.checked = false;
+
+      this.loadStudentRoster();
+    } catch (err) {
+      this.showToast(err.message || 'Failed to delete selected students.', 'error');
     }
   },
 
