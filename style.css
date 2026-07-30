@@ -2993,8 +2993,60 @@ body.admin-portal-body #panel-analytics {
 }
 
 body.admin-portal-body #panel-dean {
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+/* The top header area (title + subtab toggle + KPI cards) should not shrink */
+body.admin-portal-body #panel-dean > div > div:first-child {
+  flex-shrink: 0;
+}
+
+/* Dean monitoring/harassment view should fill remaining height */
+body.admin-portal-body #dean-view-monitoring,
+body.admin-portal-body #dean-view-harassment {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* KPI row in dean views should not shrink */
+body.admin-portal-body #dean-view-monitoring > .kpi-row {
+  flex-shrink: 0 !important;
+}
+
+/* The admin-layout inside dean views should fill remaining space */
+body.admin-portal-body #dean-view-monitoring > .admin-layout,
+body.admin-portal-body #dean-view-harassment > .admin-layout {
+  flex: 1 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+
+/* Dean ticket lists scroll independently */
+body.admin-portal-body #dean-monitoring-list,
+body.admin-portal-body #dean-harassment-list {
+  flex: 1 !important;
   overflow-y: auto !important;
-  padding-right: 0.5rem;
+  min-height: 0 !important;
+}
+
+/* Dean workspace (right side detail view) scrolls independently */
+body.admin-portal-body #dean-view-monitoring .admin-workspace,
+body.admin-portal-body #dean-view-harassment .admin-workspace {
+  overflow-y: auto !important;
+  min-height: 0 !important;
+}
+
+/* Harassment info banner and dean header should not shrink */
+body.admin-portal-body #dean-view-harassment > .glass-card {
+  flex-shrink: 0 !important;
 }
 
 /* Constrain report overlay view to fit window height with its own scrollbar */
