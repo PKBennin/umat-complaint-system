@@ -4122,22 +4122,13 @@ body.view-track-active #track-view {
   }
   
   body.student-logged-in .dashboard-profile-widget .profile-role,
-  body.student-logged-in .dashboard-profile-widget .profile-chevron {
-    display: none !important;
-  }
-  
+  body.student-logged-in .dashboard-profile-widget .profile-chevron,
   body.student-logged-in .dashboard-profile-widget .profile-info {
-    margin-right: 0 !important;
-  }
-  
-  body.student-logged-in .dashboard-profile-widget .profile-name {
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    color: var(--text-color) !important;
+    display: none !important;
   }
 
   body.student-logged-in .notification-widget {
-    display: none !important;
+    display: flex !important;
   }
 }
 

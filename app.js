@@ -593,7 +593,7 @@ const app = {
   },
 
   // Simple SPA Routing Engine
-  showView(viewName) {
+  async showView(viewName) {
     if (this.state.loggedStudent && !this.state.loggedStudent.is_profile_complete) {
       this.showProfileCompletionModal();
       return;
@@ -602,7 +602,12 @@ const app = {
 
     const currentView = this.state.currentView || 'landing';
     if (currentView === 'file' && viewName !== 'file' && this.isFormDirty()) {
-      if (!confirm("You have unsaved changes in your complaint form. Are you sure you want to leave?")) {
+      const confirmed = await this.showConfirm(
+        "Unsaved Changes",
+        "You have unsaved changes in your complaint form. Are you sure you want to leave?",
+        true
+      );
+      if (!confirmed) {
         // Restore hash to file view
         if (window.location.hash !== '#file') {
           window.location.hash = '#file';
@@ -694,12 +699,17 @@ const app = {
     }
   },
 
-  handleRouting() {
+  async handleRouting() {
     const hash = window.location.hash.substring(1) || 'landing';
     const currentView = this.state.currentView || 'landing';
 
     if (currentView === 'file' && hash !== 'file' && this.isFormDirty()) {
-      if (!confirm("You have unsaved changes in your complaint form. Are you sure you want to leave?")) {
+      const confirmed = await this.showConfirm(
+        "Unsaved Changes",
+        "You have unsaved changes in your complaint form. Are you sure you want to leave?",
+        true
+      );
+      if (!confirmed) {
         window.location.hash = '#file';
         return;
       }
@@ -2995,12 +3005,69 @@ const app = {
     }, 6000);
   },
 
+  showConfirm(title, message, isDangerous = false) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-modal-title');
+      const messageEl = document.getElementById('confirm-modal-message');
+      const btnAction = document.getElementById('confirm-modal-btn-action');
+      
+      if (!modal || !titleEl || !messageEl || !btnAction) {
+        resolve(confirm(message));
+        return;
+      }
+      
+      titleEl.innerHTML = `
+        <i data-lucide="${isDangerous ? 'alert-triangle' : 'help-circle'}" style="color: ${isDangerous ? '#e63946' : 'var(--primary)'}; width: 24px; height: 24px; vertical-align: middle;"></i>
+        ${title}
+      `;
+      messageEl.textContent = message;
+      
+      if (isDangerous) {
+        btnAction.style.backgroundColor = '#e63946';
+        btnAction.style.borderColor = '#e63946';
+        btnAction.textContent = 'Yes, Proceed';
+      } else {
+        btnAction.style.backgroundColor = 'var(--primary)';
+        btnAction.style.borderColor = 'var(--primary)';
+        btnAction.textContent = 'Confirm';
+      }
+      
+      modal.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons();
+      
+      const cleanup = () => {
+        modal.style.display = 'none';
+        btnAction.onclick = null;
+      };
+      
+      btnAction.onclick = () => {
+        cleanup();
+        resolve(true);
+      };
+      
+      this._confirmResolve = (val) => {
+        cleanup();
+        resolve(val);
+      };
+    });
+  },
+
+  handleConfirmModalCancel() {
+    if (typeof this._confirmResolve === 'function') {
+      this._confirmResolve(false);
+      this._confirmResolve = null;
+    }
+  },
+
   async handleUnsendComplaint() {
     const ticketId = this.state.activeTrackingComplaintId;
     if (!ticketId) return;
 
-    const isConfirmed = confirm(
-      "Are you sure you want to unsend and delete this complaint? This action is permanent and cannot be undone."
+    const isConfirmed = await this.showConfirm(
+      "Unsend Complaint",
+      "Are you sure you want to unsend and delete this complaint? This action is permanent and cannot be undone.",
+      true
     );
     if (!isConfirmed) return;
 
