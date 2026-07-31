@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Workstation | Campus Complaint System</title>
-  <link rel="stylesheet" href="style.css?v=6.3">
+  <link rel="stylesheet" href="style.css?v=6.4">
   <!-- Load Chart.js CDN for beautiful interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load Lucide Icons CDN for sleek UI icons -->
@@ -1534,6 +1534,120 @@
         <button type="button" class="btn btn-secondary" onclick="adminApp.handleConfirmModalCancel()" style="font-weight: 600;">Cancel</button>
         <button type="button" id="confirm-modal-btn-action" class="btn btn-primary" style="background-color: #e63946; border-color: #e63946; font-weight: 600; color: white;">Yes, Proceed</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Hidden Print-Only Official Complaint Record Template -->
+  <div id="ticket-print-template" class="print-only-container">
+    <div class="print-header">
+      <div class="print-header-left">
+        <div class="print-logo-emblem">
+          <img src="logo.jpg" alt="UMaT Logo">
+        </div>
+        <div class="print-brand-info">
+          <div class="print-title">Campus Complaint System</div>
+          <div class="print-subtitle">Office of Student Affairs — Official Complaint Record</div>
+        </div>
+      </div>
+      <div class="print-header-right">
+        <div class="print-doc-name">Student Complaint Form</div>
+        <div class="print-ticket-id" id="print-ticket-id">Ticket CMP-1042</div>
+      </div>
+    </div>
+    
+    <div class="print-meta-grid">
+      <div class="print-meta-item">
+        <div class="print-meta-label">DATE FILED</div>
+        <div class="print-meta-val" id="print-date-filed">—</div>
+      </div>
+      <div class="print-meta-item">
+        <div class="print-meta-label">DEPARTMENT</div>
+        <div class="print-meta-val" id="print-department">—</div>
+      </div>
+      <div class="print-meta-item">
+        <div class="print-meta-label">PRIORITY</div>
+        <div class="print-meta-val" id="print-priority">—</div>
+      </div>
+      <div class="print-meta-item" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+        <div class="print-meta-label" style="text-align: right; margin-bottom: 2px;">STATUS</div>
+        <div class="print-status-badge" id="print-status">Open</div>
+      </div>
+    </div>
+
+    <h3 class="print-sec-header">STUDENT INFORMATION</h3>
+    <table class="print-table">
+      <tr>
+        <td class="print-lbl">Full name</td>
+        <td class="print-val" id="print-student-name">—</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Reference number</td>
+        <td class="print-val" id="print-ref-number">—</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Phone number</td>
+        <td class="print-val" id="print-phone-number">—</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Level</td>
+        <td class="print-val" id="print-level">—</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Faculty</td>
+        <td class="print-val" id="print-faculty">—</td>
+      </tr>
+      <tr>
+        <td class="print-lbl">Department</td>
+        <td class="print-val" id="print-dept">—</td>
+      </tr>
+    </table>
+
+    <h3 class="print-sec-header">COMPLAINT DETAILS</h3>
+    <h4 class="print-subject" id="print-subject">—</h4>
+    <div class="print-desc-box" id="print-description">
+      —
+    </div>
+    <div class="print-tags" id="print-tags">
+      <!-- Tag spans injected dynamically -->
+    </div>
+
+    <h3 class="print-sec-header">PROCESSING LOG & ADMINISTRATIVE ACTIONS</h3>
+    <table class="print-log-table">
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>ACTION</th>
+          <th>BY</th>
+        </tr>
+      </thead>
+      <tbody id="print-log-rows">
+        <!-- Log rows injected dynamically -->
+      </tbody>
+    </table>
+
+    <!-- PROFESSIONAL WARNINGS & LEGAL NOTICE -->
+    <div class="print-warning-box" style="margin-top: 1.25rem; margin-bottom: 1.25rem; border: 1.5px solid #d97706; background: #fffbe0 !important; padding: 0.85rem 1rem; border-radius: 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+      <div style="font-size: 0.75rem; font-weight: 800; color: #b45309; letter-spacing: 0.5px; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem; text-transform: uppercase;">
+        ⚠️ OFFICIAL INSTITUTIONAL NOTICE & CONFIDENTIALITY WARNING
+      </div>
+      <p style="font-size: 0.72rem; color: #451a03; line-height: 1.4; margin: 0 0 0.35rem 0;">
+        <strong>1. Official Confidentiality:</strong> This official complaint document contains sensitive student grievance records processed under University of Mines and Technology (UMaT) administrative protocols. Unauthorized disclosure, copying, or dissemination of this record is strictly prohibited.
+      </p>
+      <p style="font-size: 0.72rem; color: #451a03; line-height: 1.4; margin: 0;">
+        <strong>2. Integrity Declaration:</strong> Falsification of grievance details, alteration of administrative stamps/signatures, or submission of fraudulent claims is a severe violation of the UMaT Student Code of Conduct and Staff Regulations, subject to immediate disciplinary sanctions.
+      </p>
+    </div>
+
+    <div class="print-signature-area">
+      <div class="print-sig-labels">
+        <span>Student signature & date</span>
+        <span>Received / Processed by (staff signature & date)</span>
+      </div>
+    </div>
+
+    <div class="print-footer">
+      <span>Generated by UMaT Campus Complaint Management System — Official Administrative Copy</span>
+      <span style="float: right;">Page 1</span>
     </div>
   </div>
 

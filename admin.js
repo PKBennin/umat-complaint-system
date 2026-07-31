@@ -2497,6 +2497,104 @@ const adminApp = {
     }
   },
 
+  printComplaintTicket(complaintId) {
+    const id = complaintId || this.state.activeComplaintId || (this.stateHOD ? this.stateHOD.activeComplaintId : null);
+    if (!id) {
+      this.showToast('Please select a ticket to print.', 'warning');
+      return;
+    }
+
+    const allComplaints = [...(this.state.complaints || []), ...(this.stateHOD?.complaints || []), ...(this.stateDean?.complaints || [])];
+    const complaint = allComplaints.find(c => c.id === id);
+
+    if (!complaint) {
+      this.showToast('Complaint details not found for printing.', 'error');
+      return;
+    }
+
+    const formatPrintDate = (isoString) => {
+      if (!isoString) return '—';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
+    const formatPrintDateTime = (isoString) => {
+      if (!isoString) return '—';
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return isoString;
+      return `${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    };
+
+    // Populate print template elements
+    const elId = document.getElementById('print-ticket-id');
+    const elDate = document.getElementById('print-date-filed');
+    const elDept = document.getElementById('print-department');
+    const elPrio = document.getElementById('print-priority');
+    const elStatus = document.getElementById('print-status');
+    const elName = document.getElementById('print-student-name');
+    const elRef = document.getElementById('print-ref-number');
+    const elPhone = document.getElementById('print-phone-number');
+    const elLevel = document.getElementById('print-level');
+    const elFaculty = document.getElementById('print-faculty');
+    const elStudentDept = document.getElementById('print-dept');
+    const elSubject = document.getElementById('print-subject');
+    const elDesc = document.getElementById('print-description');
+    const elTags = document.getElementById('print-tags');
+    const elLogs = document.getElementById('print-log-rows');
+
+    if (elId) elId.textContent = `Ticket ${complaint.id}`;
+    if (elDate) elDate.textContent = formatPrintDate(complaint.createdAt);
+    if (elDept) elDept.textContent = complaint.routingDept || 'General';
+    if (elPrio) elPrio.textContent = complaint.urgency || 'Normal';
+
+    if (elStatus) {
+      elStatus.textContent = complaint.status;
+      elStatus.className = `print-status-badge print-status-${(complaint.status || '').replace(/\s+/g, '-').toLowerCase()}`;
+    }
+
+    const isAnon = (complaint.studentIndex === '9099999999' || complaint.studentName === 'Anonymous Student');
+    if (elName) elName.textContent = complaint.studentName || '—';
+    if (elRef) elRef.textContent = isAnon ? 'N/A' : (complaint.studentRef || '—');
+    if (elPhone) elPhone.textContent = complaint.studentPhone || '—';
+    if (elLevel) elLevel.textContent = isAnon ? 'N/A' : (complaint.studentLevel || '—');
+    if (elFaculty) elFaculty.textContent = complaint.studentFaculty || '—';
+    if (elStudentDept) elStudentDept.textContent = complaint.studentDept || '—';
+
+    if (elSubject) elSubject.textContent = complaint.subject || 'No Subject';
+    if (elDesc) elDesc.textContent = complaint.description || 'No Description';
+
+    if (elTags) {
+      elTags.innerHTML = '';
+      if (complaint.category) {
+        const catSpan = document.createElement('span');
+        catSpan.className = 'print-tag';
+        catSpan.textContent = complaint.category;
+        elTags.appendChild(catSpan);
+      }
+    }
+
+    if (elLogs) {
+      elLogs.innerHTML = '';
+      const sortedTimeline = [...(complaint.timeline || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (sortedTimeline.length === 0) {
+        elLogs.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #718096; font-style: italic;">No actions logged yet.</td></tr>';
+      } else {
+        sortedTimeline.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${formatPrintDateTime(log.date)}</td><td>${log.message}</td><td>${log.by}</td>`;
+          elLogs.appendChild(tr);
+        });
+      }
+    }
+
+    document.body.classList.add('ticket-print-active');
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('ticket-print-active');
+    }, 1000);
+  },
+
   async handleAddDepartmentSubmit(e) {
     if (e) e.preventDefault();
     const parentSelect = document.getElementById('sys-dept-parent-faculty');

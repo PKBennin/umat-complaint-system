@@ -1682,50 +1682,39 @@ textarea {
 /* Print Styles */
 @media print {
   /* Hide interactive/nav components */
-  header, nav, footer, button, .btn, .btn-floating-quick, #toast-container, .admin-sidebar, .admin-workspace-placeholder, #ws-admin-tools, .report-actions, .student-search-wrapper {
+  header, nav, footer, button, .btn, .btn-floating-quick, #toast-container, .admin-sidebar, .admin-workspace-placeholder, #ws-admin-tools, .report-actions, .student-search-wrapper, .modal, .modal-backdrop {
     display: none !important;
   }
-  
-  /* For normal ticket printing, hide everything except the print-only container */
-  body:not(.admin-portal-body):not(.print-history-active) > *:not(#ticket-print-template) {
+
+  /* Official Ticket Print Active Mode */
+  body.ticket-print-active > *:not(#ticket-print-template) {
     display: none !important;
   }
-  
+
+  body.ticket-print-active #ticket-print-template {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 1.5rem !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
   body {
     background: #fff !important;
     color: #000 !important;
   }
-  
-  /* Student portal printing of selected complaint */
-  body:not(.admin-portal-body) main {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  body:not(.admin-portal-body) .tracking-layout {
-    display: block !important;
-  }
-  
-  body:not(.admin-portal-body) .admin-layout {
-    display: block !important;
-    border: none !important;
-    box-shadow: none !important;
-    height: auto !important;
-  }
-  
-  body:not(.admin-portal-body) #student-workspace-content {
-    display: block !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    height: auto !important;
-  }
-  
+
   /* Admin portal printing of report */
-  body.admin-portal-body main > :not(.semester-report-view.active) {
+  body.admin-portal-body:not(.ticket-print-active) main > :not(.semester-report-view.active) {
     display: none !important;
   }
-  
-  body.admin-portal-body .semester-report-view.active {
+
+  body.admin-portal-body:not(.ticket-print-active) .semester-report-view.active {
     display: block !important;
     box-shadow: none !important;
     padding: 0 !important;

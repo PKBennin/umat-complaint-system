@@ -2527,8 +2527,11 @@ const app = {
       });
     }
 
-    // Open browser native print utility
+    document.body.classList.add('ticket-print-active');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('ticket-print-active');
+    }, 1000);
   },
 
   // Calculate delay metrics and toggle reminder alerts
