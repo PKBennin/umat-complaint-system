@@ -9,7 +9,7 @@ const pool = require('./db');
 
   const staffToRestore = [
     { staffId: 'PS002', name: 'Faculty Dean', email: 'emensah@umat.edu.gh', type: 'Dean', facultyKey: 'FCaMS', departmentLabel: "Dean's Office (FCaMS)", portfolio: 'Dean of FCaMS' },
-    { staffId: 'PS333', name: 'Head of Department', email: 'jquaye@umat.edu.gh', type: 'HOD', facultyKey: 'FCaMS', departmentLabel: 'Computer Science & Engineering', portfolio: 'Head of Department (FCaMS)' },
+    { staffId: 'PS333', name: 'Head of Department', email: 'jquaye@umat.edu.gh', type: 'HOD', facultyKey: 'FCaMS', departmentLabel: 'Computer Science & Engineering', portfolio: 'Head of Department' },
     { staffId: 'CS444', name: 'Faculty Finance Officer', email: 'jadu@umat.edu.gh', type: 'Finance', facultyKey: 'FCaMS', departmentLabel: 'Finance Office (FCaMS)', portfolio: 'Finance Officer' },
   ];
 
