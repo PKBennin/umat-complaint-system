@@ -1855,16 +1855,30 @@ const adminApp = {
   },
 
   handleNewStaffTypeChange(type) {
+    const nameContainer = document.getElementById('new-staff-name-container');
+    const nameInput = document.getElementById('new-staff-name');
+    const facultyGroup = document.getElementById('new-staff-faculty-group');
     const deptGroup = document.getElementById('new-staff-dept-group');
 
-    if (type === 'Dean' || type === 'Vice Dean' || type === 'Faculty Officer' || type === 'HOD' || type === 'Department Officer') {
-      if (deptGroup) deptGroup.style.display = 'block';
-      const input = document.getElementById('new-staff-dept-label');
-      if (input) input.required = true;
-    } else {
+    if (type === 'Counsellor') {
+      if (nameContainer) nameContainer.style.display = 'none';
+      if (nameInput) { nameInput.required = false; nameInput.value = 'Guidance & Counselling Unit'; }
+      if (facultyGroup) facultyGroup.style.display = 'none';
       if (deptGroup) deptGroup.style.display = 'none';
-      const input = document.getElementById('new-staff-dept-label');
-      if (input) { input.required = false; input.value = ''; }
+    } else {
+      if (nameContainer) nameContainer.style.display = 'grid';
+      if (nameInput) { nameInput.required = true; }
+      if (facultyGroup) facultyGroup.style.display = 'block';
+
+      if (type === 'Dean' || type === 'Vice Dean' || type === 'Faculty Officer' || type === 'HOD' || type === 'Department Officer') {
+        if (deptGroup) deptGroup.style.display = 'block';
+        const input = document.getElementById('new-staff-dept-label');
+        if (input) input.required = true;
+      } else {
+        if (deptGroup) deptGroup.style.display = 'none';
+        const input = document.getElementById('new-staff-dept-label');
+        if (input) { input.required = false; input.value = ''; }
+      }
     }
   },
 
@@ -2084,18 +2098,19 @@ const adminApp = {
     }
     const title = document.getElementById('new-staff-title').value;
     const typedName = document.getElementById('new-staff-name').value.trim();
-    const name = title + " " + typedName;
+    const type = document.getElementById('new-staff-type').value;
+
+    let name = type === 'Counsellor' ? 'Guidance & Counselling Unit' : (title + " " + typedName);
     const email = null;
     const password = document.getElementById('new-staff-password').value;
-    const type = document.getElementById('new-staff-type').value;
-    const faculty_key = document.getElementById('new-staff-faculty').value || null;
-    const department_label = document.getElementById('new-staff-dept-label').value.trim() || null;
+    const faculty_key = (type === 'Counsellor' || type === 'SuperAdmin' || type === 'IT') ? null : (document.getElementById('new-staff-faculty').value || null);
+    const department_label = type === 'Counsellor' ? 'Guidance & Counselling Unit' : (document.getElementById('new-staff-dept-label').value.trim() || null);
     
-    let portfolio = type;
-    if (faculty_key) {
+    let portfolio = type === 'Counsellor' ? 'Guidance & Counselling Unit' : (type === 'Finance' ? 'Faculty Accountant' : type);
+    if (faculty_key && type !== 'Counsellor') {
       portfolio += ` (${faculty_key})`;
     }
-    if (department_label) {
+    if (department_label && type !== 'Counsellor') {
       portfolio += ` - ${department_label}`;
     }
 

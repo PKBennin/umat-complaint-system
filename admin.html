@@ -1402,7 +1402,7 @@
           <input type="text" id="new-staff-id" placeholder="e.g. PS204, CS301" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 1rem; margin-bottom: 1rem;">
+        <div id="new-staff-name-container" style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 1rem; margin-bottom: 1rem;">
           <div class="input-group">
             <label for="new-staff-title" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Title</label>
             <select id="new-staff-title" required style="width: 100%; box-sizing: border-box; background: var(--bg-input); border: 1px solid var(--border-color); color: inherit; padding: 0.6rem 0.75rem; border-radius: 6px;">
@@ -1419,7 +1419,6 @@
             <input type="text" id="new-staff-name" placeholder="e.g. Ebenezer Mensah" required style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;">
           </div>
         </div>
-
 
         <div class="input-group" style="margin-bottom: 1rem;">
           <label for="new-staff-password" style="font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; display: block; margin-bottom: 0.25rem;">Password (min 4 chars)</label>
@@ -1438,7 +1437,8 @@
             <option value="Dean">Dean</option>
             <option value="Vice Dean">Vice Dean</option>
             <option value="Faculty Officer">Faculty Officer</option>
-            <option value="Finance">Finance Officer</option>
+            <option value="Finance">Faculty Accountant</option>
+            <option value="Counsellor">Guidance & Counselling Unit</option>
             <option value="IT">IT Support</option>
             <option value="HOD">Head of Department (HOD)</option>
             <option value="Department Officer">Department Officer</option>
