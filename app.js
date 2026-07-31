@@ -374,7 +374,7 @@ const app = {
   },
 
   // Check if student session is persistent
-  checkStudentSession() {
+  async checkStudentSession() {
     const session = localStorage.getItem('current_student_session');
     const navTabTrack = document.getElementById('nav-tab-track');
     // A restored session is only valid if we still hold a JWT.
@@ -384,6 +384,22 @@ const app = {
     if (session && window.API.getToken()) {
       try {
         this.state.loggedStudent = JSON.parse(session);
+
+        // Validate the token against the server before restoring UI state.
+        // A deleted/expired student account would otherwise trap the user
+        // behind the full-screen profile-completion modal with no escape.
+        if (!(await this.validateSessionToken())) {
+          window.API.clearToken();
+          localStorage.removeItem('current_student_session');
+          this.state.loggedStudent = null;
+          if (navTabTrack) {
+            navTabTrack.innerHTML = '<i data-lucide="log-in"></i> Sign In';
+          }
+          this.closeProfileCompletionModal();
+          document.body.classList.remove('student-logged-in');
+          if (window.lucide) lucide.createIcons();
+          return;
+        }
         
         // Check if student profile is incomplete
         if (this.state.loggedStudent && !this.state.loggedStudent.is_profile_complete) {
@@ -421,6 +437,21 @@ const app = {
       document.body.classList.remove('student-logged-in');
     }
     if (window.lucide) lucide.createIcons();
+  },
+
+  // Confirms the stored JWT still corresponds to a live student account.
+  // Fails open on network errors (don't log people out mid-outage); only a
+  // definitive 401 (deleted/expired account) invalidates the session.
+  async validateSessionToken() {
+    const index = this.state.loggedStudent && this.state.loggedStudent.index;
+    if (!index) return false;
+    try {
+      await window.API.get(`/complaints/student/${encodeURIComponent(index)}`);
+      return true;
+    } catch (err) {
+      if (err && err.status === 401) return false;
+      return true;
+    }
   },
 
   // Populators
