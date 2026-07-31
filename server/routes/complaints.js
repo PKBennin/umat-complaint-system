@@ -750,7 +750,8 @@ router.get('/faculty/:facultyKey/officers', verifyJWT, requireStaff, async (req,
     const [rows] = await pool.query(
       `SELECT staff_id AS staffId, name, type, portfolio, department_label AS departmentLabel, email
          FROM staff
-        WHERE faculty_key = ? OR type = 'SuperAdmin' OR type = 'IT'
+        WHERE (faculty_key = ? OR faculty_key IS NULL OR type IN ('Counsellor', 'SuperAdmin', 'Finance', 'Faculty Officer', 'Department Officer'))
+          AND type NOT IN ('Dean', 'Vice Dean', 'IT')
         ORDER BY name ASC`,
       [facultyKey]
     );
