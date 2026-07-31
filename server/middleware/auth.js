@@ -59,11 +59,15 @@ function requireStaff(req, res, next) {
 function staffScopeClause(user) {
   switch (user.type) {
     case 'HOD':
-    case 'Department Officer':
-      // HOD sees all complaints routed to them as hod_staff_id.
-      // Also sees any complaint directly assigned to them.
+      // HOD sees all complaints in their faculty (excluding ICT and Harassment),
+      // OR complaints explicitly routed to their hod_staff_id or assigned_staff_id.
       return {
-        clause: '(c.hod_staff_id = ? OR c.assigned_staff_id = ?)',
+        clause: "(c.faculty_key = ? AND c.category_id NOT IN ('harassment', 'ict')) OR c.hod_staff_id = ? OR c.assigned_staff_id = ?",
+        params: [user.facultyKey || 'FCMS', user.staffId, user.staffId],
+      };
+    case 'Department Officer':
+      return {
+        clause: 'c.assigned_staff_id = ? OR c.hod_staff_id = ?',
         params: [user.staffId, user.staffId],
       };
     case 'Dean':
@@ -72,7 +76,7 @@ function staffScopeClause(user) {
       // This includes harassment (where they are assigned) + all HOD-routed ones.
       return {
         clause: 'c.faculty_key = ?',
-        params: [user.facultyKey],
+        params: [user.facultyKey || 'FCMS'],
       };
     case 'Finance':
     case 'Faculty Officer':
@@ -96,6 +100,7 @@ function staffCanAccessComplaint(user, complaintRow) {
   const c = complaintRow;
   switch (user.type) {
     case 'HOD':
+      return c.faculty_key === user.facultyKey || c.hod_staff_id === user.staffId || c.assigned_staff_id === user.staffId;
     case 'Department Officer':
       return c.hod_staff_id === user.staffId || c.assigned_staff_id === user.staffId;
     case 'Dean':

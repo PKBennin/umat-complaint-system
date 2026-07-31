@@ -13,27 +13,25 @@ async function computeRouting(conn, categoryKey, programmeName) {
     'SELECT id, name, route_type FROM categories WHERE id = ? OR name = ? LIMIT 1',
     [categoryKey, categoryKey],
   );
-  const [[programme]] = await conn.query(
+
+  let [[programme]] = await conn.query(
     'SELECT id, name, department_id, faculty_key FROM programmes WHERE name = ? LIMIT 1',
     [programmeName],
   );
 
-  if (!category || !programme) {
-    return {
-      ok: false,
-      categoryId: category ? category.id : null,
-      programmeId: programme ? programme.id : null,
-      assignedStaffId: null,
-      hodStaffId: null,
-      assignedName: 'General Administration Registry',
-      routingDept: 'general_registry',
-      facultyKey: null,
-      facultyName: 'Central',
-      role: 'University Registry',
-    };
+  if (!programme && programmeName) {
+    const altName = programmeName.replace(/\b&\b/g, 'and');
+    const cleanName = programmeName.replace(/^BSc\s+/i, '').trim();
+    const [[matched]] = await conn.query(
+      `SELECT id, name, department_id, faculty_key FROM programmes 
+       WHERE name = ? OR name = ? OR LOWER(name) LIKE CONCAT('%', LOWER(?), '%') LIMIT 1`,
+      [altName, cleanName, cleanName],
+    );
+    if (matched) programme = matched;
   }
 
-  const facultyKey = programme.faculty_key;
+  const facultyKey = programme ? programme.faculty_key : 'FCMS';
+
   const [[faculty]] = await conn.query(
     'SELECT name FROM faculties WHERE faculty_key = ?', [facultyKey],
   );
@@ -41,8 +39,8 @@ async function computeRouting(conn, categoryKey, programmeName) {
 
   const base = {
     ok: true,
-    categoryId: category.id,
-    programmeId: programme.id,
+    categoryId: category ? category.id : 'academic',
+    programmeId: programme ? programme.id : null,
   };
 
   // ── ICT complaints → direct to IT Directorate (unchanged) ──────────────
