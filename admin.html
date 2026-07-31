@@ -576,6 +576,7 @@
               <!-- HOD Category Filter Tabs -->
               <div class="admin-tabs-list" style="grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); margin-top: 0.5rem;" id="hod-category-tabs">
                 <button class="admin-sidebar-tab active" onclick="adminApp.setHODCategoryFilter('all')" id="hod-tab-all">All</button>
+                <button class="admin-sidebar-tab" onclick="adminApp.setHODCategoryFilter('assigned')" id="hod-tab-assigned">Assigned</button>
                 <button class="admin-sidebar-tab" onclick="adminApp.setHODCategoryFilter('academic')" id="hod-tab-academic">Academic</button>
                 <button class="admin-sidebar-tab" onclick="adminApp.setHODCategoryFilter('finance')" id="hod-tab-finance">Fees</button>
                 <button class="admin-sidebar-tab" onclick="adminApp.setHODCategoryFilter('other')" id="hod-tab-other">Others</button>
@@ -736,6 +737,7 @@
               <div class="admin-sidebar-header">
                 <div class="admin-tabs-list" style="grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));">
                   <button class="admin-sidebar-tab active" onclick="adminApp.setDeanCategoryFilter('all')" id="dean-cat-all">All</button>
+                  <button class="admin-sidebar-tab" onclick="adminApp.setDeanCategoryFilter('assigned')" id="dean-cat-assigned">Assigned</button>
                   <button class="admin-sidebar-tab" onclick="adminApp.setDeanCategoryFilter('academic')" id="dean-cat-academic">Academic</button>
                   <button class="admin-sidebar-tab" onclick="adminApp.setDeanCategoryFilter('finance')" id="dean-cat-finance">Fees</button>
                   <button class="admin-sidebar-tab" onclick="adminApp.setDeanCategoryFilter('ict')" id="dean-cat-ict">ICT</button>
@@ -1691,6 +1693,6 @@
   <!-- Backend API client -->
   <script src="api.js?v=5.1"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="admin.js?v=5.4"></script>
+  <script src="admin.js?v=5.5"></script>
 </body>
 </html>

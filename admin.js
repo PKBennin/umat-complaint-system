@@ -2706,21 +2706,29 @@ const adminApp = {
     if (singleSelect) singleSelect.innerHTML = optionsHtml;
   },
 
-  renderHODComplaintList() {
-    const inbox = document.getElementById('hod-inbox-list');
-    if (!inbox) return;
-
+  // Build the HOD base list exactly as renderHODComplaintList shows it:
+  // category filter (skipped on the Assigned tab), delegated complaints moved
+  // out of the queue tabs, Harassment/ICT excluded, search applied.
+  buildHODBaseList() {
     let list = [...this.state.complaints];
 
-    // Category filter
     const cat = this.stateHOD.categoryFilter;
-    if (cat === 'academic') {
-      list = list.filter(c => c.category === 'Academic & Exams');
-    } else if (cat === 'finance') {
-      list = list.filter(c => c.category === 'Fees & Finance');
-    } else if (cat === 'other') {
-      list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance');
+    if (cat === 'assigned') {
+      list = list.filter(c => c.assignedStaffId && c.assignedStaffId !== c.hodStaffId);
+    } else {
+      if (cat === 'academic') {
+        list = list.filter(c => c.category === 'Academic & Exams');
+      } else if (cat === 'finance') {
+        list = list.filter(c => c.category === 'Fees & Finance');
+      } else if (cat === 'other') {
+        list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance');
+      }
+      // Delegated complaints live in the Assigned tab only
+      list = list.filter(c => !(c.assignedStaffId && c.assignedStaffId !== c.hodStaffId));
     }
+
+    // Exclude Harassment from HOD list (routed to Dean only) and ICT (routed to IT)
+    list = list.filter(c => c.category !== 'Harassment' && c.category !== 'ICT & Portal Services');
 
     // Search filter
     const searchVal = (document.getElementById('hod-search-input')?.value || '').trim().toLowerCase();
@@ -2728,9 +2736,14 @@ const adminApp = {
       list = list.filter(c => c.id.toLowerCase().includes(searchVal) || c.subject.toLowerCase().includes(searchVal) || c.studentName.toLowerCase().includes(searchVal));
     }
 
-    // Exclude Harassment from HOD list (routed to Dean only) and ICT (routed to IT)
-    list = list.filter(c => c.category !== 'Harassment' && c.category !== 'ICT & Portal Services');
+    return list;
+  },
 
+  renderHODComplaintList() {
+    const inbox = document.getElementById('hod-inbox-list');
+    if (!inbox) return;
+
+    const list = this.buildHODBaseList();
     list.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
 
     inbox.innerHTML = '';
@@ -2739,7 +2752,7 @@ const adminApp = {
       inbox.innerHTML = `
         <div class="no-complaints-fallback animate-fade-in">
           <i data-lucide="inbox"></i>
-          <p>No complaints pending delegation.</p>
+          <p>${this.stateHOD.categoryFilter === 'assigned' ? 'No delegated complaints.' : 'No complaints pending delegation.'}</p>
         </div>
       `;
     } else {
@@ -2810,14 +2823,7 @@ const adminApp = {
 
   selectAllHODComplaints(checked) {
     // Build the same filtered list renderHODComplaintList() uses
-    let list = [...this.state.complaints];
-    const cat = this.stateHOD.categoryFilter;
-    if (cat === 'academic') list = list.filter(c => c.category === 'Academic & Exams');
-    else if (cat === 'finance') list = list.filter(c => c.category === 'Fees & Finance');
-    else if (cat === 'other') list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance');
-    const searchVal = (document.getElementById('hod-search-input')?.value || '').trim().toLowerCase();
-    if (searchVal) list = list.filter(c => c.id.toLowerCase().includes(searchVal) || c.subject.toLowerCase().includes(searchVal) || c.studentName.toLowerCase().includes(searchVal));
-    list = list.filter(c => c.category !== 'Harassment' && c.category !== 'ICT & Portal Services');
+    const list = this.buildHODBaseList();
 
     if (checked) {
       // Add all visible IDs not already in selectedIds
@@ -3004,12 +3010,18 @@ const adminApp = {
 
     let list = [...this.state.complaints];
 
-    // Filter by category
+    // Filter by category (Assigned tab shows delegated complaints; queue tabs
+    // exclude them so they move into the Assigned tab only)
     const cat = this.stateDean.categoryFilter;
-    if (cat === 'academic') list = list.filter(c => c.category === 'Academic & Exams');
-    else if (cat === 'finance') list = list.filter(c => c.category === 'Fees & Finance');
-    else if (cat === 'ict') list = list.filter(c => c.category === 'ICT & Portal Services');
-    else if (cat === 'other') list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance' && c.category !== 'ICT & Portal Services');
+    if (cat === 'assigned') {
+      list = list.filter(c => c.assignedStaffId && c.assignedStaffId !== c.hodStaffId);
+    } else {
+      if (cat === 'academic') list = list.filter(c => c.category === 'Academic & Exams');
+      else if (cat === 'finance') list = list.filter(c => c.category === 'Fees & Finance');
+      else if (cat === 'ict') list = list.filter(c => c.category === 'ICT & Portal Services');
+      else if (cat === 'other') list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance' && c.category !== 'ICT & Portal Services');
+      list = list.filter(c => !(c.assignedStaffId && c.assignedStaffId !== c.hodStaffId));
+    }
 
     // Search filter
     const searchVal = (document.getElementById('dean-search-input')?.value || '').trim().toLowerCase();
