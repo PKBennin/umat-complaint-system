@@ -196,7 +196,11 @@ const adminApp = {
     if (!staff) return;
 
     const nameEl = document.getElementById('logged-staff-name');
-    if (nameEl) nameEl.textContent = `${staff.name} (${staff.portfolio})`;
+    if (nameEl) {
+      nameEl.textContent = (staff.name === staff.portfolio || !staff.portfolio) 
+        ? staff.name 
+        : `${staff.name} (${staff.portfolio})`;
+    }
     const badgeEl = document.getElementById('staff-session-badge');
     if (badgeEl) badgeEl.style.display = 'flex';
     const jurEl = document.getElementById('active-jurisdiction-name');
@@ -2565,10 +2569,10 @@ const adminApp = {
 
     const optionsHtml = [
       '<option value="" disabled selected>Select Assignee Officer...</option>',
-      ...(staff ? [`<option value="${staff.staffId}">Me (${staff.name} — ${staff.portfolio || 'HOD'})</option>`] : []),
+      ...(staff ? [`<option value="${staff.staffId}">Me (${staff.name})</option>`] : []),
       ...this.stateHOD.officers
         .filter(o => o.staffId !== (staff ? staff.staffId : ''))
-        .map(o => `<option value="${o.staffId}">${o.name} (${o.portfolio || o.type})</option>`)
+        .map(o => `<option value="${o.staffId}">${o.name === o.portfolio || !o.portfolio ? o.name : `${o.name} (${o.portfolio})`}</option>`)
     ].join('');
 
     if (bulkSelect) bulkSelect.innerHTML = optionsHtml;
