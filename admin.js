@@ -22,7 +22,8 @@ const adminApp = {
     currentInboxFilter: 'all', // 'all', 'pending', 'active', 'resolved'
     currentWorkspaceTab: 'overview', // 'overview', 'comments', 'notes'
     loginMode: 'staff', // 'staff' | 'admin'
-    charts: {} // ChartJS references
+    charts: {}, // ChartJS references
+    meta: null // DB-backed reference data (faculties/departments/programmes/categories)
   },
 
   showConfirm(title, message, isDangerous = false) {
@@ -127,12 +128,63 @@ const adminApp = {
     }
   },
 
+  // Load DB-backed reference data (faculties/departments/programmes/categories)
+  // once for analytics scoping; falls back to seedData.js globals if the fetch fails.
+  async loadMeta() {
+    if (this.state.meta) return;
+    try {
+      const meta = await window.API.get('/meta');
+      if (meta && Array.isArray(meta.departments) && Array.isArray(meta.programmes)) {
+        this.state.meta = meta;
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to load reference data, falling back to seedData:', err);
+    }
+    this.state.meta = null;
+  },
+
+  // Analytics reference data: DB-backed when available, seedData globals otherwise.
+  metaSource() {
+    const m = this.state.meta;
+    if (m) return m;
+    return {
+      faculties: window.FACULTIES,
+      departments: window.DEPARTMENTS,
+      programmes: window.PROGRAMMES,
+      categories: window.CATEGORIES,
+    };
+  },
+
+  // Normalize department labels for safe matching:
+  // "Department of Computer Science & Engineering" -> "computer science and engineering"
+  normDept(s) {
+    return String(s || '')
+      .replace(/^Department of\s+/i, '')
+      .replace(/\s*&\s*/g, ' and ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  },
+
+  // Faculty display name from DB meta (array) or seedData (object lookup).
+  facultyName(key) {
+    const m = this.state.meta;
+    if (m && Array.isArray(m.faculties)) {
+      const f = m.faculties.find(x => x.faculty_key === key);
+      if (f) return f.name;
+    }
+    const seed = window.FACULTIES || {};
+    return seed[key] || key;
+  },
+
   // Refresh from the API, then re-render the workstation + analytics.
   async loadAndRender() {
     if (this.state.loggedStaff && this.state.loggedStaff.type === 'SuperAdmin') {
       await this.loadStaffRoster();
       return;
     }
+    await this.loadMeta();
     await this.refreshComplaints();
     this.renderWorkstationSidebar();
     this.renderAdminWorkspace();
@@ -1129,6 +1181,17 @@ const adminApp = {
 
     const scope = this.state.analyticsScope || 'university';
 
+    // Resolve the HOD's department label to its canonical DB department name so
+    // labels like "Computer Science & Engineering" match "Department of Computer
+    // Science and Engineering" (same department, different spellings).
+    const meta = this.metaSource();
+    let canonicalDeptName = null;
+    if (staff.type === 'HOD') {
+      const target = this.normDept(staff.department);
+      const canonical = (meta.departments || []).find(d => this.normDept(d.name) === target);
+      canonicalDeptName = canonical ? canonical.name : staff.department;
+    }
+
     // 1. Render Scope Selector buttons in the UI
     const scopeContainer = document.getElementById('analytics-scope-selector-container');
     if (scopeContainer) {
@@ -1138,7 +1201,7 @@ const adminApp = {
         // HOD Scopes: Department, University
         const btnDept = document.createElement('button');
         btnDept.className = `analytics-scope-btn ${scope === 'department' ? 'active' : ''}`;
-        btnDept.textContent = `My Dept (${staff.department.replace('Department of ', '')})`;
+        btnDept.textContent = `My Dept (${canonicalDeptName.replace('Department of ', '')})`;
         btnDept.onclick = () => this.handleAnalyticsScopeChange('department');
 
         const btnUni = document.createElement('button');
@@ -1179,12 +1242,13 @@ const adminApp = {
     let scopeDesc = "Quantify resolution rates, monitor departmental backlog, and view trends.";
 
     if (scope === 'department') {
-      filtered = this.state.complaints.filter(c => c.studentDept === staff.department);
-      scopeTitle = `${staff.department} Analytics`;
-      scopeDesc = `Performance overview and caseload mapping for ${staff.department}.`;
+      const target = this.normDept(staff.department);
+      filtered = this.state.complaints.filter(c => this.normDept(c.studentDept) === target);
+      scopeTitle = `${canonicalDeptName} Analytics`;
+      scopeDesc = `Performance overview and caseload mapping for ${canonicalDeptName}.`;
     } else if (scope === 'faculty') {
       filtered = this.state.complaints.filter(c => c.studentFacultyKey === staff.facultyKey);
-      const facName = window.FACULTIES[staff.facultyKey] || staff.facultyKey;
+      const facName = this.facultyName(staff.facultyKey);
       scopeTitle = `${facName} Analytics`;
       scopeDesc = `Caseload distribution, departmental metrics and resolution metrics for ${facName}.`;
     }
@@ -1233,7 +1297,7 @@ const adminApp = {
 
     if (scope === 'department') {
       // HOD scope: Compare programmes under this department
-      const deptProgs = window.PROGRAMMES.filter(p => p.department === staff.department);
+      const deptProgs = (meta.programmes || []).filter(p => p.department === canonicalDeptName);
       
       statsData = deptProgs.map(prog => {
         const filed = filtered.filter(c => c.studentProgramme === prog.name).length;
@@ -1247,7 +1311,7 @@ const adminApp = {
     } else if (scope === 'faculty') {
       // Dean scope: Compare departments under this faculty
       const facDepts = Array.from(new Set(
-        window.PROGRAMMES
+        (meta.programmes || [])
           .filter(p => p.facultyKey === staff.facultyKey)
           .map(p => p.department)
       ));
@@ -1263,7 +1327,7 @@ const adminApp = {
       document.getElementById('chart-rank-desc').textContent = "Caseload performance comparison across faculty departments.";
     } else {
       // IT/University Scope: Compare all departments
-      statsData = window.DEPARTMENTS.map(dept => {
+      statsData = (meta.departments || []).map(dept => {
         const deptName = typeof dept === 'string' ? dept : dept.name;
         const filed = filtered.filter(c => c.studentDept === deptName).length;
         const solved = filtered.filter(c => c.studentDept === deptName && c.status === 'Resolved').length;
@@ -1355,7 +1419,7 @@ const adminApp = {
 
     // B. Chart 2: Scoped Category Breakdown (Doughnut)
     const ctxCat = document.getElementById('categoryDistributionChart').getContext('2d');
-    const catCounts = window.CATEGORIES.map(cat => {
+    const catCounts = (meta.categories || []).map(cat => {
       return {
         name: cat.name,
         count: filteredComplaints.filter(c => c.category === cat.name).length
@@ -1465,7 +1529,8 @@ const adminApp = {
     const tableBody = document.getElementById('rep-table-rows');
     tableBody.innerHTML = '';
     
-    const deptStats = window.DEPARTMENTS.map(dept => {
+    const reportMeta = this.metaSource();
+    const deptStats = (reportMeta.departments || []).map(dept => {
       const deptName = typeof dept === 'string' ? dept : dept.name;
       const filed = this.state.complaints.filter(c => c.studentDept === deptName).length;
       const solved = this.state.complaints.filter(c => c.studentDept === deptName && c.status === 'Resolved').length;
@@ -1491,7 +1556,7 @@ const adminApp = {
     const catTableBody = document.getElementById('rep-cat-table-rows');
     catTableBody.innerHTML = '';
     
-    window.CATEGORIES.forEach(cat => {
+    (reportMeta.categories || []).forEach(cat => {
       const count = this.state.complaints.filter(c => c.category === cat.name).length;
       const share = total > 0 ? Math.round((count / total) * 100) : 0;
       let routerOffice = "";
@@ -1518,7 +1583,7 @@ const adminApp = {
       recommendation = "No complaint records are logged in the ledger database during this audit window. The system reports complete operational stability.";
     } else {
       const topDept = deptStats[0];
-      const maxCatObj = window.CATEGORIES.map(cat => {
+      const maxCatObj = (reportMeta.categories || []).map(cat => {
         return { name: cat.name, count: this.state.complaints.filter(c => c.category === cat.name).length };
       }).sort((a, b) => b.count - a.count)[0];
 
