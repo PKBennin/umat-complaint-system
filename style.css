@@ -2992,7 +2992,7 @@ body.admin-portal-body #panel-analytics {
   padding-right: 0.5rem;
 }
 
-body.admin-portal-body #panel-dean {
+body.admin-portal-body #panel-dean.active {
   overflow-y: hidden !important;
   overflow-x: hidden !important;
   display: flex !important;
@@ -3005,9 +3005,15 @@ body.admin-portal-body #panel-dean > div > div:first-child {
   flex-shrink: 0;
 }
 
-/* Dean monitoring/harassment view should fill remaining height */
-body.admin-portal-body #dean-view-monitoring,
-body.admin-portal-body #dean-view-harassment {
+/* Hide inactive dean sub-views */
+body.admin-portal-body #dean-view-monitoring[style*="display: none"],
+body.admin-portal-body #dean-view-harassment[style*="display: none"] {
+  display: none !important;
+}
+
+/* Dean monitoring/harassment view should fill remaining height when visible */
+body.admin-portal-body #dean-view-monitoring:not([style*="display: none"]),
+body.admin-portal-body #dean-view-harassment:not([style*="display: none"]) {
   flex: 1 !important;
   min-height: 0 !important;
   display: flex !important;
