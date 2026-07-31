@@ -1540,6 +1540,8 @@ const app = {
       if (inputName) inputName.value = 'Anonymous Student';
       if (inputIndex) inputIndex.value = this.state.loggedStudent ? this.state.loggedStudent.index : '9099999999';
       if (inputProg) inputProg.value = this.state.loggedStudent ? this.state.loggedStudent.programme : 'BSc Computer Science and Engineering';
+      const anonPhone = document.getElementById('comp-phone');
+      if (anonPhone && this.state.loggedStudent && this.state.loggedStudent.phone) anonPhone.value = this.state.loggedStudent.phone;
       const anonProgName = this.state.loggedStudent ? this.state.loggedStudent.programme : 'BSc Computer Science and Engineering';
       const anonMatchedProg = window.PROGRAMMES.find(p => p.name === anonProgName);
       this.state.selectedProgramme = anonMatchedProg || { name: anonProgName };
@@ -1560,6 +1562,8 @@ const app = {
         if (inputName) inputName.value = this.formatStudentName(this.state.loggedStudent.name);
         if (inputIndex) inputIndex.value = this.state.loggedStudent.index;
         if (inputProg) inputProg.value = this.state.loggedStudent.programme;
+        const idPhone = document.getElementById('comp-phone');
+        if (idPhone && this.state.loggedStudent.phone) idPhone.value = this.state.loggedStudent.phone;
         
         const matchedProg = window.PROGRAMMES.find(p => p.name === this.state.loggedStudent.programme);
         this.state.selectedProgramme = matchedProg || { name: this.state.loggedStudent.programme };
@@ -1690,6 +1694,8 @@ const app = {
         inputProg.value = this.state.loggedStudent.programme;
         inputProg.removeAttribute('required');
       }
+      const idPhone2 = document.getElementById('comp-phone');
+      if (idPhone2 && this.state.loggedStudent.phone) idPhone2.value = this.state.loggedStudent.phone;
       const matchedProg = window.PROGRAMMES.find(p => p.name === this.state.loggedStudent.programme);
       this.state.selectedProgramme = matchedProg || { name: this.state.loggedStudent.programme };
     } else {
@@ -1842,6 +1848,9 @@ const app = {
     formData.append('urgency', urgency);
     formData.append('description', desc);
     formData.append('programmeName', prog.name);
+    const phoneInput = document.getElementById('comp-phone');
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    if (phone) formData.append('phone', phone);
     if (file) formData.append('attachment', file);
 
     let ticket;

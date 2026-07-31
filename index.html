@@ -408,6 +408,12 @@
 
           <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             <div class="input-group">
+              <label for="comp-phone">Phone number (optional — for SMS updates)</label>
+              <input type="tel" id="comp-phone" maxlength="15" placeholder="e.g. 0551234567" autocomplete="tel">
+              <small style="display: block; margin-top: 0.35rem; color: var(--text-muted); font-size: 0.78rem;">If provided, you'll get SMS alerts when staff respond. Only digits, e.g. 0551234567.</small>
+            </div>
+
+            <div class="input-group">
               <label for="comp-category">Category</label>
               <select id="comp-category" required onchange="app.updateRoutingPreview()">
                 <option value="" disabled selected>Select category...</option>
@@ -1681,7 +1687,7 @@
   <!-- Backend API client -->
  <script src="api.js?v=1.1"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="app.js?v=4.52"></script>
+  <script src="app.js?v=4.53"></script>
   <!-- Scroll Chaining Controller & Portal Footer Visibility Manager -->
   <script>
     (function() {

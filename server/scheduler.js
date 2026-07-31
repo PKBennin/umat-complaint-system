@@ -64,6 +64,8 @@ async function runReminderJob() {
         sendSMS(c.phone, smsMsg).catch((err) =>
           console.error(`[Reminder Job] SMS failed for ${c.id}:`, err.message)
         );
+      } else {
+        console.warn(`[Reminder Job] SMS skipped for ${c.id}: student ${c.student_name || c.email || '?'} has no usable phone on record.`);
       }
 
       // Send Email

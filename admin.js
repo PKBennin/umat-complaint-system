@@ -3202,7 +3202,7 @@ const adminApp = {
     }
 
     try {
-      await window.API.post(`/complaints/${encodeURIComponent(id)}/appointments`, {
+      await window.API.post(`/complaints/${encodeURIComponent(id)}/appointment`, {
         type, dateTime, venue, instructions, counselorName
       });
       this.showToast('Appointment successfully scheduled.', 'success');

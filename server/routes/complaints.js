@@ -97,7 +97,7 @@ async function attachComplaintForStaff(req, res, next) {
 // ticket, but cannot log in to track it unless they separately hold real
 // credentials for that index. If the index already belongs to a real account,
 // that account (and its real password) is left untouched.
-async function ensureStudentRecord(conn, { index, name }) {
+async function ensureStudentRecord(conn, { index, name, phone }) {
   const [[existing]] = await conn.query('SELECT index_number FROM students WHERE index_number = ?', [index]);
   if (existing) return;
   const randomPassword = crypto.randomBytes(24).toString('hex');
@@ -105,7 +105,7 @@ async function ensureStudentRecord(conn, { index, name }) {
   await conn.query(
     `INSERT INTO students (index_number, name, email, phone, password_hash, level)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    [index, name, `${index}@student.umat.edu.gh`, 'N/A', hash, 'N/A'],
+    [index, name, `${index}@student.umat.edu.gh`, phone || 'N/A', hash, 'N/A'],
   );
 }
 
@@ -141,12 +141,14 @@ router.post('/', handleAttachmentUpload,
   body('urgency').isIn(['Low', 'Medium', 'High', 'Urgent', 'Critical']),
   body('description').isString().trim().notEmpty(),
   body('programmeName').isString().trim().notEmpty(),
+  body('phone').optional().isString().trim().isLength({ max: 15 }).withMessage('Phone must be at most 15 characters'),
   async (req, res, next) => {
     if (validationGuard(req, res)) { deleteUploadedFile(req.file); return; }
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
       const { studentName, studentIndex, subject, category, urgency, description, programmeName } = req.body;
+      const phone = req.body.phone ? String(req.body.phone).trim() : '';
       // Sent as a FormData string ('true'/'false'), not a real boolean.
       const isAnonymous = req.body.isAnonymous === 'true';
       console.log('[API POST /api/complaints] Parsed Body:', { studentName, studentIndex, subject, category, urgency, description, programmeName, isAnonymous });
@@ -156,7 +158,13 @@ router.post('/', handleAttachmentUpload,
         deleteUploadedFile(req.file);
         return res.status(400).json({ error: 'Unknown category or programme' });
       }
-      await ensureStudentRecord(conn, { index: studentIndex, name: studentName });
+      await ensureStudentRecord(conn, { index: studentIndex, name: studentName, phone });
+      if (phone) {
+        await conn.query(
+          `UPDATE students SET phone = ? WHERE index_number = ? AND (phone IS NULL OR phone = '' OR phone = 'N/A')`,
+          [phone, studentIndex],
+        );
+      }
       const id = await generateTicketId(conn);
       const file = req.file;
       await conn.query(
@@ -183,6 +191,8 @@ router.post('/', handleAttachmentUpload,
         if (stRow.phone && stRow.phone !== 'N/A') {
           const { sendSMS } = require('../utils/sms');
           sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
+        } else {
+          console.warn(`[SMS Skipped] No usable phone on record for student ${stRow.name || stRow.email || '?'} (ticket ${id}). Filing SMS not sent.`);
         }
         if (stRow.email) {
           const { sendEmail } = require('../utils/email');
@@ -247,6 +257,45 @@ router.get('/public/track/:id', async (req, res, next) => {
     const assembled = await assembleComplaint(pool, req.params.id);
     // Redact internal notes and return for student tracking
     return res.json(redactForStudent(assembled));
+  } catch (e) { next(e); }
+});
+
+// =============================================================================
+// DEAN SUMMARY STATS     GET /api/complaints/dean-summary
+// =============================================================================
+router.get('/dean-summary', verifyJWT, requireStaff, async (req, res, next) => {
+  try {
+    if (req.user.type !== 'Dean' && req.user.type !== 'Vice Dean' && req.user.type !== 'SuperAdmin') {
+      return res.status(403).json({ error: 'Dean access required' });
+    }
+    const facultyKey = req.user.facultyKey;
+
+    const [[totalRow]] = await pool.query(
+      'SELECT COUNT(*) AS total FROM complaints WHERE faculty_key = ?',
+      [facultyKey]
+    );
+    const [statusRows] = await pool.query(
+      'SELECT status, COUNT(*) AS count FROM complaints WHERE faculty_key = ? GROUP BY status',
+      [facultyKey]
+    );
+    const [categoryRows] = await pool.query(
+      `SELECT cat.name AS category, COUNT(*) AS count
+         FROM complaints c
+         JOIN categories cat ON cat.id = c.category_id
+        WHERE c.faculty_key = ?
+        GROUP BY cat.name`,
+      [facultyKey]
+    );
+
+    const statusCounts = { Submitted: 0, 'Under Review': 0, 'In Progress': 0, Resolved: 0, Rejected: 0 };
+    statusRows.forEach(r => { statusCounts[r.status] = r.count; });
+
+    return res.json({
+      facultyKey,
+      total: totalRow ? totalRow.total : 0,
+      statusCounts,
+      categoryCounts: categoryRows,
+    });
   } catch (e) { next(e); }
 });
 
@@ -375,10 +424,12 @@ router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
           };
           const smsMsg = `[UMaT CCM] ${statusPhrases[newStatus] || `Hey ${lastName}, your complaint (Ticket ${c.id}) is now ${newStatus}.`}${reasonNote && newStatus !== 'Rejected' ? reasonNote : ''}`;
           const emailMsg = `Dear ${stRow.name},\n\n${statusPhrases[newStatus] || `Your complaint (Ticket ${c.id}) is now ${newStatus}.`}${reasonNote ? '\n\n' + reasonNote : ''}\n\nPlease log in to the student portal to view full details and any action items assigned to you.\n\nThank you,\nUMaT Campus Complaint Management System`;
-          if (stRow.phone && stRow.phone !== 'N/A') {
-            const { sendSMS } = require('../utils/sms');
-            sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
-          }
+        if (stRow.phone && stRow.phone !== 'N/A') {
+          const { sendSMS } = require('../utils/sms');
+          sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
+        } else {
+          console.warn(`[SMS Skipped] No usable phone on record for student ${stRow.name || stRow.email || '?'} (ticket ${c.id}). Status-update SMS not sent.`);
+        }
           if (stRow.email) {
             const { sendEmail } = require('../utils/email');
             sendEmail({
@@ -514,15 +565,17 @@ router.post('/:id/comments', verifyJWT,
           const preview = req.body.message.length > 100 ? req.body.message.substring(0, 100) + '...' : req.body.message;
           const smsMsg = `[UMaT CCM] Hey ${lastName}, you have a new message on your complaint "${row.subject}" (Ticket ${row.id}): "${preview}" — Log in to reply.`;
           const emailMsg = `Dear ${stRow.name},\n\nHey ${lastName}, you have received a new message on your complaint from ${senderName} (UMaT Staff).\n\nTicket ID: ${row.id}\nSubject: ${row.subject}\n\nMessage:\n"${req.body.message}"\n\nPlease log in to the student portal to view and respond.\n\nThank you,\nUMaT Campus Complaint Management System`;
-          if (stRow.phone && stRow.phone !== 'N/A') {
-            const { sendSMS } = require('../utils/sms');
-            sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Comment Alert Error]', err.message));
-          }
-          if (stRow.email) {
-            const { sendEmail } = require('../utils/email');
-            sendEmail({
-              to: stRow.email,
-              subject: `[UMaT CCM] New Message on Ticket ${row.id}`,
+        if (stRow.phone && stRow.phone !== 'N/A') {
+          const { sendSMS } = require('../utils/sms');
+          sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Comment Alert Error]', err.message));
+        } else {
+          console.warn(`[SMS Skipped] No usable phone on record for student ${stRow.name || stRow.email || '?'} (ticket ${row.id}). Comment-alert SMS not sent.`);
+        }
+        if (stRow.email) {
+          const { sendEmail } = require('../utils/email');
+          sendEmail({
+            to: stRow.email,
+            subject: `[UMaT CCM] New Message on Ticket ${row.id}`,
               text: emailMsg
             }).catch((err) => console.error('[Email Comment Alert Error]', err.message));
           }
@@ -577,6 +630,8 @@ router.post('/:id/appointment', verifyJWT, requireStaff, attachComplaintForStaff
         if (stRow.phone && stRow.phone !== 'N/A') {
           const { sendSMS } = require('../utils/sms');
           sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
+        } else {
+          console.warn(`[SMS Skipped] No usable phone on record for student ${stRow.name || stRow.email || '?'} (ticket ${c.id}). Appointment SMS not sent.`);
         }
         if (stRow.email) {
           const { sendEmail } = require('../utils/email');
@@ -793,45 +848,6 @@ router.get('/faculty/:facultyKey/officers', verifyJWT, requireStaff, async (req,
       [facultyKey]
     );
     return res.json(rows);
-  } catch (e) { next(e); }
-});
-
-// =============================================================================
-// DEAN SUMMARY STATS     GET /api/complaints/dean-summary
-// =============================================================================
-router.get('/dean-summary', verifyJWT, requireStaff, async (req, res, next) => {
-  try {
-    if (req.user.type !== 'Dean' && req.user.type !== 'Vice Dean' && req.user.type !== 'SuperAdmin') {
-      return res.status(403).json({ error: 'Dean access required' });
-    }
-    const facultyKey = req.user.facultyKey;
-
-    const [[totalRow]] = await pool.query(
-      'SELECT COUNT(*) AS total FROM complaints WHERE faculty_key = ?',
-      [facultyKey]
-    );
-    const [statusRows] = await pool.query(
-      'SELECT status, COUNT(*) AS count FROM complaints WHERE faculty_key = ? GROUP BY status',
-      [facultyKey]
-    );
-    const [categoryRows] = await pool.query(
-      `SELECT cat.name AS category, COUNT(*) AS count
-         FROM complaints c
-         JOIN categories cat ON cat.id = c.category_id
-        WHERE c.faculty_key = ?
-        GROUP BY cat.name`,
-      [facultyKey]
-    );
-
-    const statusCounts = { Submitted: 0, 'Under Review': 0, 'In Progress': 0, Resolved: 0, Rejected: 0 };
-    statusRows.forEach(r => { statusCounts[r.status] = r.count; });
-
-    return res.json({
-      facultyKey,
-      total: totalRow ? totalRow.total : 0,
-      statusCounts,
-      categoryCounts: categoryRows,
-    });
   } catch (e) { next(e); }
 });
 
