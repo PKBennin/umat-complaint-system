@@ -7,6 +7,7 @@ const pool = require('./db');
 const authRoutes = require('./routes/auth');
 const complaintRoutes = require('./routes/complaints');
 const metaRoutes = require('./routes/meta');
+const { startScheduler } = require('./scheduler');
 
 const app = express();
 
@@ -42,4 +43,6 @@ app.use((err, req, res, next) => {
 const PORT = Number(process.env.PORT || 4000);
 app.listen(PORT, () => {
   console.log(`UMaT API listening on http://localhost:${PORT}`);
+  // Start 72-hour unattended complaint reminder job
+  startScheduler();
 });
