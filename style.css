@@ -2924,12 +2924,18 @@ body.admin-portal-body main {
 
 body.admin-portal-body #dashboard-view,
 body.admin-portal-body #panel-workstation.active,
-body.admin-portal-body #panel-hod.active,
-body.admin-portal-body #panel-system.active {
+body.admin-portal-body #panel-hod.active {
   height: 100% !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+}
+
+body.admin-portal-body #panel-analytics.active,
+body.admin-portal-body #panel-system.active {
+  height: 100% !important;
+  overflow-y: auto !important;
+  padding-right: 0.5rem;
 }
 
 /* Force layout grid to take full height of main and prevent overflow */
