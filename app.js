@@ -974,7 +974,8 @@ const app = {
       
       this.closeSignInModal();
       this.checkStudentSession();
-      this.showView('track');
+      // Don't navigate to dashboard yet — checkStudentSession() will
+      // detect the incomplete profile and show the profile completion modal.
       this.showToast('Registration successful! Please complete your profile details.', 'success');
     } catch (err) {
       this.showToast(err.message || 'Registration failed.', 'error');
