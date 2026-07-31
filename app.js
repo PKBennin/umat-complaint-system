@@ -1005,7 +1005,13 @@ const app = {
 
   showProfileCompletionModal() {
     const modal = document.getElementById('profile-completion-modal');
-    if (modal) {
+    if (!modal) return;
+    // Defensive: if malformed HTML ever nests the modal inside a hidden
+    // overlay (e.g. an unclosed sibling div), reparent it so it renders.
+    if (modal.parentElement && modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+    {
       this.state.isProfileViewMode = false;
 
       // Restore editable states
