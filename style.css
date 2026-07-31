@@ -2938,6 +2938,13 @@ body.admin-portal-body #panel-system.active {
   padding-right: 0.5rem;
 }
 
+/* Login screen: keep the dashboard shell (and its panels) hidden until a
+   staff session is restored. The inline display:none on #dashboard-view loses
+   to the display:flex !important rule above, so it must be re-asserted here. */
+body.admin-portal-body.logged-out #dashboard-view {
+  display: none !important;
+}
+
 /* Dedicated Roster Table Scroller & Sticky Headers */
 .roster-table-wrapper {
   overflow-x: auto !important;
