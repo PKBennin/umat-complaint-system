@@ -414,7 +414,7 @@
 
             <div style="display: flex; gap: 1rem; width: 100%; margin-top: 1rem;">
               <button type="button" class="btn btn-secondary" onclick="app.showView('landing')" style="flex: 1; justify-content: center; padding: 0.9rem;">Cancel</button>
-              <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 0.9rem; background: var(--accent); color: #000000; border: none; font-weight: 700;">
+              <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; padding: 0.9rem; background: var(--accent); color: #fff; border: none; font-weight: 700;">
                 Submit complaint
               </button>
             </div>
@@ -512,7 +512,7 @@
               <label for="login-index" style="text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Ticket ID</label>
               <input type="text" id="login-index" placeholder="e.g. UMAT-2026-0742" required style="text-align: center; font-size: 1.1rem; letter-spacing: 0.5px;">
             </div>
-            <button type="submit" id="btn-check-status" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-weight: 700; border: none; background: var(--accent); color: #000; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+            <button type="submit" id="btn-check-status" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-weight: 700; border: none; background: var(--accent); color: #fff; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
               Check status
             </button>
             <p id="login-footnote" style="margin-top: 1.25rem; font-size: 0.8rem; text-align: center; color: var(--text-muted); font-weight: 500;">
@@ -529,7 +529,7 @@
           <div>
             <h2 style="font-size: 2.2rem; font-weight: 700; margin-bottom: 0.25rem;" id="dash-welcome-title">Welcome back, Student</h2>
             <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0;">Here's where things stand with your complaints.</p>
-            <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #000; font-weight: 700; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;">
+            <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #fff; font-weight: 700; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;">
               <i data-lucide="plus-circle" style="width: 16px; height: 16px; stroke-width: 2.5;"></i> File a New Complaint
             </button>
           </div>
@@ -593,7 +593,7 @@
               <i data-lucide="info" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;"></i>
               <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-color);">No Ticket Selected</h3>
               <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; max-width: 320px;">Select a grievance from the history ledger on the left to track its live status, timelines, and appointments.</p>
-              <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #000; padding: 0.65rem 1.25rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; border: none; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <button class="btn btn-primary" onclick="app.showView('file')" style="background: var(--accent); color: #fff; padding: 0.65rem 1.25rem; font-weight: 700; font-size: 0.95rem; border-radius: 8px; border: none; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                 <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i> File New Complaint
               </button>
             </div>
@@ -660,7 +660,7 @@
               <!-- Guest Login Prompt Banner -->
               <div id="track-login-banner" class="glass-card animate-fade-in" style="display: none; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; padding: 1.5rem; background: rgba(34, 197, 94, 0.04); border: 1px dashed var(--accent); margin-top: 2.5rem; margin-bottom: 2.5rem;">
                 <h5 style="margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--primary);">Want to track all your complaints or view full conversation details?</h5>
-                <button class="btn btn-primary" onclick="app.showLoginOverlayFromTracker(event)" style="font-weight: 700; background: var(--accent); color: #000; border: none; padding: 0.6rem 1.25rem;">
+                <button class="btn btn-primary" onclick="app.showLoginOverlayFromTracker(event)" style="font-weight: 700; background: var(--accent); color: #fff; border: none; padding: 0.6rem 1.25rem;">
                   Login for full details
                 </button>
               </div>
@@ -912,7 +912,7 @@
         </p>
       </div>
       <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
-        <button class="btn btn-primary" onclick="app.choiceContinueWithId()" style="width: 100%; justify-content: center; padding: 0.95rem; font-weight: 700; background: var(--accent); color: #000; border: none; display: flex; align-items: center; gap: 0.5rem;">
+        <button class="btn btn-primary" onclick="app.choiceContinueWithId()" style="width: 100%; justify-content: center; padding: 0.95rem; font-weight: 700; background: var(--accent); color: #fff; border: none; display: flex; align-items: center; gap: 0.5rem;">
           <i data-lucide="id-badge"></i> Continue with student ID
         </button>
         <button class="btn btn-secondary" onclick="app.choiceContinueAnonymously()" style="width: 100%; justify-content: center; padding: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
@@ -957,7 +957,7 @@
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
           <button type="button" class="btn btn-secondary" onclick="app.closeSignInModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Log In</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #fff; border: none; font-weight: 700;">Log In</button>
         </div>
       </form>
 
@@ -978,7 +978,7 @@
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
           <button type="button" class="btn btn-secondary" onclick="app.closeSignInModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Sign Up</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #fff; border: none; font-weight: 700;">Sign Up</button>
         </div>
       </form>
 
@@ -1000,7 +1000,7 @@
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
           <button type="button" class="btn btn-secondary" onclick="app.closeTrackTicketModal()" style="flex: 1; justify-content: center; font-weight: 600;">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #000; border: none; font-weight: 700;">Check status</button>
+          <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center; background: var(--accent); color: #fff; border: none; font-weight: 700;">Check status</button>
         </div>
         <p style="margin-top: 1.25rem; font-size: 0.8rem; text-align: center; color: var(--text-muted); font-weight: 500;">
           Anonymous tickets can only be checked with the exact Ticket ID you were given.
