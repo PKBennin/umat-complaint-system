@@ -4,6 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Workstation | Campus Complaint System</title>
+  <script>
+    // Diagnostic error banner: surfaces any runtime failure as a visible
+    // message so "dead" buttons are never silent. Only appears on error.
+    (function () {
+      function banner(msg) {
+        if (!msg) return;
+        try {
+          var old = document.getElementById('err-banner');
+          if (old) old.remove();
+          var b = document.createElement('div');
+          b.id = 'err-banner';
+          b.style.cssText = 'position:fixed;left:1rem;bottom:1rem;z-index:100000;max-width:90vw;background:#7f1d1d;color:#fff;padding:0.75rem 1rem;border-radius:8px;font:600 0.8rem/1.4 sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:pointer';
+          b.innerHTML = 'Page error: ' + msg + ' <span style="opacity:.7">(click to dismiss)</span>';
+          b.onclick = function () { b.remove(); };
+          document.body.appendChild(b);
+        } catch (e) { /* never block page load */ }
+      }
+      window.addEventListener('error', function (e) {
+        banner(e.message || (e.target && e.target.src ? 'resource failed: ' + e.target.src : ''));
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        banner('Unhandled: ' + (r && (r.message || r.error || String(r)) || 'promise rejection'));
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="style.css?v=7.1">
   <!-- Load Chart.js CDN for beautiful interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
