@@ -8,9 +8,9 @@ const pool = require('./db');
   console.log('Current staff:', existing.map(r => r.staff_id));
 
   const staffToRestore = [
-    { staffId: 'PS002', name: 'Faculty Dean', email: 'emensah@umat.edu.gh', type: 'Dean', facultyKey: 'FCMS', departmentLabel: "Dean's Office (FCMS)", portfolio: 'Dean of FCMS' },
-    { staffId: 'PS333', name: 'Head of Department', email: 'jquaye@umat.edu.gh', type: 'HOD', facultyKey: 'FCMS', departmentLabel: 'Computer Science & Engineering', portfolio: 'Head of Department (FCMS)' },
-    { staffId: 'CS444', name: 'Faculty Finance Officer', email: 'jadu@umat.edu.gh', type: 'Finance', facultyKey: 'FCMS', departmentLabel: 'Finance Office (FCMS)', portfolio: 'Finance Officer' },
+    { staffId: 'PS002', name: 'Faculty Dean', email: 'emensah@umat.edu.gh', type: 'Dean', facultyKey: 'FCaMS', departmentLabel: "Dean's Office (FCaMS)", portfolio: 'Dean of FCaMS' },
+    { staffId: 'PS333', name: 'Head of Department', email: 'jquaye@umat.edu.gh', type: 'HOD', facultyKey: 'FCaMS', departmentLabel: 'Computer Science & Engineering', portfolio: 'Head of Department (FCaMS)' },
+    { staffId: 'CS444', name: 'Faculty Finance Officer', email: 'jadu@umat.edu.gh', type: 'Finance', facultyKey: 'FCaMS', departmentLabel: 'Finance Office (FCaMS)', portfolio: 'Finance Officer' },
   ];
 
   for (const s of staffToRestore) {

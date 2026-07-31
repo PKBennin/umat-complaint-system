@@ -3,7 +3,7 @@
 
 const FACULTIES = {
   FMMT: "Faculty of Mining and Minerals Technology",
-  FCMS: "Faculty of Computing and Mathematical Sciences",
+  FCaMS: "Faculty of Computing and Mathematical Sciences",
   FIMS: "Faculty of Integrated Management Science",
   FoE: "Faculty of Engineering",
   FGES: "Faculty of Geosciences and Environmental Studies",

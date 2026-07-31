@@ -30,7 +30,7 @@ async function computeRouting(conn, categoryKey, programmeName) {
     if (matched) programme = matched;
   }
 
-  const facultyKey = programme ? programme.faculty_key : 'FCMS';
+  const facultyKey = programme ? programme.faculty_key : 'FCaMS';
 
   const [[faculty]] = await conn.query(
     'SELECT name FROM faculties WHERE faculty_key = ?', [facultyKey],

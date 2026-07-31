@@ -63,7 +63,7 @@ function staffScopeClause(user) {
       // OR complaints explicitly routed to their hod_staff_id or assigned_staff_id.
       return {
         clause: "(c.faculty_key = ? AND c.category_id NOT IN ('harassment', 'ict')) OR c.hod_staff_id = ? OR c.assigned_staff_id = ?",
-        params: [user.facultyKey || 'FCMS', user.staffId, user.staffId],
+        params: [user.facultyKey || 'FCaMS', user.staffId, user.staffId],
       };
     case 'Department Officer':
       return {
@@ -76,7 +76,7 @@ function staffScopeClause(user) {
       // This includes harassment (where they are assigned) + all HOD-routed ones.
       return {
         clause: 'c.faculty_key = ?',
-        params: [user.facultyKey || 'FCMS'],
+        params: [user.facultyKey || 'FCaMS'],
       };
     case 'Finance':
     case 'Faculty Officer':
