@@ -24,16 +24,20 @@ const app = {
 
   // Initialize Application
   async init() {
-    window.API.configure({ tokenKey: 'umat_student_token' });
-    this.loadTheme();
-    await this.initMetadata();
-    this.checkStudentSession();
-    this.populateSelectors();
-    this.startClock();
-    this.startHeroBackgroundCycle();
-    this.startStudentLoginBackgroundCycle();
+    try {
+      window.API.configure({ tokenKey: 'umat_student_token' });
+      this.loadTheme();
+      await this.initMetadata();
+      this.checkStudentSession();
+      this.populateSelectors();
+      this.startClock();
+      this.startHeroBackgroundCycle();
+      this.startStudentLoginBackgroundCycle();
+    } catch (err) {
+      console.error('[app.init] Startup error (non-fatal):', err);
+    }
     
-    // Bind hashchange for SPA routing
+    // Always bind routing and events — even if startup had errors
     window.addEventListener('hashchange', () => this.handleRouting());
     this.handleRouting();
     
