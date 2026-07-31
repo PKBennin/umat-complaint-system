@@ -178,7 +178,7 @@ router.post('/', handleAttachmentUpload,
       const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [studentIndex]);
       if (stRow) {
         const lastName = stRow.name ? stRow.name.trim().split(' ')[0] : 'Student';
-        const smsMsg = `[UMaT CCM] Hey ${lastName}, your complaint "${subject}" has been received and is now under review. Ticket ID: ${id}. We'll be in touch shortly.`;
+        const smsMsg = `[UMaT CCM] Hey ${lastName}, your complaint has been submitted successfully. Your ticket code is ${id}. Keep it safe to track your complaint on the student portal.`;
         const emailMsg = `Dear ${stRow.name},\n\nYour complaint has been successfully submitted to the UMaT Campus Complaint Management System.\n\nTicket ID: ${id}\nSubject: ${subject}\nPriority: ${urgency}\nStatus: Submitted\n\nYou can track your complaint progress at any time by signing in to the student portal.\n\nThank you,\nUMaT Campus Complaint Management System`;
         if (stRow.phone && stRow.phone !== 'N/A') {
           const { sendSMS } = require('../utils/sms');
