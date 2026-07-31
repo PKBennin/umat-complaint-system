@@ -2934,17 +2934,57 @@ body.admin-portal-body #panel-hod.active {
 body.admin-portal-body #panel-analytics.active,
 body.admin-portal-body #panel-system.active {
   height: 100% !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
   padding-right: 0.5rem;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 /* Dedicated Roster Table Scroller & Sticky Headers */
 .roster-table-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
-  max-height: calc(100vh - 300px) !important;
+  /* fills all remaining space in the card below the header toolbar */
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
   border-radius: 8px !important;
   border: 1px solid var(--border-color) !important;
+}
+
+/* Independent scrollbar styling for roster table */
+.roster-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.roster-table-wrapper::-webkit-scrollbar-track {
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+.roster-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+.roster-table-wrapper::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: var(--accent-dark, var(--accent));
+}
+
+/* Roster sub-tab: flex column so wrapper fills remaining height */
+#sys-sub-roster {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#sys-sub-roster.hidden { display: none !important; }
+#sys-sub-roster > .glass-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
 }
 
 .roster-table-wrapper table.report-table thead th {
