@@ -1356,7 +1356,14 @@ const app = {
 
 
   // Student Logout
-  handleLogout() {
+  async handleLogout() {
+    const isConfirmed = await this.showConfirm(
+      "Confirm Logout",
+      "Are you sure you want to log out of your student portal session?",
+      true
+    );
+    if (!isConfirmed) return;
+
     window.API.clearToken();
     localStorage.removeItem('current_student_session');
     this.state.loggedStudent = null;

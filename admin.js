@@ -387,7 +387,14 @@ const adminApp = {
   },
 
   // Staff Logout
-  handleLogout() {
+  async handleLogout() {
+    const isConfirmed = await this.showConfirm(
+      "Confirm Logout",
+      "Are you sure you want to log out of the admin workstation? Your session will be safely ended.",
+      true
+    );
+    if (!isConfirmed) return;
+
     window.API.clearToken();
     localStorage.removeItem('current_staff_session');
     this.state.loggedStaff = null;
@@ -819,6 +826,13 @@ const adminApp = {
           deleteBtn.style.padding = '0.25rem';
           deleteBtn.innerHTML = `<i data-lucide="trash-2" style="width: 14px; height: 14px; stroke: var(--status-rejected);"></i>`;
           deleteBtn.onclick = async () => {
+            const confirmed = await adminApp.showConfirm(
+              "Delete Action Directive",
+              `Are you sure you want to delete this directive: "${dir.text}"? This action cannot be undone.`,
+              true
+            );
+            if (!confirmed) return;
+
             try {
               await window.API.del(`/complaints/${encodeURIComponent(complaint.id)}/directives/${dir.id}`);
             } catch (err) {
