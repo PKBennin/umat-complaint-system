@@ -977,9 +977,14 @@ const app = {
       localStorage.setItem('current_student_session', JSON.stringify(result.student));
       
       this.closeSignInModal();
-      this.checkStudentSession();
-      // Don't navigate to dashboard yet — checkStudentSession() will
-      // detect the incomplete profile and show the profile completion modal.
+
+      // Update header UI
+      try { this.checkStudentSession(); } catch (e) { console.error('checkStudentSession error:', e); }
+
+      // Force the profile completion modal open — this is a NEW signup,
+      // profile is always incomplete at this point.
+      this.showProfileCompletionModal();
+
       this.showToast('Registration successful! Please complete your profile details.', 'success');
     } catch (err) {
       this.showToast(err.message || 'Registration failed.', 'error');
