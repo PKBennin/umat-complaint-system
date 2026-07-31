@@ -574,8 +574,15 @@
               </div>
             </div>
 
+            <!-- Select All Header -->
+              <div id="hod-select-all-row" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-color); background: var(--bg-input); border-radius: 6px 6px 0 0; margin-top: 0.35rem;">
+                <input type="checkbox" id="hod-select-all-chk" title="Select all complaints" style="cursor: pointer; width: 15px; height: 15px;" onchange="adminApp.selectAllHODComplaints(this.checked)">
+                <label for="hod-select-all-chk" style="font-size: 0.78rem; font-weight: 600; cursor: pointer; color: var(--text-muted); user-select: none;">Select All</label>
+                <span id="hod-select-all-count" style="font-size: 0.73rem; color: var(--accent); margin-left: auto;"></span>
+              </div>
+
             <!-- Inbox Scroll Area -->
-            <div class="admin-complaint-list" id="hod-inbox-list">
+            <div class="admin-complaint-list" id="hod-inbox-list" style="border-radius: 0 0 6px 6px;">
               <!-- Rendered list items with checkboxes -->
             </div>
           </div>
@@ -1658,6 +1665,6 @@
   <!-- Backend API client -->
   <script src="api.js?v=5.0"></script>
   <!-- Load Main Application Logic Module -->
-  <script src="admin.js?v=5.0"></script>
+  <script src="admin.js?v=5.1"></script>
 </body>
 </html>

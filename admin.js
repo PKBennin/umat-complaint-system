@@ -2776,6 +2776,17 @@ const adminApp = {
     }
 
     if (window.lucide) lucide.createIcons();
+
+    // Sync the Select All checkbox state
+    const selectAllChk = document.getElementById('hod-select-all-chk');
+    const countSpan = document.getElementById('hod-select-all-count');
+    if (selectAllChk) {
+      const totalVisible = list.length;
+      const totalSelected = list.filter(c => this.stateHOD.selectedIds.includes(c.id)).length;
+      selectAllChk.checked = totalVisible > 0 && totalSelected === totalVisible;
+      selectAllChk.indeterminate = totalSelected > 0 && totalSelected < totalVisible;
+      if (countSpan) countSpan.textContent = totalVisible > 0 ? `${totalSelected} / ${totalVisible}` : '';
+    }
   },
 
   toggleHODSelectComplaint(id, checked) {
@@ -2794,6 +2805,40 @@ const adminApp = {
         bulkBar.style.display = 'none';
       }
     }
+    this.renderHODComplaintList();
+  },
+
+  selectAllHODComplaints(checked) {
+    // Build the same filtered list renderHODComplaintList() uses
+    let list = [...this.state.complaints];
+    const cat = this.stateHOD.categoryFilter;
+    if (cat === 'academic') list = list.filter(c => c.category === 'Academic & Exams');
+    else if (cat === 'finance') list = list.filter(c => c.category === 'Fees & Finance');
+    else if (cat === 'other') list = list.filter(c => c.category !== 'Academic & Exams' && c.category !== 'Fees & Finance');
+    const searchVal = (document.getElementById('hod-search-input')?.value || '').trim().toLowerCase();
+    if (searchVal) list = list.filter(c => c.id.toLowerCase().includes(searchVal) || c.subject.toLowerCase().includes(searchVal) || c.studentName.toLowerCase().includes(searchVal));
+    list = list.filter(c => c.category !== 'Harassment' && c.category !== 'ICT & Portal Services');
+
+    if (checked) {
+      // Add all visible IDs not already in selectedIds
+      list.forEach(c => { if (!this.stateHOD.selectedIds.includes(c.id)) this.stateHOD.selectedIds.push(c.id); });
+    } else {
+      // Deselect all visible IDs
+      const visibleIds = new Set(list.map(c => c.id));
+      this.stateHOD.selectedIds = this.stateHOD.selectedIds.filter(id => !visibleIds.has(id));
+    }
+
+    const bulkBar = document.getElementById('hod-bulk-bar');
+    const countLabel = document.getElementById('hod-bulk-count-label');
+    if (bulkBar && countLabel) {
+      if (this.stateHOD.selectedIds.length > 0) {
+        bulkBar.style.display = 'block';
+        countLabel.textContent = `${this.stateHOD.selectedIds.length} complaint(s) selected`;
+      } else {
+        bulkBar.style.display = 'none';
+      }
+    }
+    this.renderHODComplaintList();
   },
 
   selectHODComplaint(id) {
@@ -2879,6 +2924,9 @@ const adminApp = {
       this.stateHOD.selectedIds = [];
       const bulkBar = document.getElementById('hod-bulk-bar');
       if (bulkBar) bulkBar.style.display = 'none';
+      // Reset select-all checkbox
+      const selectAllChk = document.getElementById('hod-select-all-chk');
+      if (selectAllChk) { selectAllChk.checked = false; selectAllChk.indeterminate = false; }
       await this.refreshComplaints();
       this.renderHODComplaintList();
       this.renderHODWorkspace();
