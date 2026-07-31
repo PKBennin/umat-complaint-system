@@ -2945,7 +2945,6 @@ body.admin-portal-body #panel-system.active {
   max-height: 500px !important;
   border-radius: 8px !important;
   border: 1px solid var(--border-color) !important;
-  overscroll-behavior: contain;
 }
 
 /* Independent scrollbar styling for roster table */
