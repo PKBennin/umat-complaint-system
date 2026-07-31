@@ -2934,37 +2934,51 @@ body.admin-portal-body main {
 }
 
 body.admin-portal-body #dashboard-view,
-body.admin-portal-body #panel-workstation,
-body.admin-portal-body #panel-hod,
-body.admin-portal-body #panel-dean {
+body.admin-portal-body #panel-workstation.active,
+body.admin-portal-body #panel-hod.active,
+body.admin-portal-body #panel-system.active {
   height: 100% !important;
-}
-
-/* Force layout grid to take full height of main and prevent overflow */
-.admin-portal-body .admin-layout {
-  height: 100% !important;
-  min-height: 0 !important;
   overflow: hidden !important;
-}
-
-.admin-portal-body .admin-sidebar {
-  height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
 }
 
+/* Force layout grid to take full height of main and prevent overflow */
+.admin-portal-body .admin-layout {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+}
+
+.admin-portal-body .admin-sidebar {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.admin-portal-body .admin-sidebar-header {
+  flex-shrink: 0 !important;
+}
+
 /* Let complaint list scroll independently within the sidebar column */
 .admin-portal-body .admin-complaint-list {
-  flex-grow: 1 !important;
+  flex: 1 !important;
+  min-height: 0 !important;
   max-height: none !important;
   overflow-y: auto !important;
 }
 
 .admin-portal-body .admin-workspace {
+  flex: 1 !important;
   height: 100% !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
 }
 
 /* Let the grievance details / feedback panel scroll independently */
