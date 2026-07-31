@@ -1364,6 +1364,8 @@ const adminApp = {
     if (this.state.charts.category) this.state.charts.category.destroy();
     if (this.state.charts.trends) this.state.charts.trends.destroy();
 
+    const meta = this.metaSource();
+
     const chartOptions = {
       responsive: true,
       maintainAspectRatio: false,
