@@ -3046,10 +3046,9 @@ body.admin-portal-body #panel-analytics {
 }
 
 body.admin-portal-body #panel-dean.active {
-  overflow-y: hidden !important;
+  overflow-y: auto !important;
   overflow-x: hidden !important;
-  display: flex !important;
-  flex-direction: column !important;
+  display: block !important;
   height: 100% !important;
 }
 
@@ -3064,14 +3063,10 @@ body.admin-portal-body #dean-view-harassment[style*="display: none"] {
   display: none !important;
 }
 
-/* Dean monitoring/harassment view should fill remaining height when visible */
+/* Dean monitoring/harassment view should flow naturally */
 body.admin-portal-body #dean-view-monitoring:not([style*="display: none"]),
 body.admin-portal-body #dean-view-harassment:not([style*="display: none"]) {
-  flex: 1 !important;
-  min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+  display: block !important;
 }
 
 /* KPI row in dean views should not shrink */
@@ -3079,12 +3074,12 @@ body.admin-portal-body #dean-view-monitoring > .kpi-row {
   flex-shrink: 0 !important;
 }
 
-/* The admin-layout inside dean views should fill remaining space */
+/* The admin-layout inside dean views: sticky at the top after scrolling, fills viewport */
 body.admin-portal-body #dean-view-monitoring > .admin-layout,
 body.admin-portal-body #dean-view-harassment > .admin-layout {
-  flex: 1 !important;
-  min-height: 0 !important;
-  height: auto !important;
+  position: sticky !important;
+  top: 0 !important;
+  height: calc(100vh - var(--header-h, 78px) - 3rem) !important;
   overflow: hidden !important;
 }
 
