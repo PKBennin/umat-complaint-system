@@ -4246,13 +4246,23 @@ body.view-track-active #track-view {
   }
   
   body.student-logged-in .dashboard-profile-widget .profile-role,
-  body.student-logged-in .dashboard-profile-widget .profile-chevron,
+  body.student-logged-in .dashboard-profile-widget .profile-chevron {
+    display: none !important;
+  }
+
+  /* Hide the greeting/name text on mobile */
   body.student-logged-in .dashboard-profile-widget .profile-info {
     display: none !important;
   }
 
+  /* Show notification bell on mobile */
   body.student-logged-in .notification-widget {
     display: flex !important;
+  }
+
+  /* Notification bell styling on mobile */
+  body.student-logged-in .notification-bell-btn {
+    color: var(--text-color);
   }
 }
 
