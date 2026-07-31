@@ -425,6 +425,7 @@ const app = {
           dbName.textContent = this.formatStudentName(this.state.loggedStudent.name);
         }
       } catch (e) {
+        console.error('[app.js] checkStudentSession error details:', e);
         localStorage.removeItem('current_student_session');
         document.body.classList.remove('student-logged-in');
       }
@@ -987,6 +988,7 @@ const app = {
 
       this.showToast('Registration successful! Please complete your profile details.', 'success');
     } catch (err) {
+      console.error('[app.js] signup error details:', err);
       this.showToast(err.message || 'Registration failed.', 'error');
     }
   },
