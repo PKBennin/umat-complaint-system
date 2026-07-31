@@ -526,15 +526,15 @@ const adminApp = {
         c.studentFacultyKey === staff.facultyKey && 
         c.routingDept === staff.department
       );
-    } else if (staff.type === 'Finance') {
-      filtered = this.state.complaints.filter(c => 
-        c.studentFacultyKey === staff.facultyKey && 
-        c.routingDept === 'finance_dept'
-      );
     } else if (staff.type === 'IT') {
       filtered = this.state.complaints.filter(c => 
         c.routingDept === 'ict_dept'
       );
+    } else {
+      // Finance / Faculty Officer / Department Officer / Counsellor / HOD:
+      // the server list endpoint (GET /complaints/staff/:id) already scopes to
+      // this officer's jurisdiction, so show it as-is.
+      filtered = [...this.state.complaints];
     }
 
     // Apply sidebar status filters

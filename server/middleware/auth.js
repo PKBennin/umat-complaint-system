@@ -55,6 +55,7 @@ function requireStaff(req, res, next) {
 //   Finance       -> sees only complaints explicitly assigned to them
 //   IT            -> routing_dept = 'ict_dept' (university-wide, direct route)
 //   Faculty/Dept Officer -> sees only complaints explicitly assigned to them
+//   Counsellor    -> sees only complaints explicitly assigned to them
 //   SuperAdmin    -> sees everything
 function staffScopeClause(user) {
   switch (user.type) {
@@ -80,6 +81,7 @@ function staffScopeClause(user) {
       };
     case 'Finance':
     case 'Faculty Officer':
+    case 'Counsellor':
       // These officers only see complaints the HOD explicitly assigned to them.
       return {
         clause: 'c.assigned_staff_id = ?',
@@ -108,6 +110,7 @@ function staffCanAccessComplaint(user, complaintRow) {
       return c.faculty_key === user.facultyKey;
     case 'Finance':
     case 'Faculty Officer':
+    case 'Counsellor':
       return c.assigned_staff_id === user.staffId;
     case 'IT':
       return c.routing_dept === 'ict_dept';
