@@ -177,7 +177,8 @@ router.post('/', handleAttachmentUpload,
       // Trigger real-time SMS & Email to student upon complaint filing
       const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [studentIndex]);
       if (stRow) {
-        const smsMsg = `[UMaT CCM] Hello ${stRow.name}, your complaint "${subject}" has been received. Ticket ID: ${id}. We will get back to you shortly.`;
+        const lastName = stRow.name ? stRow.name.trim().split(' ')[0] : 'Student';
+        const smsMsg = `[UMaT CCM] Hey ${lastName}, your complaint "${subject}" has been received and is now under review. Ticket ID: ${id}. We'll be in touch shortly.`;
         const emailMsg = `Dear ${stRow.name},\n\nYour complaint has been successfully submitted to the UMaT Campus Complaint Management System.\n\nTicket ID: ${id}\nSubject: ${subject}\nPriority: ${urgency}\nStatus: Submitted\n\nYou can track your complaint progress at any time by signing in to the student portal.\n\nThank you,\nUMaT Campus Complaint Management System`;
         if (stRow.phone && stRow.phone !== 'N/A') {
           const { sendSMS } = require('../utils/sms');
@@ -362,10 +363,18 @@ router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
         const [[stRow]] = await conn.query('SELECT phone, name, email FROM students WHERE index_number = ?', [c.student_index]);
         if (stRow) {
           const newStatus = req.body.status;
-          const statusEmoji = { 'Under Review': '🔍', 'In Progress': '⚙️', 'Resolved': '✅', 'Rejected': '❌', 'Submitted': '📩' }[newStatus] || '📋';
-          const reasonNote = req.body.reason ? ` Reason: ${req.body.reason}.` : '';
-          const smsMsg = `[UMaT CCM] ${statusEmoji} Update on Ticket ${c.id}: Your complaint status has changed to "${newStatus}".${reasonNote} Log in to the student portal for details.`;
-          const emailMsg = `Dear ${stRow.name},\n\nThis is an update on your complaint with UMaT Campus Complaint Management System.\n\nTicket ID: ${c.id}\nSubject: ${c.subject}\nPrevious Status: ${c.status}\nNew Status: ${newStatus}${reasonNote ? '\nReason: ' + req.body.reason : ''}\n\nPlease log in to the student portal to view full details and any action items assigned to you.\n\nThank you,\nUMaT Campus Complaint Management System`;
+          const lastName = stRow.name ? stRow.name.trim().split(' ')[0] : 'Student';
+          const reasonNote = req.body.reason ? ` Note: ${req.body.reason}.` : '';
+          // Natural, direct language per status
+          const statusPhrases = {
+            'Under Review':  `Hey ${lastName}, your complaint "${c.subject}" (Ticket ${c.id}) is currently Under Review. We'll update you as things progress.`,
+            'In Progress':   `Hey ${lastName}, your complaint "${c.subject}" (Ticket ${c.id}) is now In Progress. Our team is actively working on it.`,
+            'Resolved':      `Hey ${lastName}, your complaint "${c.subject}" (Ticket ${c.id}) has been Resolved. We hope your concern has been addressed satisfactorily.`,
+            'Rejected':      `Hey ${lastName}, your complaint "${c.subject}" (Ticket ${c.id}) could not be processed and has been Rejected.${reasonNote}`,
+            'Submitted':     `Hey ${lastName}, your complaint "${c.subject}" (Ticket ${c.id}) has been re-submitted and is awaiting review.`,
+          };
+          const smsMsg = `[UMaT CCM] ${statusPhrases[newStatus] || `Hey ${lastName}, your complaint (Ticket ${c.id}) is now ${newStatus}.`}${reasonNote && newStatus !== 'Rejected' ? reasonNote : ''}`;
+          const emailMsg = `Dear ${stRow.name},\n\n${statusPhrases[newStatus] || `Your complaint (Ticket ${c.id}) is now ${newStatus}.`}${reasonNote ? '\n\n' + reasonNote : ''}\n\nPlease log in to the student portal to view full details and any action items assigned to you.\n\nThank you,\nUMaT Campus Complaint Management System`;
           if (stRow.phone && stRow.phone !== 'N/A') {
             const { sendSMS } = require('../utils/sms');
             sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Service Error]', err.message));
@@ -374,7 +383,7 @@ router.put('/:id/status', verifyJWT, requireStaff, attachComplaintForStaff,
             const { sendEmail } = require('../utils/email');
             sendEmail({
               to: stRow.email,
-              subject: `[UMaT CCM] Status Update — Ticket ${c.id} is now "${newStatus}"`,
+              subject: `[UMaT CCM] Update on Ticket ${c.id} — ${newStatus}`,
               text: emailMsg
             }).catch((err) => console.error('[Email Service Error]', err.message));
           }
@@ -501,9 +510,10 @@ router.post('/:id/comments', verifyJWT,
       if (!isStudent) {
         const [[stRow]] = await pool.query('SELECT phone, name, email FROM students WHERE index_number = ?', [row.student_index]);
         if (stRow) {
-          const preview = req.body.message.length > 80 ? req.body.message.substring(0, 80) + '...' : req.body.message;
-          const smsMsg = `[UMaT CCM] 💬 New message on Ticket ${row.id} from ${senderName}: "${preview}" — Log in to the student portal to reply.`;
-          const emailMsg = `Dear ${stRow.name},\n\nYou have received a new message regarding your complaint from ${senderName} (UMaT Staff).\n\nTicket ID: ${row.id}\nSubject: ${row.subject}\nMessage:\n"${req.body.message}"\n\nPlease log in to the student portal to view and respond.\n\nThank you,\nUMaT Campus Complaint Management System`;
+          const lastName = stRow.name ? stRow.name.trim().split(' ')[0] : 'Student';
+          const preview = req.body.message.length > 100 ? req.body.message.substring(0, 100) + '...' : req.body.message;
+          const smsMsg = `[UMaT CCM] Hey ${lastName}, you have a new message on your complaint "${row.subject}" (Ticket ${row.id}): "${preview}" — Log in to reply.`;
+          const emailMsg = `Dear ${stRow.name},\n\nHey ${lastName}, you have received a new message on your complaint from ${senderName} (UMaT Staff).\n\nTicket ID: ${row.id}\nSubject: ${row.subject}\n\nMessage:\n"${req.body.message}"\n\nPlease log in to the student portal to view and respond.\n\nThank you,\nUMaT Campus Complaint Management System`;
           if (stRow.phone && stRow.phone !== 'N/A') {
             const { sendSMS } = require('../utils/sms');
             sendSMS(stRow.phone, smsMsg).catch((err) => console.error('[SMS Comment Alert Error]', err.message));
