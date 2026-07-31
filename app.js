@@ -984,7 +984,9 @@ const app = {
 
       // Force the profile completion modal open — this is a NEW signup,
       // profile is always incomplete at this point.
+      console.log('[signup] About to show profile modal. is_profile_complete:', this.state.loggedStudent.is_profile_complete);
       this.showProfileCompletionModal();
+      console.log('[signup] Modal display after show:', document.getElementById('profile-completion-modal')?.style.display);
 
       this.showToast('Registration successful! Please complete your profile details.', 'success');
     } catch (err) {
@@ -1118,6 +1120,11 @@ const app = {
   },
 
   closeProfileCompletionModal() {
+    // Guard: never close the modal while the student's profile is still incomplete.
+    if (this.state.loggedStudent && !this.state.loggedStudent.is_profile_complete) {
+      console.log('[closeProfileCompletionModal] Blocked — profile is incomplete');
+      return;
+    }
     const modal = document.getElementById('profile-completion-modal');
     if (modal) modal.style.display = 'none';
   },
