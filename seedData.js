@@ -126,12 +126,6 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
 
 const SEED_COMPLAINTS = [];
 
-// Automatic one-time database clear requested by the user
-if (!localStorage.getItem('database_cleared_v3')) {
-  localStorage.clear();
-  localStorage.setItem('database_cleared_v3', 'true');
-}
-
 // Export modules if in Node, otherwise attach to window for browser script tag
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { FACULTIES, DEPARTMENTS, PROGRAMMES, CATEGORIES, STUDENT_DATABASE, STAFF_DATABASE, SEED_COMPLAINTS };

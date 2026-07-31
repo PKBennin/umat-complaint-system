@@ -9,7 +9,9 @@
   if (!header) return;
   const set = () => document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
   set();
-  new ResizeObserver(set).observe(header);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(set).observe(header);
+  }
   window.addEventListener('resize', set);
 })();
 
@@ -1510,7 +1512,7 @@ const app = {
         chip.style.background = 'rgba(34, 197, 94, 0.08)';
         chip.style.color = 'var(--accent)';
         chip.style.borderColor = 'rgba(34, 197, 94, 0.2)';
-        chip.innerHTML = `<i data-lucide="id-badge"></i> <span id="idchip-text">Signed in as ${name}</span>`;
+        chip.innerHTML = `<i data-lucide="id-card"></i> <span id="idchip-text">Signed in as ${name}</span>`;
       }
       
       // Use logged-in student credentials
@@ -1742,7 +1744,7 @@ const app = {
         idchip.style.borderColor = 'rgba(34, 197, 94, 0.2)';
         idchip.style.color = 'var(--accent)';
         idchip.style.background = 'rgba(34, 197, 94, 0.08)';
-        idchip.innerHTML = `<i data-lucide="id-badge"></i> <span id="idchip-text">Signed in as ${formattedName}</span>`;
+        idchip.innerHTML = `<i data-lucide="id-card"></i> <span id="idchip-text">Signed in as ${formattedName}</span>`;
       }
       if (metaText) metaText.textContent = `Submitting as: ${formattedName} (${this.state.loggedStudent.index}) — ${capitalizedProgram}`;
       if (window.lucide) lucide.createIcons();
