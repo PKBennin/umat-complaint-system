@@ -2938,6 +2938,23 @@ body.admin-portal-body #panel-system.active {
   padding-right: 0.5rem;
 }
 
+/* Dedicated Roster Table Scroller & Sticky Headers */
+.roster-table-wrapper {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 300px) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.roster-table-wrapper table.report-table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background: var(--bg-card) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+
 /* Force layout grid to take full height of main and prevent overflow */
 .admin-portal-body .admin-layout {
   flex: 1 !important;
