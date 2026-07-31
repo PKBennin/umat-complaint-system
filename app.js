@@ -106,24 +106,6 @@ const app = {
 
   // Expand/collapse a single FAQ item. Each item is independent (no
   // accordion exclusivity) so multiple answers can stay open at once.
-  toggleFaq(questionBtn) {
-    const item = questionBtn.closest('.faq-item');
-    if (!item) return;
-    const answer = item.querySelector('.faq-answer');
-    const chevron = item.querySelector('.faq-chevron');
-    const isOpen = item.classList.contains('faq-open');
-
-    if (isOpen) {
-      item.classList.remove('faq-open');
-      answer.style.maxHeight = '0';
-      if (chevron) chevron.style.transform = 'rotate(0deg)';
-    } else {
-      item.classList.add('faq-open');
-      answer.style.maxHeight = answer.scrollHeight + 'px';
-      if (chevron) chevron.style.transform = 'rotate(180deg)';
-    }
-  },
-
   toggleFaq(questionButton) {
     if (!questionButton) return;
     const item = questionButton.closest('.faq-item');
@@ -517,13 +499,6 @@ const app = {
     const prog = window.PROGRAMMES.find(p => p.name === programmeName);
     this.state.selectedProgramme = prog || null;
     this.updateRoutingPreview();
-  },
-
-  closeAllAutocompletes() {
-    const listContainer = document.getElementById('stud-programme-list');
-    if (listContainer) {
-      listContainer.style.display = 'none';
-    }
   },
 
   // Real-time Auto-Routing Preview
@@ -1100,6 +1075,17 @@ const app = {
       }
 
       modal.style.display = 'flex';
+      // Nuclear: hide ALL page content behind the modal to guarantee visibility,
+      // bypassing any CSS stacking context issues with position:fixed.
+      const pageHeader = document.querySelector('body > header');
+      const pageMain = document.querySelector('body > main');
+      const pageFooter = document.querySelector('.portal-footer');
+      const floatingBtn = document.querySelector('.btn-floating-quick');
+      if (pageHeader) pageHeader.style.display = 'none';
+      if (pageMain) pageMain.style.display = 'none';
+      if (pageFooter) pageFooter.style.display = 'none';
+      if (floatingBtn) floatingBtn.style.display = 'none';
+
       if (this.state.loggedStudent) {
         const onboardingNameEl = document.getElementById('onboarding-logged-name');
         if (onboardingNameEl) {
@@ -1127,6 +1113,15 @@ const app = {
     }
     const modal = document.getElementById('profile-completion-modal');
     if (modal) modal.style.display = 'none';
+    // Restore page content that was hidden when the modal opened
+    const pageHeader = document.querySelector('body > header');
+    const pageMain = document.querySelector('body > main');
+    const pageFooter = document.querySelector('.portal-footer');
+    const floatingBtn = document.querySelector('.btn-floating-quick');
+    if (pageHeader) pageHeader.style.display = '';
+    if (pageMain) pageMain.style.display = '';
+    if (pageFooter) pageFooter.style.display = '';
+    if (floatingBtn) floatingBtn.style.display = '';
   },
 
   handleProfileProgSearch(input) {
@@ -1238,6 +1233,10 @@ const app = {
   },
 
   closeAllAutocompletes() {
+    // Complaint form autocompletes
+    const listContainer = document.getElementById('stud-programme-list');
+    if (listContainer) listContainer.style.display = 'none';
+    // Onboarding profile autocompletes
     const listProg = document.getElementById('onboarding-profile-prog-autocomplete-list');
     const listFaculty = document.getElementById('onboarding-profile-faculty-autocomplete-list');
     const listDept = document.getElementById('onboarding-profile-dept-autocomplete-list');
@@ -2806,26 +2805,6 @@ const app = {
         menu.classList.add('active');
         backdrop.classList.add('active');
       }
-    }
-  },
-
-  toggleOnboardingDropdown(e) {
-    if (e) e.stopPropagation();
-    const dropdown = document.getElementById('onboarding-profile-dropdown');
-    const widget = document.getElementById('onboarding-profile-badge');
-    if (dropdown) {
-      const isVisible = dropdown.style.display === 'block';
-      dropdown.style.display = isVisible ? 'none' : 'block';
-      if (widget) {
-        widget.classList.toggle('active', !isVisible);
-      }
-    }
-  },
-
-  closeProfileCompletionModal() {
-    const modal = document.getElementById('profile-completion-modal');
-    if (modal) {
-      modal.style.display = 'none';
     }
   },
 
