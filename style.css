@@ -2942,12 +2942,9 @@ body.admin-portal-body #panel-system.active {
 .roster-table-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
-  /* Fixed height so table scrolls independently once page reaches it */
-  max-height: 55vh !important;
+  max-height: 500px !important;
   border-radius: 8px !important;
   border: 1px solid var(--border-color) !important;
-  /* Scroll chaining: page scrolls first; when table top/bottom is hit
-     the scroll transfers into this element (not back to the page) */
   overscroll-behavior: contain;
 }
 
