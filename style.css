@@ -2934,21 +2934,21 @@ body.admin-portal-body #panel-hod.active {
 body.admin-portal-body #panel-analytics.active,
 body.admin-portal-body #panel-system.active {
   height: 100% !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
   padding-right: 0.5rem;
-  display: flex !important;
-  flex-direction: column !important;
 }
 
 /* Dedicated Roster Table Scroller & Sticky Headers */
 .roster-table-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
-  /* fills all remaining space in the card below the header toolbar */
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
+  /* Fixed height so table scrolls independently once page reaches it */
+  max-height: 55vh !important;
   border-radius: 8px !important;
   border: 1px solid var(--border-color) !important;
+  /* Scroll chaining: page scrolls first; when table top/bottom is hit
+     the scroll transfers into this element (not back to the page) */
+  overscroll-behavior: contain;
 }
 
 /* Independent scrollbar styling for roster table */
@@ -2963,28 +2963,19 @@ body.admin-portal-body #panel-system.active {
 .roster-table-wrapper::-webkit-scrollbar-thumb {
   background: var(--accent);
   border-radius: 4px;
-  opacity: 0.7;
 }
 .roster-table-wrapper::-webkit-scrollbar-thumb:hover {
-  opacity: 1;
   background: var(--accent-dark, var(--accent));
 }
 
-/* Roster sub-tab: flex column so wrapper fills remaining height */
+/* Roster sub-tab: normal block layout, page scroll leads into table */
 #sys-sub-roster {
-  display: flex !important;
-  flex-direction: column !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  display: block;
 }
 #sys-sub-roster.hidden { display: none !important; }
 #sys-sub-roster > .glass-card {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  display: block;
+  overflow: visible;
 }
 
 .roster-table-wrapper table.report-table thead th {

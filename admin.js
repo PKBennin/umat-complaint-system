@@ -2166,7 +2166,7 @@ const adminApp = {
     }
 
     document.getElementById('sys-sub-overview').style.display = tabName === 'overview' ? 'block' : 'none';
-    document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'flex' : 'none';
+    document.getElementById('sys-sub-roster').style.display = tabName === 'roster' ? 'block' : 'none';
     document.getElementById('sys-sub-faculties').style.display = tabName === 'faculties' ? 'grid' : 'none';
     document.getElementById('sys-sub-students').style.display = tabName === 'students' ? 'flex' : 'none';
 
